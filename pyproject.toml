@@ -1,6 +1,6 @@
 [project]
 name = "rhino-mcp"
-version = "0.1.0"
+version = "0.2.0"
 description = "MCP server connecting Claude to McNeel Rhino 8 and Grasshopper via rhino3dm and an in-Rhino bridge plugin."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -48,7 +48,12 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/rhino_mcp"]
-artifacts = ["src/rhino_mcp/data/*.json"]
+artifacts = [
+    "src/rhino_mcp/data/*.json",
+    "src/rhino_mcp/data/gh_templates/*.json",
+    "src/rhino_mcp/data/gh_templates/*.gh",
+    "src/rhino_mcp/data/gh_templates/*.md",
+]
 
 [tool.hatch.build.targets.sdist]
 include = [

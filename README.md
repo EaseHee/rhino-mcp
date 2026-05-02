@@ -23,8 +23,8 @@
 
 `rhino-mcp` is a Model Context Protocol server that lets Claude (or any MCP client) drive Rhino 8 — creating geometry, manipulating layers and materials, baking Grasshopper output, exporting STEP/IGES/STL/OBJ — through plain natural-language tool calls. It runs in two modes:
 
-- **Standalone** (default): backed by [`rhino3dm`](https://github.com/mcneel/rhino3dm) for headless `.3dm` file authoring; works without Rhino installed and exposes **~72 tools** (geometry, file-I/O, transform, layer, material, analysis, and RhinoScript docs).
-- **Bridge**: when the C# bridge plugin is loaded in a live Rhino 8 session, the server transparently forwards every call (booleans, lofts, sweeps, viewport, render, scripting, deformation, NURBS editing, SubD, paneling, *and* every Grasshopper operation) to RhinoCommon and Grasshopper.Instances, exposing **130+ tools**.
+- **Standalone** (default): backed by [`rhino3dm`](https://github.com/mcneel/rhino3dm) for headless `.3dm` file authoring; works without Rhino installed and exposes **~89 tools** (geometry, file-I/O, transform, layer, material, analysis, RhinoScript docs, composition, document hygiene, geometry validation, GH template catalogue, *and* freeform skin / panelisation / curvature / fields for non-rectilinear architecture).
+- **Bridge**: when the C# bridge plugin is loaded in a live Rhino 8 session, the server transparently forwards every call (booleans, lofts, sweeps, viewport, render, scripting, deformation, NURBS editing, SubD, paneling, freeform analysis with true Gaussian curvature, *and* every Grasshopper operation including templates) to RhinoCommon and Grasshopper.Instances, exposing **156+ tools**.
 
 ## Features
 
@@ -39,7 +39,12 @@
 - **Inline base64 screenshots** — `rhino_screenshot(as_base64=True)` returns the PNG payload inline for visual verification by the LLM.
 - **Rich object selection** — `rhino_object_select` filters by glob name pattern, layer, RGB color, object type, and user-text key/value pairs.
 - **Pagination on bulk queries** — `rhino_list_objects` returns a `pagination: {total, offset, limit, returned, has_more}` block so large documents stay manageable.
-- **Strategy prompts for the LLM** — three `@mcp.prompt()` guides (`general_strategy`, `rhinoscript_workflow`, `viewport_workflow`) help Claude pick the right tool and avoid hallucinated APIs.
+- **Scene composition shortcuts** (v0.2) — `rhino_place_grid`, `rhino_stack_floors`, `rhino_scatter`, `rhino_replicate_along_curve` collapse "loop + transform" into a single tool call.
+- **Document hygiene tools** (v0.2) — query/set units, tolerances, and base point (`rhino_document_units_*`, `rhino_tolerance_*`, `rhino_origin_set`); `rhino_document_summary` exposes them so the LLM can verify scale before issuing geometry calls.
+- **Geometry validation** (v0.2) — `rhino_validate_brep`, `rhino_report_mesh_health`, `rhino_curve_continuity`, plus `rhino_check_naked_edges` (bridge) for explicit topology diagnostics before booleans / exports.
+- **Grasshopper template loader** (v0.2) — `gh_template_list` reads a manifest of pre-wired definitions; `gh_load_template`, `gh_bind_template_parameter`, `gh_run_template` (bridge) load, parameterise, and bake them.
+- **Free-form architecture toolkit** — `rhino_skin_from_sections`, `rhino_uv_grid_panels`, `rhino_panel_planarity`, `rhino_panel_curvature_classify`, `rhino_surface_developable_score`, `rhino_attractor_displace_points`, `rhino_smooth_polyline`. Bridge mode adds true Gaussian / mean / principal curvature, world-axis slicing, and waffle ribs.
+- **Strategy prompts for the LLM** — seven `@mcp.prompt()` guides (`general_strategy`, `rhinoscript_workflow`, `viewport_workflow`, `parametric_workflow`, `bim_authoring_workflow`, `design_dialogue_workflow`, `freeform_workflow`) help Claude pick the right tool, avoid hallucinated APIs, and keep the user in the loop on design decisions.
 - **Async-capable tools** — read-only query tools run on `async def` so concurrent bridge round-trips don't stall the MCP transport.
 - **Robust connection layer** — JSON-RPC over named pipe / Unix socket / TCP with `MSG_PEEK` liveness probes and exponential backoff with jitter on reconnect.
 - **Grasshopper automation** — open `.gh` files, drop components, wire them, set sliders/panels/toggles, run, bake, read DataTrees.

@@ -244,6 +244,49 @@ namespace RhinoMCPBridge
             Register("gh.parameter.set_panel", gh.ParameterSetPanel);
             Register("gh.data_tree.get", gh.DataTreeGet);
             Register("gh.data_tree.set", gh.DataTreeSet);
+
+            // Composition (multi-object placement)
+            var comp = new Handlers.CompositionHandler();
+            Register("rhino.composition.place_grid", comp.PlaceGrid);
+            Register("rhino.composition.stack_floors", comp.StackFloors);
+            Register("rhino.composition.scatter", comp.Scatter);
+            Register("rhino.composition.replicate_along_curve", comp.ReplicateAlongCurve);
+
+            // Document configuration (units, tolerance, base point)
+            var dcfg = new Handlers.DocumentConfigHandler();
+            Register("rhino.document_config.units_get", dcfg.UnitsGet);
+            Register("rhino.document_config.units_set", dcfg.UnitsSet);
+            Register("rhino.document_config.tolerance_get", dcfg.ToleranceGet);
+            Register("rhino.document_config.tolerance_set", dcfg.ToleranceSet);
+            Register("rhino.document_config.origin_set", dcfg.OriginSet);
+            Register("rhino.document_config.settings", dcfg.Settings);
+
+            // Geometry validation
+            var val = new Handlers.ValidationHandler();
+            Register("rhino.validation.brep", val.Brep);
+            Register("rhino.validation.naked_edges", val.NakedEdges);
+            Register("rhino.validation.mesh", val.Mesh);
+            Register("rhino.validation.curve", val.Curve);
+
+            // Grasshopper templates
+            var ght = new Handlers.GhTemplatesHandler();
+            Register("rhino.gh_templates.load", ght.Load);
+            Register("rhino.gh_templates.bind_parameter", ght.BindParameter);
+            Register("rhino.gh_templates.run", ght.Run);
+
+            // Freeform / non-rectilinear (v0.3)
+            var ff = new Handlers.FreeformHandler();
+            Register("rhino.freeform.skin", ff.Skin);
+            Register("rhino.freeform.section_at_axis", ff.SectionAtAxis);
+            Register("rhino.freeform.axis_ribs", ff.AxisRibs);
+            Register("rhino.freeform.normal_at", ff.NormalAt);
+            Register("rhino.freeform.curvature_at", ff.CurvatureAt);
+            Register("rhino.freeform.developable_score", ff.DevelopableScore);
+            Register("rhino.freeform.uv_grid_panels", ff.UvGridPanels);
+            Register("rhino.freeform.panel_planarity", ff.PanelPlanarity);
+            Register("rhino.freeform.panel_curvature_classify", ff.PanelCurvatureClassify);
+            Register("rhino.freeform.attractor_displace_points", ff.AttractorDisplacePoints);
+            Register("rhino.freeform.smooth_polyline", ff.SmoothPolyline);
         }
 
         private void Register(string method, Func<JObject, JObject> handler)

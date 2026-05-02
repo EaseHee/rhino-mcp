@@ -51,5 +51,17 @@ For those, the bridge plugin running inside Rhino 8 is required. The capability 
 | `rhino_dup_edge`, `rhino_dup_border`, `rhino_isocurve`, `rhino_make2d` (extraction) | ✗ | ✓ |
 | `rhino_get_control_points`, `rhino_set_control_points` (control points) | ✗ | ✓ |
 | `rhino_panelize_surface`, `rhino_create_uv_grid`, `rhino_panel_frames` (paneling) | ✗ | ✓ |
+| `rhino_place_grid`, `rhino_stack_floors`, `rhino_scatter`, `rhino_replicate_along_curve` (composition, v0.2) | ✓ | ✓ |
+| `rhino_document_units_get/set`, `rhino_tolerance_get/set`, `rhino_origin_set`, `rhino_document_settings` (document hygiene, v0.2) | ✓ | ✓ |
+| `rhino_validate_brep`, `rhino_report_mesh_health`, `rhino_curve_continuity` (validation, v0.2) | ✓ | ✓ |
+| `rhino_check_naked_edges` (naked-edge enumeration, v0.2) | ✗ | ✓ |
+| `gh_template_list` (catalogue, v0.2) | ✓ | ✓ |
+| `gh_load_template`, `gh_bind_template_parameter`, `gh_run_template` (v0.2) | ✗ | ✓ |
+| `rhino_skin_from_sections`, `rhino_section_at_axis(u/v)` (freeform skin, v0.2) | ✓ | ✓ |
+| `rhino_section_at_axis(x/y/z)`, `rhino_axis_ribs` (freeform skin world-axis, v0.2) | ✗ | ✓ |
+| `rhino_uv_grid_panels`, `rhino_panel_planarity`, `rhino_panel_curvature_classify` (paneling, v0.2) | ✓ | ✓ |
+| `rhino_surface_normal_at`, `rhino_surface_developable_score` (curvature, v0.2) | ✓ | ✓ |
+| `rhino_surface_curvature_at` (true Gaussian/mean/principal, v0.2) | ✗ | ✓ |
+| `rhino_attractor_displace_points`, `rhino_smooth_polyline` (fields, v0.2) | ✓ | ✓ |
 
-In numbers: ~72 standalone tools, ~130+ with the C# bridge.
+In numbers: ~89 standalone tools, ~156+ with the C# bridge.

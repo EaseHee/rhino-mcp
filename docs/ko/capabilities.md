@@ -51,5 +51,17 @@
 | `rhino_dup_edge`, `rhino_dup_border`, `rhino_isocurve`, `rhino_make2d` (추출) | ✗ | ✓ |
 | `rhino_get_control_points`, `rhino_set_control_points` (컨트롤 포인트) | ✗ | ✓ |
 | `rhino_panelize_surface`, `rhino_create_uv_grid`, `rhino_panel_frames` (패널링) | ✗ | ✓ |
+| `rhino_place_grid`, `rhino_stack_floors`, `rhino_scatter`, `rhino_replicate_along_curve` (구성, v0.2) | ✓ | ✓ |
+| `rhino_document_units_get/set`, `rhino_tolerance_get/set`, `rhino_origin_set`, `rhino_document_settings` (도큐먼트 위생, v0.2) | ✓ | ✓ |
+| `rhino_validate_brep`, `rhino_report_mesh_health`, `rhino_curve_continuity` (검증, v0.2) | ✓ | ✓ |
+| `rhino_check_naked_edges` (naked edge 열거, v0.2) | ✗ | ✓ |
+| `gh_template_list` (템플릿 카탈로그, v0.2) | ✓ | ✓ |
+| `gh_load_template`, `gh_bind_template_parameter`, `gh_run_template` (v0.2) | ✗ | ✓ |
+| `rhino_skin_from_sections`, `rhino_section_at_axis(u/v)` (비정형 skin, v0.2) | ✓ | ✓ |
+| `rhino_section_at_axis(x/y/z)`, `rhino_axis_ribs` (월드 축 슬라이싱·waffle, v0.2) | ✗ | ✓ |
+| `rhino_uv_grid_panels`, `rhino_panel_planarity`, `rhino_panel_curvature_classify` (패널 합리화, v0.2) | ✓ | ✓ |
+| `rhino_surface_normal_at`, `rhino_surface_developable_score` (곡률 분석, v0.2) | ✓ | ✓ |
+| `rhino_surface_curvature_at` (정확한 가우스/평균/주곡률, v0.2) | ✗ | ✓ |
+| `rhino_attractor_displace_points`, `rhino_smooth_polyline` (필드 변형, v0.2) | ✓ | ✓ |
 
-요약: standalone 약 72개, C# 브리지 활성 시 130개 이상.
+요약: standalone 약 89개, C# 브리지 활성 시 156개 이상.

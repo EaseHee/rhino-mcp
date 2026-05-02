@@ -154,7 +154,7 @@ def register(mcp, mode: Mode) -> None:  # type: ignore[no-untyped-def]
         bbox = geom.GetBoundingBox()
         layer_idx = obj.Attributes.LayerIndex
         layer_name = ""
-        if 0 <= layer_idx < h.file3dm.Layers.Count:
+        if 0 <= layer_idx < len(h.file3dm.Layers):
             layer_name = h.file3dm.Layers[layer_idx].Name
 
         info: dict[str, Any] = {
@@ -171,12 +171,12 @@ def register(mcp, mode: Mode) -> None:  # type: ignore[no-untyped-def]
             info["domain"] = [geom.Domain.Min, geom.Domain.Max]
             info["length"] = geom.GetLength()
         elif isinstance(geom, r3.Brep):
-            info["face_count"] = geom.Faces.Count
-            info["edge_count"] = geom.Edges.Count
+            info["face_count"] = len(geom.Faces)
+            info["edge_count"] = len(geom.Edges)
             info["is_solid"] = geom.IsSolid
         elif isinstance(geom, r3.Mesh):
-            info["vertex_count"] = geom.Vertices.Count
-            info["face_count"] = geom.Faces.Count
+            info["vertex_count"] = len(geom.Vertices)
+            info["face_count"] = len(geom.Faces)
 
         return {"summary": info, "text": f"{kind}: {args.object_id}"}
 
@@ -199,12 +199,32 @@ def register(mcp, mode: Mode) -> None:  # type: ignore[no-untyped-def]
         layers = []
         for i in range(layer_count):
             lay = f.Layers[i]
+            color = lay.Color
+            r_, g_, b_ = (color[0], color[1], color[2]) if isinstance(color, tuple) else (
+                color.R, color.G, color.B
+            )
             layers.append({
                 "index": i,
                 "name": lay.Name,
-                "color": {"r": lay.Color.R, "g": lay.Color.G, "b": lay.Color.B},
+                "color": {"r": r_, "g": g_, "b": b_},
                 "visible": lay.Visible,
             })
+
+        # Extended document hygiene fields (units / tolerances / base point /
+        # layer-tree depth) so the LLM can verify it's modeling at the right
+        # scale before issuing geometry calls.
+        s = f.Settings
+        from rhino_mcp.tools.document_config import _UNITS_ENUM_TO_NAME
+
+        unit_int = int(s.ModelUnitSystem)
+        units_name = _UNITS_ENUM_TO_NAME.get(unit_int, str(s.ModelUnitSystem))
+        layer_tree_depth = 0
+        for i in range(layer_count):
+            full = f.Layers[i].FullPath if hasattr(f.Layers[i], "FullPath") else f.Layers[i].Name
+            if full:
+                depth = full.count("::") + 1
+                if depth > layer_tree_depth:
+                    layer_tree_depth = depth
 
         return {
             "summary": {
@@ -212,8 +232,20 @@ def register(mcp, mode: Mode) -> None:  # type: ignore[no-untyped-def]
                 "type_counts": type_counts,
                 "layer_count": layer_count,
                 "layers": layers,
+                "units": units_name,
+                "tolerances": {
+                    "absolute": s.ModelAbsoluteTolerance,
+                    "angle_degrees": s.ModelAngleToleranceDegrees,
+                    "relative": s.ModelRelativeTolerance,
+                },
+                "base_point": {
+                    "x": s.ModelBasePoint.X,
+                    "y": s.ModelBasePoint.Y,
+                    "z": s.ModelBasePoint.Z,
+                },
+                "layer_tree_depth": layer_tree_depth,
             },
-            "text": f"Document: {obj_count} objects, {layer_count} layers"
+            "text": f"Document: {obj_count} objects, {layer_count} layers, units={units_name}"
         }
 
     @mcp.tool(annotations={"title": "List Layers", "readOnlyHint": True})
@@ -237,11 +269,15 @@ def register(mcp, mode: Mode) -> None:  # type: ignore[no-untyped-def]
         layers = []
         for i in range(layer_count):
             lay = f.Layers[i]
+            color = lay.Color
+            r_, g_, b_ = (color[0], color[1], color[2]) if isinstance(color, tuple) else (
+                color.R, color.G, color.B
+            )
             layers.append({
                 "index": i,
                 "name": lay.Name,
                 "full_path": lay.FullPath if hasattr(lay, 'FullPath') else lay.Name,
-                "color": {"r": lay.Color.R, "g": lay.Color.G, "b": lay.Color.B},
+                "color": {"r": r_, "g": g_, "b": b_},
                 "visible": lay.Visible,
                 "locked": lay.IsLocked,
                 "object_count": layer_obj_count.get(i, 0),

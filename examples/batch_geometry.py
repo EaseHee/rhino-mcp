@@ -1,7 +1,7 @@
-"""배치 지오메트리 생성 예제.
+"""Batch geometry creation example.
 
-여러 개의 3D 객체를 프로그래밍 방식으로 생성하고 레이어별로 정리한다.
-Standalone 모드에서 실행 가능.
+Creates many 3-D objects programmatically and organises them by layer.
+Runs in standalone mode.
 """
 
 import math
@@ -19,14 +19,14 @@ def main() -> None:
 
     import rhino3dm as r3
 
-    # 레이어 생성
+    # Create layers.
     for name, color in [("Spheres", (255, 0, 0, 255)), ("Boxes", (0, 0, 255, 255))]:
         layer = r3.Layer()
         layer.Name = name
         layer.Color = color
         file3dm.Layers.Add(layer)
 
-    # 구체 5x5 그리드
+    # 5x5 grid of spheres.
     for i in range(5):
         for j in range(5):
             center = r3.Point3d(i * 20, j * 20, 0)
@@ -37,7 +37,7 @@ def main() -> None:
             attrs.Name = f"sphere_{i}_{j}"
             file3dm.Objects.AddBrep(brep, attrs)
 
-    # 박스 5x5 그리드 (오프셋)
+    # 5x5 grid of boxes (offset along X).
     for i in range(5):
         for j in range(5):
             bbox = r3.BoundingBox(

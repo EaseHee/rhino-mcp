@@ -1,7 +1,7 @@
-"""에러 처리 패턴 예제.
+"""Error-handling patterns example.
 
-rhino-mcp의 ToolError 계층과 ErrorCategory를 활용하여
-도구 호출 실패 시 적절히 대응하는 방법을 보여준다.
+Shows how to react to tool failures using rhino-mcp's ToolError
+hierarchy and ErrorCategory enum.
 """
 
 from rhino_mcp.tools.context import set_runtime
@@ -12,7 +12,7 @@ set_runtime(Mode.STANDALONE, None)
 
 
 def demo_parameter_error() -> None:
-    """잘못된 파라미터 처리."""
+    """Handle an invalid parameter."""
     from rhino_mcp.utils.error_handling import parameter_error
 
     try:
@@ -24,7 +24,7 @@ def demo_parameter_error() -> None:
 
 
 def demo_not_found_error() -> None:
-    """존재하지 않는 객체 처리."""
+    """Handle a missing object lookup."""
     from rhino_mcp.utils.error_handling import not_found_error
 
     try:
@@ -32,13 +32,13 @@ def demo_not_found_error() -> None:
     except ToolError as e:
         print(f"\n[{e.category.value}] {e.message}")
         print(f"  Hint: {e.hint}")
-        # 카테고리별 분기 처리
+        # Branch by category.
         if e.category == ErrorCategory.NOT_FOUND:
-            print("  → 객체 생성 후 재시도 가능")
+            print("  -> can retry after creating the object")
 
 
 def demo_unsupported_error() -> None:
-    """Bridge 전용 도구의 standalone 호출 처리."""
+    """Handle a bridge-only tool called in standalone mode."""
     from rhino_mcp.utils.error_handling import unsupported_in_standalone
 
     try:
@@ -47,11 +47,11 @@ def demo_unsupported_error() -> None:
         print(f"\n[{e.category.value}] {e.message}")
         print(f"  Hint: {e.hint}")
         if e.category == ErrorCategory.UNSUPPORTED:
-            print("  → Rhino 8 Bridge 모드로 전환 필요")
+            print("  -> switch to Rhino 8 bridge mode")
 
 
 def demo_error_to_dict() -> None:
-    """에러를 JSON 직렬화 가능한 dict로 변환."""
+    """Convert an error to a JSON-serialisable dict."""
     from rhino_mcp.utils.error_handling import parameter_error
 
     err = parameter_error("count", "must be between 3 and 256", allowed="3-256")

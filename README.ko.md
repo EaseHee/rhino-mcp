@@ -23,8 +23,8 @@
 
 `rhino-mcp`는 Claude(또는 임의의 MCP 클라이언트)가 자연어 도구 호출만으로 Rhino 8을 조작할 수 있도록 만드는 Model Context Protocol 서버입니다. 형상 생성, 레이어·머티리얼·블록 관리, Grasshopper 베이크, STEP/IGES/STL/OBJ 내보내기 등을 모두 지원합니다. 두 가지 실행 모드를 제공합니다.
 
-- **Standalone(독립 실행)**: [`rhino3dm`](https://github.com/mcneel/rhino3dm) 라이브러리로 헤드리스 `.3dm` 파일을 직접 만듭니다. Rhino 미설치 환경에서도 동작하며 **약 72개 도구**를 노출합니다.
-- **Bridge(브리지)**: Rhino 8 안에서 C# 브리지 플러그인이 로드되면 모든 호출(부울 연산, 로프트, 스윕, 뷰포트, 렌더, 스크립트 실행, 변형, NURBS 편집, SubD, 패널링, 모든 Grasshopper 명령)을 라이브 Rhino로 투명하게 전달합니다. **130개 이상의 도구**가 활성화됩니다.
+- **Standalone(독립 실행)**: [`rhino3dm`](https://github.com/mcneel/rhino3dm) 라이브러리로 헤드리스 `.3dm` 파일을 직접 만듭니다. Rhino 미설치 환경에서도 동작하며 **약 89개 도구**를 노출합니다(v0.2 기준 — 구성 단축 도구, 도큐먼트 위생, 지오메트리 검증, GH 템플릿 카탈로그, **비정형 skin / 패널 합리화 / 곡률 분석 / 필드 변형** 포함).
+- **Bridge(브리지)**: Rhino 8 안에서 C# 브리지 플러그인이 로드되면 모든 호출(부울 연산, 로프트, 스윕, 뷰포트, 렌더, 스크립트 실행, 변형, NURBS 편집, SubD, 패널링, 정확한 가우스 곡률을 포함한 비정형 분석, 모든 Grasshopper 명령 + 템플릿)을 라이브 Rhino로 투명하게 전달합니다. **156개 이상의 도구**가 활성화됩니다.
 
 ## 기능(Features)
 
@@ -39,7 +39,12 @@
 - **인라인 base64 스크린샷** — `rhino_screenshot(as_base64=True)`가 PNG 데이터를 응답에 직접 포함해 LLM이 즉시 시각 검증 가능.
 - **풍부한 객체 선택 필터** — `rhino_object_select`가 이름 glob 패턴, 레이어, RGB 색상, 객체 타입, user-text 키/값 조합으로 필터.
 - **대량 조회 페이지네이션** — `rhino_list_objects` 응답에 `pagination: {total, offset, limit, returned, has_more}` 블록 포함, 큰 도면에서도 컨텍스트 폭발 없음.
-- **LLM 전략 가이드 프롬프트** — `general_strategy`, `rhinoscript_workflow`, `viewport_workflow` 3개 `@mcp.prompt()`로 도구 선택 가이드 및 hallucination 방지.
+- **장면 구성 단축 도구**(v0.2) — `rhino_place_grid`, `rhino_stack_floors`, `rhino_scatter`, `rhino_replicate_along_curve`로 "loop + transform" 패턴을 단일 호출로 압축.
+- **도큐먼트 위생 도구**(v0.2) — 단위·공차·기준점을 직접 조회/설정(`rhino_document_units_*`, `rhino_tolerance_*`, `rhino_origin_set`). `rhino_document_summary`가 이를 노출하여 LLM이 지오메트리 호출 전에 스케일을 검증할 수 있음.
+- **지오메트리 검증**(v0.2) — `rhino_validate_brep`, `rhino_report_mesh_health`, `rhino_curve_continuity`, 그리고 브리지 전용 `rhino_check_naked_edges`로 부울/내보내기 전 토폴로지 진단.
+- **Grasshopper 템플릿 로더**(v0.2) — `gh_template_list`로 사전 와이어링된 템플릿 카탈로그 조회. `gh_load_template`/`gh_bind_template_parameter`/`gh_run_template`(브리지)로 로드·파라미터 바인딩·베이크.
+- **비정형 건축 설계 툴킷** — `rhino_skin_from_sections`, `rhino_uv_grid_panels`, `rhino_panel_planarity`, `rhino_panel_curvature_classify`, `rhino_surface_developable_score`, `rhino_attractor_displace_points`, `rhino_smooth_polyline`. 브리지 모드에서는 정확한 가우스/평균/주곡률, 월드 축 슬라이싱, waffle ribs까지 추가.
+- **LLM 전략 가이드 프롬프트** — `general_strategy`, `rhinoscript_workflow`, `viewport_workflow`, `parametric_workflow`, `bim_authoring_workflow`, `design_dialogue_workflow`, `freeform_workflow` 7개 `@mcp.prompt()`로 도구 선택 가이드, hallucination 방지, 사용자-인-더-루프 디자인 결정.
 - **비동기 도구** — read-only 쿼리 도구가 `async def`로 노출되어 동시 브리지 호출이 MCP 전송을 막지 않음.
 - **견고한 연결 계층** — named pipe / Unix socket / TCP 위 JSON-RPC. `MSG_PEEK` liveness probe와 jitter 적용 지수 백오프 재연결.
 - **Grasshopper 자동화** — `.gh` 열기, 컴포넌트(component) 추가·연결·삭제, 슬라이더(slider)/패널(panel)/토글(toggle) 설정, 솔루션 실행, 베이크(bake), DataTree 읽기.

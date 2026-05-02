@@ -32,12 +32,15 @@ def _tool_specs() -> list[tuple[Mode, object]]:
         analysis,
         annotation,
         batch,
+        composition,
         control_points,
         curves,
         deformation,
         display,
+        document_config,
         extraction,
         geometry,
+        geometry_validation,
         history,
         io,
         layers,
@@ -54,7 +57,11 @@ def _tool_specs() -> list[tuple[Mode, object]]:
         surfaces,
         transform,
     )
-    from rhino_mcp.tools.grasshopper import canvas, components, data_tree, parameters
+    from rhino_mcp.tools.freeform import curvature as ff_curvature
+    from rhino_mcp.tools.freeform import fields as ff_fields
+    from rhino_mcp.tools.freeform import paneling as ff_paneling
+    from rhino_mcp.tools.freeform import skin as ff_skin
+    from rhino_mcp.tools.grasshopper import canvas, components, data_tree, parameters, templates
 
     return [
         # Core geometry (standalone + bridge)
@@ -64,12 +71,20 @@ def _tool_specs() -> list[tuple[Mode, object]]:
         (Mode.BOTH, surfaces.register),
         (Mode.BOTH, mesh.register),
         (Mode.BOTH, transform.register),
+        (Mode.BOTH, composition.register),
         (Mode.BOTH, annotation.register),
         (Mode.BOTH, layers.register),
         (Mode.BOTH, materials.register),
         (Mode.BOTH, io.register),
         (Mode.BOTH, analysis.register),
         (Mode.BOTH, query.register),
+        (Mode.BOTH, document_config.register),
+        (Mode.BOTH, geometry_validation.register),
+        # Freeform / non-rectilinear architecture (v0.3)
+        (Mode.BOTH, ff_skin.register),
+        (Mode.BOTH, ff_paneling.register),
+        (Mode.BOTH, ff_curvature.register),
+        (Mode.BOTH, ff_fields.register),
         # Documentation (standalone + bridge)
         (Mode.BOTH, rhinoscript_docs.register),
         # Script execution (bridge only)
@@ -92,6 +107,7 @@ def _tool_specs() -> list[tuple[Mode, object]]:
         (Mode.BRIDGE, parameters.register),
         (Mode.BRIDGE, canvas.register),
         (Mode.BRIDGE, data_tree.register),
+        (Mode.BOTH, templates.register),
     ]
 
 
@@ -139,6 +155,10 @@ def _register_prompts(mcp: FastMCP) -> int:
         strategy.general_strategy,
         strategy.rhinoscript_workflow,
         strategy.viewport_workflow,
+        strategy.parametric_workflow,
+        strategy.bim_authoring_workflow,
+        strategy.design_dialogue_workflow,
+        strategy.freeform_workflow,
     )
     for fn in funcs:
         mcp.prompt(name=fn.__name__, description=(fn.__doc__ or "").strip())(fn)
