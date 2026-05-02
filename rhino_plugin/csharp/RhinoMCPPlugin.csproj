@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0</TargetFrameworks>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <TargetExt>.rhp</TargetExt>
+    <NoWarn>NU1701</NoWarn>
+    <Title>RhinoMCPBridge</Title>
+    <Description>MCP bridge plugin for Rhino 8 — JSON-RPC 2.0 over TCP.</Description>
+    <Version>0.1.0</Version>
+    <AssemblyName>RhinoMCPBridge</AssemblyName>
+    <RootNamespace>RhinoMCPBridge</RootNamespace>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="RhinoCommon" Version="8.17.25066.7001" ExcludeAssets="runtime" />
+    <PackageReference Include="Grasshopper" Version="8.17.25066.7001" ExcludeAssets="runtime" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="System.Drawing.Common" Version="8.0.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.12.0" />
+  </ItemGroup>
+
+  <!-- macOS: copy to Rhino.app/Contents/PlugIns/ -->
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="$([MSBuild]::IsOSPlatform('OSX'))">
+    <Exec Command="cp '$(TargetDir)RhinoMCPBridge.rhp' '/Applications/Rhino 8.app/Contents/PlugIns/'" />
+    <Exec Command="cp '$(TargetDir)Newtonsoft.Json.dll' '/Applications/Rhino 8.app/Contents/PlugIns/'" Condition="Exists('$(TargetDir)Newtonsoft.Json.dll')" />
+  </Target>
+
+  <!-- Windows: copy to Plug-ins folder -->
+  <Target Name="PostBuildWin" AfterTargets="PostBuildEvent" Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+    <Copy SourceFiles="$(TargetDir)RhinoMCPBridge.rhp" DestinationFolder="$(APPDATA)/McNeel/Rhinoceros/8.0/Plug-ins/RhinoMCPBridge/" />
+    <Copy SourceFiles="$(TargetDir)Newtonsoft.Json.dll" DestinationFolder="$(APPDATA)/McNeel/Rhinoceros/8.0/Plug-ins/RhinoMCPBridge/" Condition="Exists('$(TargetDir)Newtonsoft.Json.dll')" />
+  </Target>
+
+</Project>

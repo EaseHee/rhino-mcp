@@ -1,0 +1,29 @@
+services:
+  rhino-mcp:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: rhino-mcp:latest
+    container_name: rhino-mcp
+    restart: unless-stopped
+    ports:
+      - "8765:8765"
+    environment:
+      RHINO_MCP_TRANSPORT: http
+      RHINO_MCP_LOG_LEVEL: INFO
+      # When the Rhino bridge runs on the docker host, point at it via host.docker.internal.
+      RHINO_MCP_FORCE_MODE: ${RHINO_MCP_FORCE_MODE:-standalone}
+      RHINO_HOST: ${RHINO_HOST:-host.docker.internal}
+      RHINO_PORT: ${RHINO_PORT:-4242}
+      RHINO_MCP_TRANSPORT_KIND: tcp
+    volumes:
+      # Mount a working directory so rhino_save / rhino_export_* can write outside the container.
+      - ${RHINO_MCP_DATA:-./data}:/data
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8765/health', timeout=5)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

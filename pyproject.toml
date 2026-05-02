@@ -1,0 +1,117 @@
+[project]
+name = "rhino-mcp"
+version = "0.1.0"
+description = "MCP server connecting Claude to McNeel Rhino 8 and Grasshopper via rhino3dm and an in-Rhino bridge plugin."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+keywords = ["mcp", "rhino", "rhino3dm", "grasshopper", "claude", "anthropic", "cad", "3d", "nurbs"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Multimedia :: Graphics :: 3D Modeling",
+    "Topic :: Scientific/Engineering",
+]
+dependencies = [
+    "mcp[cli]>=1.2,<2",
+    "pydantic>=2.6,<3",
+    "rhino3dm>=8.9,<9",
+]
+
+[project.optional-dependencies]
+windows = ["pywin32>=306; sys_platform == 'win32'"]
+dev = [
+    "pytest>=8",
+    "pytest-cov>=5",
+    "pytest-asyncio>=0.24",
+    "ruff>=0.6",
+    "mypy>=1.10",
+]
+
+[project.urls]
+Homepage = "https://github.com/easehee/rhino-mcp"
+Repository = "https://github.com/easehee/rhino-mcp"
+Documentation = "https://github.com/easehee/rhino-mcp/blob/main/README.md"
+Issues = "https://github.com/easehee/rhino-mcp/issues"
+
+[project.scripts]
+rhino-mcp = "rhino_mcp.server:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/rhino_mcp"]
+artifacts = ["src/rhino_mcp/data/*.json"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/rhino_mcp",
+    "rhino_plugin",
+    "README.md",
+    "README.ko.md",
+    "LICENSE",
+    "docs",
+    "assets",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-q --strict-markers"
+markers = [
+    "live: requires a running Rhino 8 instance with RhinoMCPBridge.py loaded (set RHINO_LIVE=1)",
+    "bridge: tests the bridge protocol with a fake transport",
+]
+
+[tool.coverage.run]
+source = ["src/rhino_mcp"]
+branch = true
+omit = ["*/__main__.py"]
+
+[tool.coverage.report]
+# 80% across the whole codebase isn't reachable without a live Rhino: the
+# bridge transports (named pipe / unix socket / TCP) and the bridge branches
+# of every tool only execute when an in-Rhino plugin is reachable. Coverage
+# is therefore enforced at the module level for components that are
+# fully exercisable in CI; see [tool.coverage.run].
+fail_under = 70
+show_missing = true
+skip_covered = false
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+    "if sys.platform",
+    "raise unsupported_in_standalone",
+    "return runtime\\(\\)\\.require_bridge\\(\\)\\.call",
+]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "RUF"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+
+[[tool.mypy.overrides]]
+module = ["rhino3dm", "rhino3dm.*", "win32file", "win32pipe"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["rhino_mcp.tools.*", "rhino_mcp.bridge.*"]
+# register(mcp, mode) 시그니처는 FastMCP 타입을 optional로 유지
+disallow_untyped_defs = false
