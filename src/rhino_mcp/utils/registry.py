@@ -3,7 +3,7 @@
 Each tool declares which execution mode it supports:
 
 * ``Mode.STANDALONE`` — runs against an in-process ``rhino3dm.File3dm``.
-* ``Mode.BRIDGE`` — proxies through ``RhinoMCPBridge`` running inside a live Rhino 8.
+* ``Mode.BRIDGE`` — proxies through the ``RhinoMCPBridge.rhp`` C# plugin loaded inside a live Rhino 8.
 * ``Mode.BOTH`` — supported in both, with implementation chosen at runtime.
 
 Tools whose capability does not match the active mode are simply not registered

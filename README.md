@@ -23,8 +23,8 @@
 
 `rhino-mcp` is a Model Context Protocol server that lets Claude (or any MCP client) drive Rhino 8 — creating geometry, manipulating layers and materials, baking Grasshopper output, exporting STEP/IGES/STL/OBJ — through plain natural-language tool calls. It runs in two modes:
 
-- **Standalone** (default): backed by [`rhino3dm`](https://github.com/mcneel/rhino3dm) for headless `.3dm` file authoring; works without Rhino installed and exposes **~89 tools** (geometry, file-I/O, transform, layer, material, analysis, RhinoScript docs, composition, document hygiene, geometry validation, GH template catalogue, *and* freeform skin / panelisation / curvature / fields for non-rectilinear architecture).
-- **Bridge**: when the C# bridge plugin is loaded in a live Rhino 8 session, the server transparently forwards every call (booleans, lofts, sweeps, viewport, render, scripting, deformation, NURBS editing, SubD, paneling, freeform analysis with true Gaussian curvature, *and* every Grasshopper operation including templates) to RhinoCommon and Grasshopper.Instances, exposing **156+ tools**.
+- **Standalone** (default): backed by [`rhino3dm`](https://github.com/mcneel/rhino3dm) for headless `.3dm` file authoring; works without Rhino installed and exposes **~126 tools** (geometry, file-I/O, transform, layer, material, analysis, RhinoScript docs, composition, document hygiene, geometry validation, GH template catalogue, freeform skin / panelisation / curvature / fields, drawing-set sheet + title block, schedule / quantity, block definition, sun-position + shadow projection, BIM metadata tagging, 19 physical material presets, BRE daylight factor + Bird DNI clear-sky model).
+- **Bridge**: when the C# bridge plugin is loaded in a live Rhino 8 session, the server transparently forwards every call (booleans, lofts, sweeps, viewport, render, scripting, deformation, NURBS editing, SubD, paneling, freeform analysis with true Gaussian curvature, drawing-set view placement + section cuts + PDF export, accurate Brep-area schedules, block explode/redefine, ray-cast solar exposure, IFC / gbXML import-export, HDRI environment, camera / light / render / turntable automation, *and* every Grasshopper operation including templates) to RhinoCommon and Grasshopper.Instances, exposing **~223 tools**.
 
 ## Features
 
@@ -33,6 +33,13 @@
 - **Transforms** — move, rotate, scale, mirror, plane-to-plane orient, linear/polar/rectangular arrays.
 - **Script execution** — run arbitrary RhinoScript Python (IronPython) or RhinoCommon C# (Roslyn) code in a live Rhino session, with built-in RhinoScript API documentation search (899 functions).
 - **Advanced modeling** — deformation (bend/twist/taper/flow), NURBS editing (rebuild/unroll/evaluate), SubD, surface matching, extraction (dup edge/border/isocurve/Make2D), control points, and paneling tools.
+- **Drawing-set authoring** — sheet / title block / north arrow / scale bar in standalone; multi-view placement, section cuts, and PDF export through the bridge.
+- **Quantity & schedule** — per-layer / per-material / per-`user_text` aggregation with CSV export; bridge mode uses `AreaMassProperties` / `VolumeMassProperties` for accurate Brep area + volume.
+- **Block / instance reuse** — define / insert / list blocks in standalone; explode / redefine in bridge mode for synchronized component edits.
+- **Environmental analysis** — sun position + monthly sun-path polylines + shadow projection (NOAA SPA approximation); ray-cast solar exposure in bridge mode. Daylight precision adds Bird DNI clear-sky model with Kasten-Young air mass and Linke turbidity, plus BRE simplified daylight factor.
+- **BIM interchange** — IFC2x3 / IFC4 / IFC4x3 import & export, gbXML export, and IFC PropertySet metadata tagging that round-trips through `user_text`.
+- **Material presets + HDRI** — 19 bundled physical presets (concrete / brick / steel / aluminium / glass / timber / stone / plaster / fabric / landscape) keyed by category; HDRI environment for rendering.
+- **Render automation** — camera / light / render-engine setup, render-to-file, and parametric turntable sequences (bridge mode).
 - **Undo / redo and batch operations** — every bridge operation is wrapped in undo records; batch modify changes many objects in a single call.
 - **Layers, materials, blocks, groups** — full attribute control on the document.
 - **File I/O** — open/save `.3dm`, export OBJ/STL standalone; STEP/IGES/DXF and screenshots via the bridge.
@@ -226,17 +233,6 @@ Post-build targets copy the `.rhp`:
 
 Restart Rhino 8 — the bridge starts automatically on load (TCP `:4242` by default). Then restart `rhino-mcp` (or set `RHINO_MCP_FORCE_MODE=bridge`) and the bridge-only tools become available.
 
-<details>
-<summary>Legacy Python bridge (deprecated, 8 methods)</summary>
-
-```bash
-python rhino_plugin/install.py
-# Then in Rhino 8:
-_-RunPythonScript "<scripts dir>/RhinoMCPBridge.py"
-```
-
-The Python bridge supports only a handful of methods. Use the C# plugin for script execution, undo/redo, batch, deformation, NURBS, SubD, paneling, base64 screenshots, and more.
-</details>
 
 ## Quick start
 
@@ -322,6 +318,15 @@ PY
 | **Ctrl Points**| 0          | **2**     | **`rhino_get_control_points`**, **`rhino_set_control_points`** |
 | **Paneling**   | 0          | **3**     | **`rhino_panelize_surface`**, **`rhino_create_uv_grid`**, **`rhino_panel_frames`** |
 | Grasshopper    | 0          | 22        | `gh_set_slider`, `gh_bake_to_rhino`, `gh_data_tree_get` |
+| **Drawing**    | **2**      | **5**     | **`rhino_drawing_sheet_create`**, **`rhino_drawing_title_block_add`**, **`rhino_drawing_view_place`** (bridge) |
+| **Schedule**   | **5**      | **5**     | **`rhino_schedule_by_layer`**, **`rhino_schedule_by_user_text`**, **`rhino_object_quantity`** |
+| **Blocks**     | **3**      | **5**     | **`rhino_block_define`**, **`rhino_block_insert`**, **`rhino_block_explode`** (bridge) |
+| **Environment**| **3**      | **4**     | **`rhino_sun_position`**, **`rhino_sun_path`**, **`rhino_shadow_project`** |
+| **Freeform**   | **8**      | **11**    | **`rhino_skin_from_sections`**, **`rhino_panel_curvature_classify`**, **`rhino_attractor_displace_points`** |
+| **BIM I/O**    | **1**      | **4**     | **`rhino_bim_metadata_set`**, **`rhino_export_ifc`** (bridge), **`rhino_import_ifc`** (bridge), **`rhino_export_gbxml`** (bridge) |
+| **Materials+** | **2**      | **3**     | **`rhino_material_preset_list`**, **`rhino_material_preset_create`**, **`rhino_environment_set`** (bridge) |
+| **Render**     | 0          | **5**     | **`rhino_camera_set`**, **`rhino_light_add`**, **`rhino_render_setup`**, **`rhino_render_to_file`**, **`rhino_turntable_render`** |
+| **Daylight**   | **2**      | **2**     | **`rhino_direct_irradiance`**, **`rhino_daylight_factor`** |
 
 Detailed signatures live in [docs/en/tools-reference.md](docs/en/tools-reference.md).
 
@@ -329,7 +334,7 @@ Detailed signatures live in [docs/en/tools-reference.md](docs/en/tools-reference
 
 ```text
 1. Start Rhino 8 → open Grasshopper → load your `.gh` definition.
-2. Run `_-RunPythonScript "<path>/RhinoMCPBridge.py"` (or rely on the startup hook).
+2. Ensure the C# bridge plugin (`RhinoMCPBridge.rhp`) is loaded in Rhino.
 3. Set `RHINO_MCP_FORCE_MODE=bridge` and restart rhino-mcp.
 4. From Claude:
    - "Open /work/wing.gh, set the 'span' slider to 12.5, run, bake to layer 'Wing'."

@@ -1,0 +1,39 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  python:
+    name: Python tests + lint
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install uv
+        run: pip install uv
+      - name: Sync deps
+        run: uv sync
+      - name: ruff
+        run: uv run ruff check src/ tests/
+      - name: pytest
+        run: uv run pytest tests/ -q
+
+  csharp:
+    name: C# bridge build
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: "8.0.x"
+      - run: dotnet build rhino_plugin/csharp -c Release

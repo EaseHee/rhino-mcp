@@ -598,6 +598,180 @@ not just a screenshot.
 """.strip()
 
 
+def drawing_documentation() -> str:
+    """Drawing-set authoring workflow (sheets, views, title block, PDF)."""
+    return """
+============================================================
+DRAWING DOCUMENTATION WORKFLOW
+============================================================
+
+Use this when the user wants deliverables — plan / elevation / section
+sheets ready for review or printing — rather than just a 3-D model.
+The tools below collapse "model -> drawing set" into call bundles.
+
+
+STEP 1: SET UP HYGIENE FIRST
+----------------------------
+A drawing set authored against the wrong unit or scale is worse than
+no drawing set. Run document hygiene checks before placing the first
+sheet:
+
+- rhino_document_summary -> verify units / tolerances / layer tree
+- rhino_document_units_set("mm") if the document is not in mm yet
+  (mm is the conventional unit for sheet layouts; geometry can stay
+  in m as long as the viewport scale is computed accordingly)
+
+
+STEP 2: CREATE THE SHEET
+------------------------
+- rhino_drawing_sheet_create(
+      name="A-101_Plans", width_mm=420, height_mm=297,
+      scale_denominator=100,
+  )
+  -> sheet_id; sheet rectangle on layer "Sheets::A-101_Plans"
+
+ISO sheet sizes:
+  A4: 297 x 210 | A3: 420 x 297 | A2: 594 x 420 | A1: 841 x 594
+
+
+STEP 3: PLACE VIEWS (bridge only)
+---------------------------------
+For each view (plan, east elevation, south elevation, section A):
+
+- rhino_drawing_view_place(
+      sheet_id, object_ids=[...], view_plane="Top",
+      target_origin={"x":..., "y":..., "z":0},
+      viewport_scale=0.01,  # 1:100
+      hidden_line=True,
+  )
+
+Multi-pass layout: pick a 2x2 grid for typical residential, 3x1 for
+commercial elevations + section. Leave 30 mm gutters between views.
+
+For sections:
+- rhino_drawing_section_cut(
+      sheet_id, object_ids=[...],
+      plane_origin=..., plane_normal=..., target_origin=...,
+  )
+
+
+STEP 4: FINISH WITH TITLE BLOCK
+-------------------------------
+- rhino_drawing_title_block_add(
+      sheet_id, project="House A",
+      title="Ground Floor Plan", scale_text="1:100",
+      date_iso="2026-05-03", drawn_by="...",
+      sheet_no="A-101", north_arrow_angle_deg=15,
+  )
+  -> emits north arrow + scale bar + bottom-right table.
+
+If multiple revisions are in flight, mark changes:
+- rhino_annotation_revision_cloud(boundary_points=[...], revision_no="R2")
+
+
+STEP 5: EXPORT (bridge only)
+----------------------------
+- rhino_drawing_export_pdf(sheet_id, path="/abs/path.pdf", dpi=300)
+
+
+COMMON FAILURE MODES
+--------------------
+- Mixed units between document and sheet — ALWAYS verify with
+  rhino_document_units_get before STEP 2.
+- Calling view_place in standalone (rhino3dm) — that's bridge-only.
+  Surface "unsupported" errors to the user with a hint to start Rhino.
+- Forgetting north arrow rotation when the site grid is not aligned to
+  true north.
+""".strip()
+
+
+def quantity_takeoff() -> str:
+    """Quantity / BOM workflow (per-layer / per-material / per-user_text)."""
+    return """
+============================================================
+QUANTITY TAKEOFF WORKFLOW
+============================================================
+
+Use this when the user wants numbers — area schedules, material BOMs,
+window/door schedules — rather than visual deliverables. Pair with the
+``bim_authoring_workflow`` so the metadata you query was attached to
+each object during creation.
+
+
+STEP 1: VERIFY METADATA HYGIENE
+-------------------------------
+A schedule is only as good as the metadata it groups by. Before any
+takeoff, audit:
+
+- rhino_document_summary -> confirm layer_tree_depth >= 2 (organised)
+- rhino_layer_list       -> spot the discipline/element/state tree
+- rhino_object_select(user_text={"function":"wall"}) — sanity check
+  that user_text is being populated. Empty selection = no metadata.
+
+If user_text is sparse, run a remediation pass with
+``rhino_set_user_text`` BEFORE running schedules — otherwise the BOM
+will be incomplete.
+
+
+STEP 2: AGGREGATE
+-----------------
+Pick the schedule shape that matches the question:
+
+- "How much wall by layer?" — per-layer area:
+    rhino_schedule_by_layer(
+        layer_filter=["Arch::Walls"],
+        fields=["count","area"],
+        include_sublayers=True,
+    )
+
+- "Window schedule by assembly type" — group by user_text:
+    rhino_schedule_by_user_text(
+        group_key="assembly_type",
+        fields=["count"],
+    )
+
+- "Material BOM" — per assigned material:
+    rhino_schedule_by_material(fields=["count","area","volume"])
+
+- "Detail per object for review":
+    rhino_object_quantity(
+        object_ids=[...],
+        fields=["area","volume","centroid","bbox"],
+    )
+
+
+STEP 3: EXPORT
+--------------
+For documents and downstream tools:
+
+- rhino_schedule_export_csv(rows=<schedule.rows>, path="...")
+
+The same row format works for every rhino_schedule_* response, so a
+single export call wraps the chosen takeoff.
+
+
+STEP 4: REPORT
+--------------
+Return a compact summary table to the user. For each row include the
+group key + the fields they asked for. Round areas to whole m^2 / sq ft
+based on the document units (use rhino_document_units_get to know
+which).
+
+
+CAVEATS
+-------
+- Standalone area/volume is only accurate for meshes; for Brep area
+  the bridge mode call must be used (ScheduleHandler uses
+  ``AreaMassProperties`` server-side).
+- ``include_sublayers`` defaults to True; explicitly set False if the
+  user wants strict per-layer counts (e.g. "exactly Arch::Walls, not
+  its children").
+- "Default" material in by_material rows means the object had no
+  explicit material assignment — surface this fact to the user before
+  reporting totals.
+""".strip()
+
+
 def viewport_workflow() -> str:
     """Visual verification workflow (bridge mode)."""
     return """

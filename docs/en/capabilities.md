@@ -29,7 +29,8 @@ For those, the bridge plugin running inside Rhino 8 is required. The capability 
 | `rhino_text` | ✓ (text-dot fallback) | ✓ (true text annotation) |
 | `rhino_dimension_*`, `rhino_leader`, `rhino_hatch`, `rhino_clipping_plane` | ✗ | ✓ |
 | `rhino_layer_create/delete/set_color`, `rhino_object_*`, `rhino_group` | ✓ | ✓ |
-| `rhino_block_create`, `rhino_block_insert` | ✗ | ✓ |
+| `rhino_block_define`, `rhino_block_insert`, `rhino_block_list` (v0.3) | ✓ | ✓ |
+| `rhino_block_explode`, `rhino_block_redefine` (v0.3) | ✗ | ✓ |
 | `rhino_material_create`, `rhino_material_assign` | ✓ | ✓ |
 | `rhino_render_viewport` | ✗ | ✓ |
 | `rhino_open`, `rhino_save`, `rhino_export_obj`, `rhino_export_stl` | ✓ | ✓ |
@@ -63,5 +64,18 @@ For those, the bridge plugin running inside Rhino 8 is required. The capability 
 | `rhino_surface_normal_at`, `rhino_surface_developable_score` (curvature, v0.2) | ✓ | ✓ |
 | `rhino_surface_curvature_at` (true Gaussian/mean/principal, v0.2) | ✗ | ✓ |
 | `rhino_attractor_displace_points`, `rhino_smooth_polyline` (fields, v0.2) | ✓ | ✓ |
+| `rhino_drawing_sheet_create`, `rhino_drawing_title_block_add` (drawing, v0.3) | ✓ | ✓ |
+| `rhino_drawing_view_place`, `rhino_drawing_section_cut`, `rhino_drawing_export_pdf` (v0.3) | ✗ | ✓ |
+| `rhino_schedule_by_layer/by_user_text/by_material`, `rhino_object_quantity`, `rhino_schedule_export_csv` (schedule, v0.3) | ✓ | ✓ |
+| `rhino_sun_position`, `rhino_sun_path`, `rhino_shadow_project` (environment, v0.3) | ✓ | ✓ |
+| `rhino_solar_exposure_estimate` (ray-cast, v0.3) | ✗ | ✓ |
+| `rhino_annotation_north_arrow/scale_bar/revision_cloud/callout` (annotation, v0.3) | ✓ | ✓ |
+| `rhino_annotation_dimension_style` (DimStyle table, v0.3) | ✗ | ✓ |
+| `rhino_bim_metadata_set` (IFC entity + Pset tagging, v0.3) | ✓ | ✓ |
+| `rhino_export_ifc`, `rhino_import_ifc`, `rhino_export_gbxml` (BIM I/O, v0.3) | ✗ | ✓ |
+| `rhino_material_preset_list`, `rhino_material_preset_create` (presets, v0.3) | ✓ | ✓ |
+| `rhino_environment_set` (HDRI env, v0.3) | ✗ | ✓ |
+| `rhino_camera_set`, `rhino_light_add`, `rhino_render_setup`, `rhino_render_to_file`, `rhino_turntable_render` (render, v0.3) | ✗ | ✓ |
+| `rhino_direct_irradiance`, `rhino_daylight_factor` (precision daylight, v0.3) | ✓ | ✓ |
 
-In numbers: ~89 standalone tools, ~156+ with the C# bridge.
+In numbers: ~126 standalone tools, ~223 with the C# bridge.

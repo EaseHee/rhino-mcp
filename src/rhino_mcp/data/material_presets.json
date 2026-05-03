@@ -1,0 +1,177 @@
+{
+  "version": 1,
+  "description": "Physical material presets for architectural visualisation. Diffuse colour, transparency, glossiness, and reflectivity tuned to typical real-world appearance. Bridge mode additionally maps each preset to Rhino's PBR render content with appropriate IOR.",
+  "presets": {
+    "concrete_cip": {
+      "category": "stone",
+      "diffuse": [180, 178, 172],
+      "transparency": 0.0,
+      "glossiness": 0.05,
+      "reflectivity": 0.04,
+      "ior": 1.5,
+      "description": "Cast-in-place exposed concrete, slight roughness."
+    },
+    "concrete_precast": {
+      "category": "stone",
+      "diffuse": [195, 193, 188],
+      "transparency": 0.0,
+      "glossiness": 0.08,
+      "reflectivity": 0.04,
+      "ior": 1.5,
+      "description": "Precast concrete panel, lightly polished."
+    },
+    "brick_red": {
+      "category": "stone",
+      "diffuse": [142, 60, 50],
+      "transparency": 0.0,
+      "glossiness": 0.03,
+      "reflectivity": 0.04,
+      "ior": 1.5,
+      "description": "Standard fired clay brick, matte."
+    },
+    "steel_brushed": {
+      "category": "metal",
+      "diffuse": [148, 148, 152],
+      "transparency": 0.0,
+      "glossiness": 0.55,
+      "reflectivity": 0.7,
+      "ior": 2.5,
+      "description": "Brushed structural steel."
+    },
+    "aluminum_anodised": {
+      "category": "metal",
+      "diffuse": [195, 195, 198],
+      "transparency": 0.0,
+      "glossiness": 0.65,
+      "reflectivity": 0.85,
+      "ior": 1.5,
+      "description": "Anodised aluminium facade panel."
+    },
+    "copper_patina": {
+      "category": "metal",
+      "diffuse": [110, 145, 110],
+      "transparency": 0.0,
+      "glossiness": 0.25,
+      "reflectivity": 0.45,
+      "ior": 1.1,
+      "description": "Aged copper roofing with green patina."
+    },
+    "glass_clear": {
+      "category": "glass",
+      "diffuse": [220, 230, 235],
+      "transparency": 0.85,
+      "glossiness": 0.95,
+      "reflectivity": 0.04,
+      "ior": 1.52,
+      "description": "Clear architectural float glass, single pane."
+    },
+    "glass_low_e": {
+      "category": "glass",
+      "diffuse": [200, 220, 230],
+      "transparency": 0.65,
+      "glossiness": 0.95,
+      "reflectivity": 0.18,
+      "ior": 1.52,
+      "description": "Low-E coated double glazing."
+    },
+    "glass_frosted": {
+      "category": "glass",
+      "diffuse": [210, 215, 218],
+      "transparency": 0.5,
+      "glossiness": 0.2,
+      "reflectivity": 0.04,
+      "ior": 1.52,
+      "description": "Sandblasted / acid-etched diffusing glass."
+    },
+    "timber_oak": {
+      "category": "wood",
+      "diffuse": [165, 130, 90],
+      "transparency": 0.0,
+      "glossiness": 0.2,
+      "reflectivity": 0.05,
+      "ior": 1.5,
+      "description": "Oak hardwood, natural finish."
+    },
+    "timber_clt": {
+      "category": "wood",
+      "diffuse": [200, 165, 115],
+      "transparency": 0.0,
+      "glossiness": 0.15,
+      "reflectivity": 0.05,
+      "ior": 1.5,
+      "description": "Cross-laminated timber panel."
+    },
+    "timber_charred": {
+      "category": "wood",
+      "diffuse": [40, 32, 28],
+      "transparency": 0.0,
+      "glossiness": 0.05,
+      "reflectivity": 0.03,
+      "ior": 1.5,
+      "description": "Shou sugi ban / yakisugi charred cedar siding."
+    },
+    "stone_granite_grey": {
+      "category": "stone",
+      "diffuse": [128, 128, 130],
+      "transparency": 0.0,
+      "glossiness": 0.4,
+      "reflectivity": 0.06,
+      "ior": 1.6,
+      "description": "Polished grey granite slab."
+    },
+    "stone_marble_white": {
+      "category": "stone",
+      "diffuse": [232, 230, 225],
+      "transparency": 0.0,
+      "glossiness": 0.7,
+      "reflectivity": 0.07,
+      "ior": 1.5,
+      "description": "Polished Carrara marble."
+    },
+    "plaster_white": {
+      "category": "plaster",
+      "diffuse": [240, 238, 232],
+      "transparency": 0.0,
+      "glossiness": 0.05,
+      "reflectivity": 0.04,
+      "ior": 1.5,
+      "description": "Matte interior plaster."
+    },
+    "carpet_grey": {
+      "category": "fabric",
+      "diffuse": [105, 105, 108],
+      "transparency": 0.0,
+      "glossiness": 0.0,
+      "reflectivity": 0.02,
+      "ior": 1.4,
+      "description": "Loop-pile commercial carpet."
+    },
+    "rubber_floor": {
+      "category": "polymer",
+      "diffuse": [55, 55, 58],
+      "transparency": 0.0,
+      "glossiness": 0.15,
+      "reflectivity": 0.04,
+      "ior": 1.5,
+      "description": "Rubber sheet flooring."
+    },
+    "site_grass": {
+      "category": "landscape",
+      "diffuse": [85, 130, 60],
+      "transparency": 0.0,
+      "glossiness": 0.0,
+      "reflectivity": 0.03,
+      "ior": 1.4,
+      "description": "Lawn / generic grass for site context."
+    },
+    "site_water": {
+      "category": "landscape",
+      "diffuse": [60, 110, 145],
+      "transparency": 0.55,
+      "glossiness": 0.85,
+      "reflectivity": 0.5,
+      "ior": 1.33,
+      "description": "Clear water surface, calm."
+    }
+  }
+}

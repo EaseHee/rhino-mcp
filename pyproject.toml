@@ -1,6 +1,6 @@
 [project]
 name = "rhino-mcp"
-version = "0.2.0"
+version = "0.3.0"
 description = "MCP server connecting Claude to McNeel Rhino 8 and Grasshopper via rhino3dm and an in-Rhino bridge plugin."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -53,6 +53,7 @@ artifacts = [
     "src/rhino_mcp/data/gh_templates/*.json",
     "src/rhino_mcp/data/gh_templates/*.gh",
     "src/rhino_mcp/data/gh_templates/*.md",
+    "src/rhino_mcp/data/material_presets.json",
 ]
 
 [tool.hatch.build.targets.sdist]
@@ -71,7 +72,7 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 addopts = "-q --strict-markers"
 markers = [
-    "live: requires a running Rhino 8 instance with RhinoMCPBridge.py loaded (set RHINO_LIVE=1)",
+    "live: requires a running Rhino 8 instance with the RhinoMCPBridge.rhp C# plugin loaded (set RHINO_LIVE=1)",
     "bridge: tests the bridge protocol with a fake transport",
 ]
 

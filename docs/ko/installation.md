@@ -38,27 +38,13 @@ pip install 'rhino-mcp[windows]'
 
 ## Rhino 측 브리지 플러그인 설치
 
-브리지는 Rhino 8 내부에서 실행되어 RhinoCommon + Grasshopper를 소켓으로 노출하는 단일 Python 파일(`rhino_plugin/RhinoMCPBridge.py`)입니다.
+브리지: Rhino 8 내부에서 실행되며 RhinoCommon + Grasshopper를 JSON-RPC 소켓으로 노출하는 C# Rhino 플러그인(`rhino_plugin/csharp/`).
 
 ```bash
-python rhino_plugin/install.py
+dotnet build rhino_plugin/csharp -c Release
 ```
 
-스크립트는 Rhino의 scripts 디렉터리에 브리지를 복사합니다:
-
-| OS       | 경로 |
-|----------|------|
-| Windows  | `%APPDATA%\McNeel\Rhinoceros\8.0\scripts\RhinoMCPBridge.py` |
-| macOS    | `~/Library/Application Support/McNeel/Rhinoceros/8.0/scripts/RhinoMCPBridge.py` |
-| Linux    | `~/.config/Rhino/8.0/scripts/RhinoMCPBridge.py` |
-
-Rhino 안에서:
-
-```
-_-RunPythonScript "<위 경로>"
-```
-
-ScriptEditor에 붙여넣어 실행해도 됩니다. 브리지는 시작 시 listening 중인 transport URL을 출력합니다.
+빌드 산출물 경로: `rhino_plugin/csharp/bin/Release/net8.0/RhinoMCPBridge.rhp`. Rhino 8 뷰포트에 `.rhp` 드래그-앤-드롭(또는 `_PluginManager`)으로 1회 로드 → 플러그인이 플랫폼 기본 transport(Windows: 명명된 파이프, macOS/Linux: Unix domain socket)에서 JSON-RPC 리스너 시작. MCP 서버 기동 시 자동 감지.
 
 ## Claude Desktop 설정
 

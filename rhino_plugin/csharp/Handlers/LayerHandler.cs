@@ -107,5 +107,76 @@ namespace RhinoMCPBridge.Handlers
             }
             return StatusOk($"Material '{name}' assigned to {ids.Count} objects");
         }
+
+        public JObject PresetCreate(JObject p)
+        {
+            var name = p["material_name"]!.ToString();
+            var spec = p["spec"] as JObject ?? throw new ArgumentException("missing 'spec' payload");
+            var diffuseArr = spec["diffuse"] as JArray;
+            var color = diffuseArr != null
+                ? System.Drawing.Color.FromArgb(
+                    diffuseArr[0].Value<int>(), diffuseArr[1].Value<int>(), diffuseArr[2].Value<int>())
+                : System.Drawing.Color.Gray;
+            double transparency = spec["transparency"]?.Value<double>() ?? 0.0;
+            double glossiness = spec["glossiness"]?.Value<double>() ?? 0.0;
+            double reflectivity = spec["reflectivity"]?.Value<double>() ?? 0.04;
+            double ior = spec["ior"]?.Value<double>() ?? 1.5;
+
+            var mat = new Rhino.DocObjects.Material
+            {
+                Name = name,
+                DiffuseColor = color,
+                Transparency = transparency,
+                Shine = glossiness * Rhino.DocObjects.Material.MaxShine,
+                Reflectivity = reflectivity,
+                IndexOfRefraction = ior,
+            };
+            int idx = Doc.Materials.Add(mat);
+            return new JObject
+            {
+                ["summary"] = new JObject
+                {
+                    ["name"] = name,
+                    ["preset"] = p["preset_name"]?.ToString(),
+                    ["category"] = spec["category"]?.ToString(),
+                    ["index"] = idx,
+                    ["transparency"] = transparency,
+                    ["glossiness"] = glossiness,
+                    ["reflectivity"] = reflectivity,
+                    ["ior"] = ior,
+                },
+                ["text"] = $"Created material '{name}' from preset",
+            };
+        }
+
+        public JObject EnvironmentSet(JObject p)
+        {
+            var hdri = p["hdri_path"]!.ToString();
+            double rotation = p["rotation_deg"]?.Value<double>() ?? 0.0;
+            double strength = p["background_strength"]?.Value<double>() ?? 1.0;
+            bool forLighting = p["use_for_lighting"]?.Value<bool>() ?? true;
+            bool forBackground = p["use_for_background"]?.Value<bool>() ?? true;
+
+            // Persist as document strings for downstream render engines that
+            // read the active environment from Rhino's RenderSettings.
+            Doc.Strings.SetString("rhino_mcp::env_hdri", hdri);
+            Doc.Strings.SetString("rhino_mcp::env_rotation_deg", rotation.ToString("R"));
+            Doc.Strings.SetString("rhino_mcp::env_strength", strength.ToString("R"));
+            Doc.Strings.SetString("rhino_mcp::env_for_lighting", forLighting ? "1" : "0");
+            Doc.Strings.SetString("rhino_mcp::env_for_background", forBackground ? "1" : "0");
+            Rhino.RhinoApp.RunScript($"_-Environment _SetActive _File \"{hdri}\" _Enter", false);
+            return new JObject
+            {
+                ["summary"] = new JObject
+                {
+                    ["hdri_path"] = hdri,
+                    ["rotation_deg"] = rotation,
+                    ["background_strength"] = strength,
+                    ["use_for_lighting"] = forLighting,
+                    ["use_for_background"] = forBackground,
+                },
+                ["text"] = $"HDRI environment set: {hdri}",
+            };
+        }
     }
 }

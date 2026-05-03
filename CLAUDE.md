@@ -4,10 +4,9 @@ MCP server connecting Claude to McNeel Rhino 8 and Grasshopper.
 
 ## Architecture
 
-- **Standalone mode**: `rhino3dm` (headless Python lib) for `.3dm` file I/O. ~72 tools.
-- **Bridge mode**: C# plugin (`rhino_plugin/csharp/`) with JSON-RPC 2.0. ~130+ tools.
+- **Standalone mode**: `rhino3dm` (headless Python lib) for `.3dm` file I/O. ~120 tools.
+- **Bridge mode**: C# plugin (`rhino_plugin/csharp/`) with JSON-RPC 2.0. ~210 tools.
 - Mode auto-detected at startup (`detect_mode()`). Override with `RHINO_MCP_FORCE_MODE`.
-- Legacy Python bridge (`RhinoMCPBridge.py`) supports ~8 methods; C# bridge recommended.
 
 ## Project Structure
 
@@ -52,11 +51,10 @@ src/rhino_mcp/
   models/            # Pydantic data models
   utils/             # registry, error_handling, logging, serialization
 rhino_plugin/
-  csharp/            # C# bridge plugin (recommended, 130+ methods)
-    Handlers/        # 14+ handler classes (one per category)
+  csharp/            # C# bridge plugin (RhinoMCPBridge.rhp, ~210 methods)
+    Handlers/        # one handler class per category
     CommandDispatcher.cs  # method → handler routing
-  RhinoMCPBridge.py  # legacy Python bridge (8 methods, deprecated)
-tests/               # pytest (110+ tests)
+tests/               # pytest (~190 tests)
 ```
 
 ## Development

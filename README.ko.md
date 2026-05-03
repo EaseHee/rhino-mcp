@@ -23,8 +23,8 @@
 
 `rhino-mcp`는 Claude(또는 임의의 MCP 클라이언트)가 자연어 도구 호출만으로 Rhino 8을 조작할 수 있도록 만드는 Model Context Protocol 서버입니다. 형상 생성, 레이어·머티리얼·블록 관리, Grasshopper 베이크, STEP/IGES/STL/OBJ 내보내기 등을 모두 지원합니다. 두 가지 실행 모드를 제공합니다.
 
-- **Standalone(독립 실행)**: [`rhino3dm`](https://github.com/mcneel/rhino3dm) 라이브러리로 헤드리스 `.3dm` 파일을 직접 만듭니다. Rhino 미설치 환경에서도 동작하며 **약 89개 도구**를 노출합니다(v0.2 기준 — 구성 단축 도구, 도큐먼트 위생, 지오메트리 검증, GH 템플릿 카탈로그, **비정형 skin / 패널 합리화 / 곡률 분석 / 필드 변형** 포함).
-- **Bridge(브리지)**: Rhino 8 안에서 C# 브리지 플러그인이 로드되면 모든 호출(부울 연산, 로프트, 스윕, 뷰포트, 렌더, 스크립트 실행, 변형, NURBS 편집, SubD, 패널링, 정확한 가우스 곡률을 포함한 비정형 분석, 모든 Grasshopper 명령 + 템플릿)을 라이브 Rhino로 투명하게 전달합니다. **156개 이상의 도구**가 활성화됩니다.
+- **Standalone(독립 실행)**: [`rhino3dm`](https://github.com/mcneel/rhino3dm) 라이브러리로 헤드리스 `.3dm` 파일 직접 작성. Rhino 미설치 환경에서도 동작, **약 126개 도구** 노출(v0.3 기준 — 구성 단축, 도큐먼트 위생, 지오메트리 검증, GH 템플릿 카탈로그, 비정형 skin / 패널 합리화 / 곡률 / 필드, **도면 시트 + 표제란, 면적 / 자재 산출, 블록 정의, 일조 위치 + 그림자 투영, IFC 메타 태깅, 19종 물리 머티리얼 프리셋, BRE 주광율 + Bird DNI 청천공 모델** 포함).
+- **Bridge(브리지)**: Rhino 8 안에서 C# 브리지 플러그인 로드 시 모든 호출(부울 연산, 로프트, 스윕, 뷰포트, 렌더, 스크립트 실행, 변형, NURBS 편집, SubD, 패널링, 정확한 가우스 곡률을 포함한 비정형 분석, **다중 뷰 도면 배치 / 단면 / PDF 내보내기, AreaMassProperties 기반 Brep 면적 산출, 블록 폭파·재정의, ray-cast 일조 노출, IFC / gbXML 입출력, HDRI 환경, 카메라 / 라이트 / 렌더 / 턴테이블 자동화**, 모든 Grasshopper 명령 + 템플릿)을 라이브 Rhino로 투명 전달. **약 223개 도구** 활성.
 
 ## 기능(Features)
 
@@ -33,6 +33,13 @@
 - **변환(transform)** — 이동·회전·스케일·미러(mirror)·평면-평면 오리엔트(orient)·선형/방사형/직사각 어레이(array).
 - **스크립트 실행(scripting)** — 라이브 Rhino에서 임의의 RhinoScript Python(IronPython) 또는 RhinoCommon C#(Roslyn) 코드 실행. 내장 RhinoScript API 문서 검색(899개 함수).
 - **고급 모델링(advanced modeling)** — 변형(bend/twist/taper/flow), NURBS 편집(rebuild/unroll/evaluate), SubD, 서피스 매칭, 추출(dup edge/border/isocurve/Make2D), 컨트롤 포인트, 패널링.
+- **도면 세트(drawing set)** — standalone에서 시트/표제란/북쪽화살/스케일바 작성. 브리지에서 다중 뷰 배치, 단면 추출, PDF 내보내기까지.
+- **수량 / 스케줄(quantity & schedule)** — 레이어/머티리얼/`user_text` 기준 집계 + CSV 내보내기. 브리지는 `AreaMassProperties`/`VolumeMassProperties` 기반 정확한 Brep 면적·체적 측정.
+- **블록 / 인스턴스 재사용(blocks)** — standalone에서 정의/삽입/조회. 브리지에서 폭파·재정의로 일관된 컴포넌트 편집.
+- **환경 분석(environment)** — NOAA SPA 근사로 일조 위치 + 월별 sun-path + 그림자 투영. 브리지에서 ray-cast 기반 일조 노출 추정. Bird 청천공 DNI(Kasten-Young air mass + Linke turbidity) + BRE 단순 주광율(daylight factor) 보강.
+- **BIM 입출력(bim-io)** — IFC2x3 / IFC4 / IFC4x3 import & export, gbXML export, IFC PropertySet 메타 태깅(`user_text` 라운드트립).
+- **머티리얼 프리셋 + HDRI(materials+)** — 19종 물리 프리셋(콘크리트 / 벽돌 / 강철 / 알루미늄 / 유리 / 목재 / 석재 / 플라스터 / 직물 / 조경) 카테고리별 분류. 브리지에서 HDRI 환경 + IOR 포함 PBR 적용.
+- **렌더 자동화(render)** — 카메라 / 라이트 / 렌더 엔진 설정, 파일 출력, 매개변수 카메라 궤도(turntable) 시퀀스(브리지 전용).
 - **실행 취소(undo/redo) / 일괄 작업(batch)** — 모든 브리지 작업에 undo 레코드 적용. 일괄 수정으로 다수 객체를 단일 호출로 변경.
 - **레이어(layer)·머티리얼(material)·블록(block)·그룹(group)** — 도큐먼트 속성을 완전 제어.
 - **파일 입출력(File I/O)** — `.3dm` 열기/저장, OBJ/STL은 standalone에서, STEP/IGES/DXF·스크린샷은 브리지에서.
@@ -62,13 +69,13 @@
                                             │
                               JSON-RPC 2.0  │   (named pipe / unix socket / TCP)
                                             │
-                                  ┌─────────▼──────────┐
-                                  │  RhinoMCPBridge.py │
-                                  │  (Rhino 8 내부)    │
-                                  │  ────────────────  │
-                                  │  RhinoCommon       │
-                                  │  Grasshopper       │
-                                  └────────────────────┘
+                                  ┌──────────▼──────────┐
+                                  │  RhinoMCPBridge.rhp │
+                                  │  (Rhino 8 C# 플러그인) │
+                                  │  ─────────────────  │
+                                  │  RhinoCommon        │
+                                  │  Grasshopper        │
+                                  └─────────────────────┘
 ```
 
 **Standalone** 모드에서는 우측이 인-프로세스(in-process) `rhino3dm.File3dm`로 대체되며, 브리지 전용 도구는 등록되지 않습니다.
@@ -223,17 +230,6 @@ PostBuild 단계에서 `.rhp`가 자동 복사되는 위치:
 
 Rhino 8을 재시작하면 브리지가 자동으로 시작합니다(기본 TCP `:4242`). `rhino-mcp`를 재시작하거나 `RHINO_MCP_FORCE_MODE=bridge`를 설정하면 브리지 전용 도구가 활성화됩니다.
 
-<details>
-<summary>레거시 Python 브리지 (deprecated, 8개 메소드)</summary>
-
-```bash
-python rhino_plugin/install.py
-# Rhino 8에서:
-_-RunPythonScript "<scripts dir>/RhinoMCPBridge.py"
-```
-
-Python 브리지는 일부 메소드만 지원합니다. 스크립트 실행, undo/redo, batch, 변형, NURBS, SubD, 패널링, base64 스크린샷 등에는 C# 플러그인을 사용하세요.
-</details>
 
 ## 빠른 시작(Quick Start)
 
@@ -307,6 +303,15 @@ PY
 | Analysis       | 4          | 9         | `rhino_volume`, `rhino_zebra`(브리지) |
 | Display        | 0          | 5         | `rhino_zoom_extent`, `rhino_named_view_save` |
 | Grasshopper    | 0          | 22        | `gh_set_slider`, `gh_bake_to_rhino`, `gh_data_tree_get` |
+| **Drawing**    | **2**      | **5**     | **`rhino_drawing_sheet_create`**, **`rhino_drawing_title_block_add`**, **`rhino_drawing_view_place`**(브리지) |
+| **Schedule**   | **5**      | **5**     | **`rhino_schedule_by_layer`**, **`rhino_schedule_by_user_text`**, **`rhino_object_quantity`** |
+| **Blocks**     | **3**      | **5**     | **`rhino_block_define`**, **`rhino_block_insert`**, **`rhino_block_explode`**(브리지) |
+| **Environment**| **3**      | **4**     | **`rhino_sun_position`**, **`rhino_sun_path`**, **`rhino_shadow_project`** |
+| **Freeform**   | **8**      | **11**    | **`rhino_skin_from_sections`**, **`rhino_panel_curvature_classify`**, **`rhino_attractor_displace_points`** |
+| **BIM I/O**    | **1**      | **4**     | **`rhino_bim_metadata_set`**, **`rhino_export_ifc`**(브리지), **`rhino_import_ifc`**(브리지), **`rhino_export_gbxml`**(브리지) |
+| **Materials+** | **2**      | **3**     | **`rhino_material_preset_list`**, **`rhino_material_preset_create`**, **`rhino_environment_set`**(브리지) |
+| **Render**     | 0          | **5**     | **`rhino_camera_set`**, **`rhino_light_add`**, **`rhino_render_setup`**, **`rhino_render_to_file`**, **`rhino_turntable_render`** |
+| **Daylight**   | **2**      | **2**     | **`rhino_direct_irradiance`**, **`rhino_daylight_factor`** |
 
 자세한 시그니처는 [docs/ko/tools-reference.md](docs/ko/tools-reference.md)를 참고하세요.
 
@@ -314,7 +319,7 @@ PY
 
 ```text
 1. Rhino 8 실행 → Grasshopper 열기 → `.gh` 정의 로드.
-2. `_-RunPythonScript "<path>/RhinoMCPBridge.py"` 실행(또는 startup 후크 등록).
+2. C# 브리지 플러그인(`RhinoMCPBridge.rhp`)이 Rhino에 로드된 상태인지 확인.
 3. `RHINO_MCP_FORCE_MODE=bridge` 설정 후 rhino-mcp 재시작.
 4. Claude에 요청:
    - "/work/wing.gh를 열고 'span' 슬라이더를 12.5로 설정한 뒤 실행하고 'Wing' 레이어로 베이크해."

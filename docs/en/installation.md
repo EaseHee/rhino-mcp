@@ -38,27 +38,13 @@ pip install 'rhino-mcp[windows]'
 
 ## Install the Rhino bridge plugin
 
-The bridge is a single Python file (`rhino_plugin/RhinoMCPBridge.py`) that runs inside Rhino 8 and exposes RhinoCommon + Grasshopper to the MCP server over a socket.
+The bridge is a C# Rhino plugin (`rhino_plugin/csharp/`) that runs inside Rhino 8 and exposes RhinoCommon + Grasshopper to the MCP server over a JSON-RPC socket.
 
 ```bash
-python rhino_plugin/install.py
+dotnet build rhino_plugin/csharp -c Release
 ```
 
-This copies the bridge to your Rhino scripts directory:
-
-| OS       | Path |
-|----------|------|
-| Windows  | `%APPDATA%\McNeel\Rhinoceros\8.0\scripts\RhinoMCPBridge.py` |
-| macOS    | `~/Library/Application Support/McNeel/Rhinoceros/8.0/scripts/RhinoMCPBridge.py` |
-| Linux    | `~/.config/Rhino/8.0/scripts/RhinoMCPBridge.py` |
-
-Inside Rhino:
-
-```
-_-RunPythonScript "<the path above>"
-```
-
-You can also paste the script into Rhino's ScriptEditor and run it from there. The bridge prints a startup line with the transport URL it's listening on.
+The build emits `rhino_plugin/csharp/bin/Release/net8.0/RhinoMCPBridge.rhp`. Drag-and-drop that `.rhp` onto a Rhino 8 viewport (or load it via `_PluginManager`). Once loaded the plugin starts a JSON-RPC listener on the platform-native transport (named pipe on Windows, Unix domain socket on macOS/Linux) and the MCP server auto-detects it on startup.
 
 ## Configure Claude Desktop
 

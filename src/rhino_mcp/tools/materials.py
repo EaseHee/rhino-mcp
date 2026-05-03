@@ -1,17 +1,34 @@
-"""Material creation/assignment, plus render-viewport (bridge-only)."""
+"""Material creation/assignment, physical presets, environment HDRI, plus render-viewport (bridge-only)."""
 
 from __future__ import annotations
 
+import json
+from importlib.resources import files
 from typing import Annotated, Any
 
 import rhino3dm as r3
 from pydantic import BaseModel, Field
 
 from rhino_mcp.models.geometry_types import ColorRGBA
-from rhino_mcp.tools._helpers import doc, find_material_index
+from rhino_mcp.tools._helpers import bridge_call, doc, find_material_index, require_bridge_only
 from rhino_mcp.tools.context import runtime
-from rhino_mcp.utils.error_handling import not_found_error, unsupported_in_standalone
+from rhino_mcp.utils.error_handling import (
+    not_found_error,
+    parameter_error,
+    unsupported_in_standalone,
+)
 from rhino_mcp.utils.registry import Mode
+
+_PRESET_CACHE: dict[str, Any] | None = None
+
+
+def _load_presets() -> dict[str, Any]:
+    """Load and cache the material-preset catalogue shipped under ``data/``."""
+    global _PRESET_CACHE
+    if _PRESET_CACHE is None:
+        raw = files("rhino_mcp.data").joinpath("material_presets.json").read_text(encoding="utf-8")
+        _PRESET_CACHE = json.loads(raw)
+    return _PRESET_CACHE
 
 
 class _DocArg(BaseModel):
@@ -37,6 +54,34 @@ class _RenderIn(_DocArg):
     width: Annotated[int, Field(ge=64, le=8192)] = 1280
     height: Annotated[int, Field(ge=64, le=8192)] = 720
     output_path: str
+
+
+class _PresetListIn(BaseModel):
+    category: str | None = Field(
+        None,
+        description="If set, only presets in this category are returned (stone, metal, glass, wood, plaster, fabric, polymer, landscape).",
+    )
+
+
+class _PresetCreateIn(_DocArg):
+    preset_name: str = Field(
+        ..., description="Preset key from rhino_material_preset_list (e.g. 'glass_low_e')."
+    )
+    material_name: str | None = Field(
+        None,
+        description="Override the document-side material name. Defaults to the preset key.",
+    )
+
+
+class _EnvironmentSetIn(_DocArg):
+    hdri_path: str = Field(
+        ...,
+        description="Absolute path to an HDRI / EXR file used as the scene environment.",
+    )
+    rotation_deg: float = Field(0.0, description="Rotation around world Z (degrees).")
+    background_strength: Annotated[float, Field(ge=0.0, le=10.0)] = 1.0
+    use_for_lighting: bool = Field(True)
+    use_for_background: bool = Field(True)
 
 
 def _find_material(handle, name: str) -> int:
@@ -86,8 +131,73 @@ def register(mcp, mode: Mode) -> None:  # type: ignore[no-untyped-def]
             "text": f"Assigned '{args.material_name}' to {len(updated)} object(s)",
         }
 
+    @mcp.tool(annotations={"title": "List Material Presets", "readOnlyHint": True, "idempotentHint": True})
+    def rhino_material_preset_list(args: _PresetListIn) -> dict[str, Any]:
+        """List physical-material presets bundled with rhino-mcp.
+
+        Returns the full catalogue (or a single category subset) so the LLM
+        can pick a known-good name before calling ``rhino_material_preset_create``.
+        """
+        catalogue = _load_presets()
+        rows: list[dict[str, Any]] = []
+        for key, spec in catalogue["presets"].items():
+            if args.category and spec.get("category") != args.category:
+                continue
+            rows.append({"name": key, **spec})
+        return {
+            "summary": {
+                "presets": rows,
+                "count": len(rows),
+                "version": catalogue.get("version", 1),
+            },
+            "text": f"{len(rows)} material preset(s)",
+        }
+
+    @mcp.tool(annotations={"title": "Create Material From Preset", "readOnlyHint": False})
+    def rhino_material_preset_create(args: _PresetCreateIn) -> dict[str, Any]:
+        """Create a document material from a bundled physical preset.
+
+        Standalone uses rhino3dm's basic Material (diffuse / transparency /
+        shine). Bridge mode also pushes the matching Rhino PBR render
+        content + IOR for photoreal output.
+        """
+        catalogue = _load_presets()
+        spec = catalogue["presets"].get(args.preset_name)
+        if spec is None:
+            raise parameter_error(
+                "preset_name",
+                f"unknown preset '{args.preset_name}'",
+                allowed=", ".join(sorted(catalogue["presets"].keys())),
+            )
+        material_name = args.material_name or args.preset_name
+        if runtime().mode is Mode.BRIDGE:
+            payload = args.model_dump()
+            payload["material_name"] = material_name
+            payload["spec"] = spec
+            return bridge_call("rhino.material.preset_create", payload)
+        h = doc(args.doc_id)
+        m = r3.Material()
+        m.Name = material_name
+        r_, g_, b_ = spec["diffuse"][:3]
+        m.DiffuseColor = (r_, g_, b_, 255)
+        m.Transparency = float(spec.get("transparency", 0.0))
+        m.Shine = int(float(spec.get("glossiness", 0.0)) * 255)
+        idx = h.file3dm.Materials.Add(m)
+        return {
+            "summary": {
+                "name": material_name,
+                "preset": args.preset_name,
+                "category": spec.get("category"),
+                "index": idx,
+                "diffuse": spec["diffuse"],
+                "transparency": spec.get("transparency"),
+                "glossiness": spec.get("glossiness"),
+            },
+            "text": f"Created material '{material_name}' from preset '{args.preset_name}'",
+        }
+
     if mode is Mode.STANDALONE:
-        return  # bridge-only render tool below
+        return  # bridge-only render + environment tools below
 
     @mcp.tool(annotations={"title": "Render Viewport", "readOnlyHint": False})
     def rhino_render_viewport(args: _RenderIn) -> dict[str, Any]:
@@ -95,3 +205,9 @@ def register(mcp, mode: Mode) -> None:  # type: ignore[no-untyped-def]
         if runtime().mode is Mode.STANDALONE:
             raise unsupported_in_standalone("rhino_render_viewport")
         return runtime().require_bridge().call("rhino.render.viewport", args.model_dump())
+
+    @mcp.tool(annotations={"title": "Set HDRI Environment", "readOnlyHint": False})
+    def rhino_environment_set(args: _EnvironmentSetIn) -> dict[str, Any]:
+        """Attach an HDRI/EXR environment used for lighting + background (bridge only)."""
+        require_bridge_only("rhino_environment_set")
+        return bridge_call("rhino.material.environment_set", args.model_dump())

@@ -59,7 +59,8 @@ def connection_error(detail: str = "") -> ToolError:
         ErrorCategory.CONNECTION,
         "Cannot reach Rhino bridge.",
         (
-            "Start Rhino 8, run `_-RunPythonScript rhino_plugin/RhinoMCPBridge.py`, "
+            "Start Rhino 8 with the RhinoMCPBridge.rhp C# plugin loaded "
+            "(dotnet build rhino_plugin/csharp -c Release, then drag-drop the .rhp), "
             "and verify the transport (named pipe on Windows, unix socket on macOS/Linux, "
             "or TCP on $RHINO_HOST:$RHINO_PORT). "
             + (detail if detail else "")
@@ -93,7 +94,7 @@ def unsupported_in_standalone(tool: str) -> ToolError:
     return ToolError(
         ErrorCategory.UNSUPPORTED,
         f"Tool '{tool}' requires Rhino bridge mode.",
-        "Start Rhino 8 + RhinoMCPBridge and re-run; rhino3dm standalone cannot perform this operation.",
+        "Start Rhino 8 with the RhinoMCPBridge.rhp C# plugin loaded and re-run; rhino3dm standalone cannot perform this operation.",
         details={"tool": tool, "reason": "rhino3dm lacks the underlying API"},
     )
 

@@ -1,12 +1,12 @@
 # Grasshopper guide
 
-All Grasshopper tools are bridge-only. They forward JSON-RPC requests to `RhinoMCPBridge.py` running inside Rhino 8 with Grasshopper open.
+All Grasshopper tools are bridge-only. They forward JSON-RPC requests to the `RhinoMCPBridge.rhp` C# plugin loaded inside Rhino 8 with Grasshopper open.
 
 ## Prerequisites
 
 1. Rhino 8 running.
 2. Grasshopper window open at least once (the canvas DocumentServer is initialised lazily).
-3. `RhinoMCPBridge.py` started (or installed as a startup script).
+3. `RhinoMCPBridge.rhp` loaded in Rhino's Plugin Manager (`dotnet build rhino_plugin/csharp -c Release` then drag-drop the `.rhp`).
 4. `rhino-mcp` running with `RHINO_MCP_FORCE_MODE=bridge`.
 
 ## Canvas lifecycle

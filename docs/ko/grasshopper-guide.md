@@ -1,12 +1,12 @@
 # Grasshopper 가이드
 
-모든 Grasshopper 도구는 브리지 전용입니다. JSON-RPC 요청을 Rhino 8 안의 `RhinoMCPBridge.py`로 전달합니다.
+모든 Grasshopper 도구는 브리지 전용. Rhino 8에 로드된 `RhinoMCPBridge.rhp` C# 플러그인으로 JSON-RPC 요청 전달.
 
 ## 사전 준비
 
 1. Rhino 8 실행.
 2. Grasshopper 창 한 번 이상 열기(캔버스 DocumentServer가 지연 초기화됨).
-3. `RhinoMCPBridge.py` 시작(또는 startup 스크립트로 등록).
+3. `RhinoMCPBridge.rhp`가 Rhino Plugin Manager에 로드된 상태(`dotnet build rhino_plugin/csharp -c Release` → 산출물 `.rhp` 드래그-드롭).
 4. `RHINO_MCP_FORCE_MODE=bridge`로 `rhino-mcp` 실행.
 
 ## 캔버스 라이프사이클

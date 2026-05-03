@@ -13,35 +13,23 @@ and shows the exact fix for each failure.
 
 ## Bridge setup inside Rhino 8
 
-The most common reason `rhino-mcp` starts in standalone mode is that
-**RhinoMCPBridge.py is not running inside Rhino 8**.
+The most common reason `rhino-mcp` starts in standalone mode is that the
+**C# bridge plugin is not loaded in Rhino 8**.
 
-### Step 1 — Install the bridge file (once)
+### Step 1 — Build the plugin (once)
 
 ```bash
-python rhino_plugin/install.py
+dotnet build rhino_plugin/csharp -c Release
 ```
 
-Platform install paths:
+This emits `rhino_plugin/csharp/bin/Release/net8.0/RhinoMCPBridge.rhp`.
 
-| OS      | Path |
-|---------|------|
-| macOS   | `~/Library/Application Support/McNeel/Rhinoceros/8.0/scripts/RhinoMCPBridge.py` |
-| Windows | `%APPDATA%\McNeel\Rhinoceros\8.0\scripts\RhinoMCPBridge.py` |
-| Linux   | `~/.config/Rhino/8.0/scripts/RhinoMCPBridge.py` |
+### Step 2 — Load the .rhp in Rhino 8
 
-### Step 2 — Start the bridge in Rhino 8
-
-Type in the Rhino command line:
-
-```
-_-RunPythonScript "path/to/RhinoMCPBridge.py"
-```
-
-> macOS example:
-> ```
-> _-RunPythonScript "/Users/<you>/Library/Application Support/McNeel/Rhinoceros/8.0/scripts/RhinoMCPBridge.py"
-> ```
+Drag-and-drop the `.rhp` onto a Rhino viewport, or open `_PluginManager`
+and click *Install...*. The plugin is loaded once and survives Rhino
+restarts. You can verify with `_-PluginManager` and looking for the
+`RhinoMCPBridge` entry.
 
 On **success** the Rhino command history shows:
 

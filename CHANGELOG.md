@@ -7,6 +7,167 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-05-03
+
+### Added — drawing-set and quantity workflow upgrade
+
+- **Drawing-set tools** (`tools/drawing.py`, both modes for sheet /
+  title block; bridge for view placement / section cut / PDF export) —
+  collapse the "model -> drawing set" workflow into call bundles:
+  - `rhino_drawing_sheet_create` writes a sheet rectangle on layer
+    `Sheets::<name>` with paper-size and scale metadata stored as
+    user_text.
+  - `rhino_drawing_view_place` (bridge) projects model objects to a
+    chosen world view (Top/Front/Right/...) and translates the wireframe
+    onto the sheet at the requested scale.
+  - `rhino_drawing_section_cut` (bridge) emits a section trace via
+    `Brep.Plane` intersection.
+  - `rhino_drawing_title_block_add` draws bottom-right title block,
+    top-left north arrow, and bottom-left scale bar in one call.
+  - `rhino_drawing_export_pdf` (bridge) wraps Rhino's `_-Print _PDF`.
+- **Quantity / schedule tools** (`tools/schedule.py`, both modes):
+  - `rhino_schedule_by_layer` aggregates count / area / volume / length
+    per layer with optional filter and sublayer merging.
+  - `rhino_schedule_by_user_text` groups by any user_text key
+    (`function`, `assembly_type`, `material`, ...).
+  - `rhino_schedule_by_material` groups by assigned material.
+  - `rhino_object_quantity` per-object detail rows with centroid and
+    bbox.
+  - `rhino_schedule_export_csv` writes any rows to CSV.
+  - Bridge mode uses `AreaMassProperties` / `VolumeMassProperties` for
+    accurate Brep area + volume.
+- **Block / instance reuse** (`tools/blocks.py`, both modes; bridge
+  full-feature) — promote the latent C# block routes to a first-class
+  Python toolkit:
+  - `rhino_block_define`, `rhino_block_insert`, `rhino_block_list`
+    work in standalone via `File3dm.InstanceDefinitions` and
+    `InstanceReference`.
+  - `rhino_block_explode` and `rhino_block_redefine` are bridge only
+    because rhino3dm lacks the mutator APIs.
+- **Environmental analysis** (`tools/environment.py`, both modes):
+  - `rhino_sun_position` — NOAA SPA approximation (~+/- 0.5 deg).
+  - `rhino_sun_path` — monthly polylines on a hemisphere of given
+    radius around an anchor.
+  - `rhino_shadow_project` — AABB-corner shadow polygon onto a
+    horizontal ground plane (standalone) / accurate wireframe
+    projection (bridge).
+  - `rhino_solar_exposure_estimate` (bridge) — ray-cast lit-sample
+    ratio against optional obstruction objects.
+- **Annotation extensions** (`tools/annotation.py`):
+  - `rhino_annotation_north_arrow` (`simple` triangle or `compass`).
+  - `rhino_annotation_scale_bar` with division ticks + label.
+  - `rhino_annotation_revision_cloud` (bumpy polyline + `Rev <no>`
+    label).
+  - `rhino_annotation_callout` (`balloon` or `box` style).
+  - `rhino_annotation_dimension_style` (bridge — `RhinoDoc.DimStyles`).
+- **2 new strategy prompts** in `prompts/strategy.py`:
+  - `drawing_documentation` — multi-view sheet workflow with
+    title-block + revision-cloud + PDF export.
+  - `quantity_takeoff` — per-layer / per-material / per-user_text
+    schedule + CSV export.
+- **3 new examples**:
+  - `examples/drawing_set.py` — sheet + title block + north arrow +
+    scale bar (standalone).
+  - `examples/schedule_report.py` — disciplined-layer mesh model +
+    layer / user_text schedules + CSV export.
+  - `examples/sun_study.py` — sun_position + sun_path + shadow_project
+    for Seoul defaults.
+- **C# handlers** (`rhino_plugin/csharp/Handlers/`):
+  - `DrawingHandler.cs` (sheet / view_place / section_cut /
+    title_block / export_pdf).
+  - `ScheduleHandler.cs` (by_layer / by_user_text / by_material /
+    object_quantity).
+  - `EnvironmentHandler.cs` (sun_path / shadow_project /
+    solar_exposure_estimate).
+  - `BlockHandler.cs` (define / insert / list / explode / redefine).
+  - `AnnotationHandler.cs` extended with north_arrow / scale_bar /
+    revision_cloud / callout / dim_style_create.
+  - `CommandDispatcher.cs` registers the new routes (~25 entries).
+
+### Changed
+
+- `tools/layers.py` no longer hosts `rhino_block_create` /
+  `rhino_block_insert` stubs; block authoring lives in
+  `tools/blocks.py` instead.
+- `tools/annotation.py` is now a both-mode module (was bridge-only past
+  the text/text-dot pair).
+- README / docs / CLAUDE.md updated to document the C# bridge as the
+  only supported bridge implementation.
+
+### Removed
+
+- Legacy Python bridge `rhino_plugin/RhinoMCPBridge.py` and its
+  installer `rhino_plugin/install.py`. Use the C# plugin
+  (`rhino_plugin/csharp/`) — `dotnet build -c Release` then drag-drop
+  the `.rhp`.
+
+### Added — BIM interchange, material presets, render automation, daylight precision, release CI
+
+- **BIM interchange** (`tools/bim_io.py` + `BimIoHandler.cs`):
+  - `rhino_export_ifc` (bridge) — IFC2x3 / IFC4 / IFC4x3 round-trip;
+    auto-tags objects by `function` user_text using a default
+    `IfcWallStandardCase` / `IfcSlab` / `IfcRoof` / `IfcColumn` /
+    `IfcBeam` / `IfcDoor` / `IfcWindow` / `IfcStair` / `IfcRailing` /
+    `IfcFurnishingElement` map. Override via `entity_type_map`.
+  - `rhino_import_ifc` (bridge) — buckets imported objects under
+    `<root>::<IfcType>` layers with optional whitelist filter.
+  - `rhino_export_gbxml` (bridge) — gbXML for thermal / structural
+    interchange.
+  - `rhino_bim_metadata_set` (both modes) — writes IFC entity +
+    `Pset_<name>::<key>` user_text so a subsequent IFC export carries
+    BIM properties across.
+- **Physical material presets + HDRI environment**
+  (`tools/materials.py` + `data/material_presets.json` +
+  `MaterialHandler.PresetCreate` / `EnvironmentSet`):
+  - 19-entry preset catalogue (concrete CIP / precast, brick,
+    brushed steel, anodised aluminium, patinated copper, clear /
+    Low-E / frosted glass, oak / CLT / charred timber, granite /
+    marble, plaster, carpet, rubber, grass, water) with diffuse /
+    transparency / glossiness / reflectivity / IOR tuned for
+    architectural visualisation.
+  - `rhino_material_preset_list` (filterable by category).
+  - `rhino_material_preset_create` (both modes — standalone uses
+    rhino3dm's basic Material; bridge sets the same PBR fields plus
+    IOR via Rhino's render content engine).
+  - `rhino_environment_set` (bridge) — HDRI / EXR scene environment
+    with rotation, strength, and lighting / background toggles.
+- **Render automation** (`tools/render.py` + `RenderHandler.cs`,
+  bridge only):
+  - `rhino_camera_set` — viewport position + target + lens length.
+  - `rhino_light_add` — point / spot / directional / rectangular /
+    linear lights with intensity + colour.
+  - `rhino_render_setup` — resolution, samples, engine
+    (rhino / cycles / raytraced / vray / active), transparent
+    background.
+  - `rhino_render_to_file` — execute the configured render and write
+    to disk via `_-Render` + `_-SaveRenderWindowAs`.
+  - `rhino_turntable_render` — render a frame sequence around a
+    target (parametric camera orbit).
+- **Daylight precision** (`tools/environment.py`):
+  - `rhino_direct_irradiance` — Direct Normal Irradiance (W/m²)
+    clear-sky estimate via Bird-style attenuation + Kasten-Young air
+    mass with site altitude + Linke turbidity.
+  - `rhino_daylight_factor` — BRE simplified daylight factor for
+    side-lit rooms with deficient (<2 %) / acceptable (2–5 %) /
+    good (≥ 5 %) rating.
+- **Release CI**:
+  - `.github/workflows/ci.yml` — Python 3.11/3.12/3.13 matrix
+    (ruff + pytest) plus C# `dotnet build` on Windows.
+  - `.github/workflows/release.yml` — tag-triggered jobs that build
+    + publish the wheel to PyPI (Trusted Publishing), build the
+    `RhinoMCPBridge.rhp`, and produce a Yak `.yak` package via
+    `manifest.yml`. Artefacts attached to the GitHub release.
+  - `rhino_plugin/csharp/manifest.yml` — Yak manifest stub
+    (name / version / authors / icon / keywords).
+
+### Tests
+
+- v0.3 first wave: `+27` (drawing / schedule / blocks / environment /
+  annotation extensions).
+- v0.3 second wave: `+20` (`test_bim_io.py`, `test_material_presets.py`,
+  `test_render.py`, `test_daylight.py`).
+- Total: **213 tests** in standalone.
+
 ## [0.2.0] - 2026-05-03
 
 ### Added — modeling experience upgrade

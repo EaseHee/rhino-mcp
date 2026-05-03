@@ -12,34 +12,19 @@
 
 ## Bridge 연결 설정 (Rhino 내부)
 
-서버가 standalone 모드로 시작되는 가장 흔한 원인은 **Rhino 8 내에서 RhinoMCPBridge.py가 실행되지 않은 것**입니다.
+서버가 standalone 모드로 시작되는 가장 흔한 원인 — **C# 브리지 플러그인이 Rhino 8에 미로드된 상태**.
 
-### 1단계 — Bridge 파일 설치 (최초 1회)
+### 1단계 — 플러그인 빌드 (최초 1회)
 
 ```bash
-python rhino_plugin/install.py
+dotnet build rhino_plugin/csharp -c Release
 ```
 
-플랫폼별 설치 경로:
+산출물 경로: `rhino_plugin/csharp/bin/Release/net8.0/RhinoMCPBridge.rhp`.
 
-| OS      | 경로 |
-|---------|------|
-| macOS   | `~/Library/Application Support/McNeel/Rhinoceros/8.0/scripts/RhinoMCPBridge.py` |
-| Windows | `%APPDATA%\McNeel\Rhinoceros\8.0\scripts\RhinoMCPBridge.py` |
-| Linux   | `~/.config/Rhino/8.0/scripts/RhinoMCPBridge.py` |
+### 2단계 — Rhino 8에 .rhp 로드
 
-### 2단계 — Rhino 8에서 Bridge 실행
-
-Rhino 8 커맨드 라인에 입력:
-
-```
-_-RunPythonScript "경로/RhinoMCPBridge.py"
-```
-
-> macOS 전체 경로 예시:
-> ```
-> _-RunPythonScript "/Users/<사용자>/Library/Application Support/McNeel/Rhinoceros/8.0/scripts/RhinoMCPBridge.py"
-> ```
+`.rhp` 파일을 Rhino 뷰포트로 드래그-앤-드롭하거나 `_PluginManager` → *Install...* 로 1회 로드 → 이후 Rhino 재시작에도 유지. `_-PluginManager`에서 `RhinoMCPBridge` 항목 확인 시 정상.
 
 **성공 시** Rhino CommandHistory 창에 출력:
 

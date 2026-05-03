@@ -251,7 +251,7 @@ def detect_mode() -> tuple[Mode, BridgeClient | None]:
                 log.warning(
                     "Bridge unreachable (RHINO_MCP_BRIDGE_OPTIONAL=1); "
                     "falling back to standalone mode. "
-                    "Start Rhino 8 + RhinoMCPBridge and restart to enable bridge tools."
+                    "Start Rhino 8 with the RhinoMCPBridge.rhp C# plugin loaded, then restart to enable bridge tools."
                 )
                 return Mode.STANDALONE, None
             raise connection_error(

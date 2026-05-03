@@ -97,6 +97,8 @@ namespace RhinoMCPBridge
             var mat = new Handlers.MaterialHandler();
             Register("rhino.material.create", mat.Create);
             Register("rhino.material.assign", mat.Assign);
+            Register("rhino.material.preset_create", mat.PresetCreate);
+            Register("rhino.material.environment_set", mat.EnvironmentSet);
 
             // Annotation
             var ann = new Handlers.AnnotationHandler();
@@ -147,9 +149,17 @@ namespace RhinoMCPBridge
             Register("rhino.object.delete", obj.Delete);
             Register("rhino.object.select", obj.Select);
             Register("rhino.object.move_to_layer", obj.MoveToLayer);
-            Register("rhino.block.create", obj.BlockCreate);
-            Register("rhino.block.insert", obj.BlockInsert);
             Register("rhino.group.create", obj.GroupCreate);
+
+            // Block / instance reuse
+            var blk = new Handlers.BlockHandler();
+            Register("rhino.block.define", blk.Define);
+            Register("rhino.block.insert", blk.Insert);
+            Register("rhino.block.list", blk.List);
+            Register("rhino.block.explode", blk.Explode);
+            Register("rhino.block.redefine", blk.Redefine);
+            // Backward-compat alias for the legacy create -> define naming.
+            Register("rhino.block.create", blk.Define);
 
             // Query (read-only document inspection)
             var qry = new Handlers.QueryHandler();
@@ -273,6 +283,49 @@ namespace RhinoMCPBridge
             Register("rhino.gh_templates.load", ght.Load);
             Register("rhino.gh_templates.bind_parameter", ght.BindParameter);
             Register("rhino.gh_templates.run", ght.Run);
+
+            // Drawing-set tools (v0.3)
+            var draw = new Handlers.DrawingHandler();
+            Register("rhino.drawing.sheet_create", draw.SheetCreate);
+            Register("rhino.drawing.view_place", draw.ViewPlace);
+            Register("rhino.drawing.section_cut", draw.SectionCut);
+            Register("rhino.drawing.title_block_add", draw.TitleBlockAdd);
+            Register("rhino.drawing.export_pdf", draw.ExportPdf);
+
+            // Schedule / quantity (v0.3)
+            var sch = new Handlers.ScheduleHandler();
+            Register("rhino.schedule.by_layer", sch.ByLayer);
+            Register("rhino.schedule.by_user_text", sch.ByUserText);
+            Register("rhino.schedule.by_material", sch.ByMaterial);
+            Register("rhino.schedule.object_quantity", sch.ObjectQuantity);
+
+            // Environmental analysis (v0.3)
+            var env = new Handlers.EnvironmentHandler();
+            Register("rhino.environment.sun_path", env.SunPath);
+            Register("rhino.environment.shadow_project", env.ShadowProject);
+            Register("rhino.environment.solar_exposure_estimate", env.SolarExposureEstimate);
+
+            // BIM interchange (v0.3)
+            var bim = new Handlers.BimIoHandler();
+            Register("rhino.bim.export_ifc", bim.ExportIfc);
+            Register("rhino.bim.import_ifc", bim.ImportIfc);
+            Register("rhino.bim.export_gbxml", bim.ExportGbXml);
+            Register("rhino.bim.metadata_set", bim.MetadataSet);
+
+            // Render automation (v0.3)
+            var rnd = new Handlers.RenderHandler();
+            Register("rhino.render.camera_set", rnd.CameraSet);
+            Register("rhino.render.light_add", rnd.LightAdd);
+            Register("rhino.render.setup", rnd.Setup);
+            Register("rhino.render.to_file", rnd.ToFile);
+            Register("rhino.render.turntable", rnd.Turntable);
+
+            // v0.3 annotation extensions
+            Register("rhino.annotation.north_arrow", ann.NorthArrow);
+            Register("rhino.annotation.scale_bar", ann.ScaleBar);
+            Register("rhino.annotation.revision_cloud", ann.RevisionCloud);
+            Register("rhino.annotation.callout", ann.Callout);
+            Register("rhino.annotation.dim_style_create", ann.DimStyleCreate);
 
             // Freeform / non-rectilinear (v0.3)
             var ff = new Handlers.FreeformHandler();

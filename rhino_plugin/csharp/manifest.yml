@@ -1,0 +1,20 @@
+---
+name: RhinoMCPBridge
+version: 0.3.0
+authors:
+  - rhino-mcp contributors
+description: |
+  RhinoCommon + Grasshopper bridge for the rhino-mcp MCP server.
+  Loads as a Rhino 8 plug-in and exposes a JSON-RPC listener over a
+  platform-native transport (named pipe on Windows, Unix socket on
+  macOS/Linux, optional TCP). The MCP server (separate process) auto-
+  detects the bridge on startup.
+url: https://github.com/easehee/rhino-mcp
+keywords:
+  - mcp
+  - claude
+  - llm
+  - architecture
+  - bim
+  - grasshopper
+icon: ../../assets/rhino-logo.png

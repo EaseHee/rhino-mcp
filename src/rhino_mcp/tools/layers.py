@@ -1,4 +1,7 @@
-"""Layer, group, block, and per-object selection tools."""
+"""Layer, group, and per-object selection tools.
+
+Block / instance authoring lives in ``tools/blocks.py``.
+"""
 
 from __future__ import annotations
 
@@ -8,10 +11,10 @@ from typing import Any
 import rhino3dm as r3
 from pydantic import BaseModel, Field, field_validator
 
-from rhino_mcp.models.geometry_types import ColorRGBA, Point3dModel
+from rhino_mcp.models.geometry_types import ColorRGBA
 from rhino_mcp.tools._helpers import doc, find_layer_index
 from rhino_mcp.tools.context import runtime
-from rhino_mcp.utils.error_handling import not_found_error, unsupported_in_standalone
+from rhino_mcp.utils.error_handling import not_found_error
 from rhino_mcp.utils.registry import Mode
 
 
@@ -100,19 +103,6 @@ class _ObjectSelectIn(_DocArg):
 class _GroupIn(_DocArg):
     object_ids: list[str] = Field(..., min_length=1)
     name: str | None = None
-
-
-class _BlockCreateIn(_DocArg):
-    name: str = Field(..., min_length=1)
-    object_ids: list[str] = Field(..., min_length=1)
-    base_point: Point3dModel = Field(default_factory=lambda: Point3dModel(x=0, y=0, z=0))
-
-
-class _BlockInsertIn(_DocArg):
-    name: str = Field(..., min_length=1)
-    location: Point3dModel
-    scale: float = 1.0
-    rotation_degrees: float = 0.0
 
 
 def _find_layer(handle, name: str) -> int:
@@ -327,19 +317,3 @@ def register(mcp, mode: Mode) -> None:  # type: ignore[no-untyped-def]
             "text": f"Created group {group_index} with {len(args.object_ids)} member(s)",
         }
 
-    if mode is Mode.STANDALONE:
-        return  # bridge-only block tools below
-
-    @mcp.tool(annotations={"title": "Create Block Definition", "readOnlyHint": False})
-    def rhino_block_create(args: _BlockCreateIn) -> dict[str, Any]:
-        """Define a block from existing objects (bridge required for full support)."""
-        if runtime().mode is Mode.STANDALONE:
-            raise unsupported_in_standalone("rhino_block_create")
-        return runtime().require_bridge().call("rhino.block.create", args.model_dump())
-
-    @mcp.tool(annotations={"title": "Insert Block", "readOnlyHint": False})
-    def rhino_block_insert(args: _BlockInsertIn) -> dict[str, Any]:
-        """Insert a block reference at a location."""
-        if runtime().mode is Mode.STANDALONE:
-            raise unsupported_in_standalone("rhino_block_insert")
-        return runtime().require_bridge().call("rhino.block.insert", args.model_dump())

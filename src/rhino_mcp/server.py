@@ -32,12 +32,16 @@ def _tool_specs() -> list[tuple[Mode, object]]:
         analysis,
         annotation,
         batch,
+        bim_io,
+        blocks,
         composition,
         control_points,
         curves,
         deformation,
         display,
         document_config,
+        drawing,
+        environment,
         extraction,
         geometry,
         geometry_validation,
@@ -49,7 +53,9 @@ def _tool_specs() -> list[tuple[Mode, object]]:
         nurbs,
         paneling,
         query,
+        render,
         rhinoscript_docs,
+        schedule,
         scripting,
         solids,
         subd,
@@ -80,6 +86,14 @@ def _tool_specs() -> list[tuple[Mode, object]]:
         (Mode.BOTH, query.register),
         (Mode.BOTH, document_config.register),
         (Mode.BOTH, geometry_validation.register),
+        # Drawing / quantity / blocks / environment (v0.3)
+        (Mode.BOTH, drawing.register),
+        (Mode.BOTH, schedule.register),
+        (Mode.BOTH, blocks.register),
+        (Mode.BOTH, environment.register),
+        # BIM interchange / render automation (v0.3)
+        (Mode.BOTH, bim_io.register),
+        (Mode.BRIDGE, render.register),
         # Freeform / non-rectilinear architecture (v0.3)
         (Mode.BOTH, ff_skin.register),
         (Mode.BOTH, ff_paneling.register),
@@ -132,7 +146,7 @@ def build_server(
             "Each tool returns structured JSON (object IDs, bounding boxes, etc.) "
             "and a short human-readable summary. Standalone mode uses rhino3dm "
             "for headless 3DM I/O; bridge mode forwards calls to a live Rhino 8 "
-            "session running RhinoMCPBridge."
+            "session running the RhinoMCPBridge.rhp C# plugin."
         ),
     )
 
@@ -159,6 +173,8 @@ def _register_prompts(mcp: FastMCP) -> int:
         strategy.bim_authoring_workflow,
         strategy.design_dialogue_workflow,
         strategy.freeform_workflow,
+        strategy.drawing_documentation,
+        strategy.quantity_takeoff,
     )
     for fn in funcs:
         mcp.prompt(name=fn.__name__, description=(fn.__doc__ or "").strip())(fn)

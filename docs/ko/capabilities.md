@@ -29,7 +29,8 @@
 | `rhino_text` | ✓(text-dot 폴백) | ✓(true text) |
 | `rhino_dimension_*`, `rhino_leader`, `rhino_hatch`, `rhino_clipping_plane` | ✗ | ✓ |
 | `rhino_layer_create/delete/set_color`, `rhino_object_*`, `rhino_group` | ✓ | ✓ |
-| `rhino_block_create`, `rhino_block_insert` | ✗ | ✓ |
+| `rhino_block_define`, `rhino_block_insert`, `rhino_block_list` (v0.3) | ✓ | ✓ |
+| `rhino_block_explode`, `rhino_block_redefine` (v0.3) | ✗ | ✓ |
 | `rhino_material_create`, `rhino_material_assign` | ✓ | ✓ |
 | `rhino_render_viewport` | ✗ | ✓ |
 | `rhino_open`, `rhino_save`, `rhino_export_obj`, `rhino_export_stl` | ✓ | ✓ |
@@ -63,5 +64,18 @@
 | `rhino_surface_normal_at`, `rhino_surface_developable_score` (곡률 분석, v0.2) | ✓ | ✓ |
 | `rhino_surface_curvature_at` (정확한 가우스/평균/주곡률, v0.2) | ✗ | ✓ |
 | `rhino_attractor_displace_points`, `rhino_smooth_polyline` (필드 변형, v0.2) | ✓ | ✓ |
+| `rhino_drawing_sheet_create`, `rhino_drawing_title_block_add` (도면 시트, v0.3) | ✓ | ✓ |
+| `rhino_drawing_view_place`, `rhino_drawing_section_cut`, `rhino_drawing_export_pdf` (v0.3) | ✗ | ✓ |
+| `rhino_schedule_by_layer/by_user_text/by_material`, `rhino_object_quantity`, `rhino_schedule_export_csv` (수량/스케줄, v0.3) | ✓ | ✓ |
+| `rhino_sun_position`, `rhino_sun_path`, `rhino_shadow_project` (환경 분석, v0.3) | ✓ | ✓ |
+| `rhino_solar_exposure_estimate` (ray-cast 일조 노출, v0.3) | ✗ | ✓ |
+| `rhino_annotation_north_arrow/scale_bar/revision_cloud/callout` (주석, v0.3) | ✓ | ✓ |
+| `rhino_annotation_dimension_style` (DimStyle 테이블, v0.3) | ✗ | ✓ |
+| `rhino_bim_metadata_set` (IFC entity + Pset 태깅, v0.3) | ✓ | ✓ |
+| `rhino_export_ifc`, `rhino_import_ifc`, `rhino_export_gbxml` (BIM I/O, v0.3) | ✗ | ✓ |
+| `rhino_material_preset_list`, `rhino_material_preset_create` (물리 프리셋, v0.3) | ✓ | ✓ |
+| `rhino_environment_set` (HDRI 환경, v0.3) | ✗ | ✓ |
+| `rhino_camera_set`, `rhino_light_add`, `rhino_render_setup`, `rhino_render_to_file`, `rhino_turntable_render` (렌더, v0.3) | ✗ | ✓ |
+| `rhino_direct_irradiance`, `rhino_daylight_factor` (정밀 주광, v0.3) | ✓ | ✓ |
 
-요약: standalone 약 89개, C# 브리지 활성 시 156개 이상.
+요약: standalone 약 126개, C# 브리지 활성 시 223개.
