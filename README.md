@@ -123,6 +123,18 @@ The command writes a timestamped `.bak.*` copy of the existing config
 before saving, and is idempotent — re-running with the same flags is a
 no-op. Restart Claude Desktop afterwards to pick up the change.
 
+#### From inside Rhino — `_McpInstall`
+
+If the bridge plugin is loaded, type `_McpInstall` on the Rhino command
+line. The command is non-interactive: it locates `uvx` / `rhino-mcp`
+/ `python` on `PATH` (with `~/.local/bin`, `~/.cargo/bin`,
+`/opt/homebrew/bin`, and `/usr/local/bin` searched on macOS so the
+GUI-app `PATH` is enough), runs the same install pipeline as
+`rhino-mcp install`, and streams the outcome to the Rhino command
+line. The MCP server is registered with `--mode auto` so Claude
+Desktop attaches to the bridge when Rhino is running and falls back
+to standalone (rhino3dm) when it is not.
+
 ### Docker
 
 ```bash

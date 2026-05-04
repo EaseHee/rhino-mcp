@@ -7,6 +7,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-05-05
+
+### Added — `_McpInstall` Rhino command
+
+- New `_McpInstall` command (`rhino_plugin/csharp/Commands/McpInstallCommand.cs`)
+  bootstraps the PyPI package and runs `rhino-mcp install` from inside
+  Rhino so end users no longer need a terminal at all. The command
+  resolves a launcher in this order: `uvx` (preferred, ephemeral
+  install), an installed `rhino-mcp` console script, then a system
+  `python` / `python3` fallback. macOS launches scan
+  `~/.local/bin`, `~/.cargo/bin`, `/opt/homebrew/bin`, and
+  `/usr/local/bin` because Rhino starts as a GUI app with a thin
+  `PATH`. Output is streamed to the Rhino command line; failure
+  paths print the canonical `pip install rhino3dm-mcp && rhino-mcp
+  install` instructions plus the `uv` install URL. The command is
+  non-interactive — the MCP server is always registered with
+  `--mode auto`, which lets Claude Desktop attach to the bridge
+  when Rhino is running and fall back to standalone (rhino3dm) when
+  Rhino is closed. Rhino-design users are never asked about
+  "standalone" vs "bridge" terminology.
+
+### Changed — version sync
+
+- `pyproject.toml`, `src/rhino_mcp/__init__.py`,
+  `rhino_plugin/csharp/manifest.yml`,
+  `rhino_plugin/csharp/RhinoMCPPlugin.csproj`, and the staged
+  `yak-stage/{win,mac}/manifest.yml` are all bumped to `0.4.1`
+  together. The `csproj` `<Version>` value was lagging at `0.3.1`;
+  it is now sync'd with the rest of the build matrix.
+
+### 추가 — `_McpInstall` Rhino 명령
+
+- `rhino_plugin/csharp/Commands/McpInstallCommand.cs` 신규: Rhino 명령창에서
+  `_McpInstall` 한 줄 입력 → PyPI 패키지 부트스트랩 + `rhino-mcp install`
+  자동 실행. 터미널 사용 0회. launcher 우선순위: `uvx` (선호, ephemeral
+  실행) → 설치된 `rhino-mcp` 콘솔 스크립트 → 시스템 `python` / `python3`.
+  Rhino 가 GUI 앱으로 시작되어 macOS `PATH` 가 빈약 → `~/.local/bin`,
+  `~/.cargo/bin`, `/opt/homebrew/bin`, `/usr/local/bin` 명시 탐색.
+  출력은 Rhino 명령창으로 스트리밍, 실패 시 표준 `pip install
+  rhino3dm-mcp && rhino-mcp install` 안내 + `uv` 설치 URL 출력.
+  비대화형(non-interactive) — MCP 서버는 항상 `--mode auto` 로
+  등록. Claude Desktop 실행 시점에 Rhino 가 켜져 있으면 브리지 자동
+  연결, 꺼져 있으면 standalone (rhino3dm) 자동 폴백.
+  사용자에게 standalone/bridge 같은 용어 선택을 요구하지 않음.
+
+### 변경 — 버전 동기화
+
+- `pyproject.toml`, `src/rhino_mcp/__init__.py`,
+  `rhino_plugin/csharp/manifest.yml`,
+  `rhino_plugin/csharp/RhinoMCPPlugin.csproj`, 그리고 staged
+  `yak-stage/{win,mac}/manifest.yml` 모두 `0.4.1` 로 동기화. csproj
+  `<Version>` 이 `0.3.1` 로 뒤쳐져 있던 것 → 빌드 매트릭스와 일치.
+
 ## [0.4.0] - 2026-05-05
 
 ### Added — packaging and release pipeline
