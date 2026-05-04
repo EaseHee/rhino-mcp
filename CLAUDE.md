@@ -4,58 +4,19 @@ MCP server connecting Claude to McNeel Rhino 8 and Grasshopper.
 
 ## Architecture
 
-- **Standalone mode**: `rhino3dm` (headless Python lib) for `.3dm` file I/O. ~120 tools.
-- **Bridge mode**: C# plugin (`rhino_plugin/csharp/`) with JSON-RPC 2.0. ~210 tools.
-- Mode auto-detected at startup (`detect_mode()`). Override with `RHINO_MCP_FORCE_MODE`.
+- **Standalone**: `rhino3dm` (headless Python lib) for `.3dm` I/O. ~126 tools.
+- **Bridge**: C# plugin `rhino_plugin/csharp/rhino-mcp.rhp` over JSON-RPC 2.0. ~223 tools.
+- Mode auto-detected at startup (`detect_mode()`); override via `RHINO_MCP_FORCE_MODE`.
 
-## Project Structure
+## Project layout (top level)
 
-```
-src/rhino_mcp/
-  server.py          # entrypoint, FastMCP server, tool registration
-  transport.py       # stdio/HTTP transport selection
-  document.py        # DocumentHandle registry (rhino3dm.File3dm wrapper)
-  data/              # static data (rhinoscriptsyntax.json)
-  tools/             # tool modules (26 categories)
-    context.py       # runtime state (mode, bridge client)
-    _helpers.py      # shared utilities (to_point, doc, add_object_with_attrs, etc.)
-    geometry.py      # points, curves, primitives, rebuild_curve
-    curves.py        # curve analysis, point_at, split
-    solids.py        # box, sphere, cylinder, cone, torus, booleans
-    surfaces.py      # plane, extrude, revolve, loft, sweep, blend, fillet, offset
-    mesh.py          # mesh creation, booleans, weld, reduce
-    transform.py     # move, rotate, scale, mirror, orient, array
-    annotation.py    # text, dimensions, leader, hatch, clipping plane
-    layers.py        # layer CRUD, visibility, lock
-    materials.py     # material create, assign
-    io.py            # open, save, import, export (OBJ/STL/STEP/IGES/DXF)
-    analysis.py      # bbox, area, volume, distance, curvature, section, contour
-    query.py         # list_objects, object_info, document_summary, selected_objects
-    display.py       # viewport, zoom, named views, display modes (bridge)
-    scripting.py     # execute Python/C# scripts in Rhino (bridge)
-    rhinoscript_docs.py  # RhinoScript API search and documentation (both)
-    history.py       # undo/redo (bridge)
-    batch.py         # batch modify objects (bridge)
-    deformation.py   # bend, twist, taper, flow along curve (bridge)
-    nurbs.py         # rebuild surface, surface from points, unroll, evaluate (bridge)
-    subd.py          # SubD create, to NURBS (bridge)
-    surface_match.py # match, blend edges, merge (bridge)
-    extraction.py    # dup edge/border, isocurve, make2d (bridge)
-    control_points.py # get/set NURBS control points (bridge)
-    paneling.py      # panelize, UV grid, panel frames (bridge)
-    grasshopper/     # GH canvas, components, data_tree, parameters (bridge)
-  bridge/            # JSON-RPC transport layer
-    rhino_connection.py  # BridgeClient, detect_mode()
-    transport_base.py    # abstract Transport
-    tcp_socket.py / unix_socket.py / named_pipe.py
-  models/            # Pydantic data models
-  utils/             # registry, error_handling, logging, serialization
-rhino_plugin/
-  csharp/            # C# bridge plugin (RhinoMCPBridge.rhp, ~210 methods)
-    Handlers/        # one handler class per category
-    CommandDispatcher.cs  # method → handler routing
-tests/               # pytest (~190 tests)
-```
+- `src/rhino_mcp/` — Python package (server, tools, bridge transports, prompts, models, utils, data).
+- `rhino_plugin/csharp/` — C# bridge plugin (`Plugin.cs`, `BridgeServer.cs`, `CommandDispatcher.cs`, `Handlers/*.cs`, `manifest.yml`).
+- `tests/` — pytest (~213 tests).
+- `examples/` — runnable demo scripts (architectural massing, schedule, sun study, etc.).
+- `docs/{en,ko}/` — capabilities / configuration / installation / troubleshooting / tools-reference / grasshopper-guide.
+- `.github/workflows/` — CI + release pipelines.
+- `.claude/` — agents, skills, commands, rules, settings.
 
 ## Development
 
@@ -63,41 +24,46 @@ tests/               # pytest (~190 tests)
 uv sync
 uv pip install -e '.[dev]'
 uv run pytest tests/ -v                    # all tests
-uv run pytest tests/ --cov=src/rhino_mcp   # coverage
 uv run ruff check src/ tests/              # lint
 uv run mypy src/rhino_mcp                  # type check
-dotnet build rhino_plugin/csharp/          # build C# plugin
+dotnet build rhino_plugin/csharp -c Release
 ```
-
-## Adding a New Tool
-
-1. Create `src/rhino_mcp/tools/<category>.py` with Pydantic input model + tool function
-2. Define `register(mcp, mode)` using `@mcp.tool()` decorator
-3. Add `(Mode.BOTH|BRIDGE, <module>.register)` to `server.py:_tool_specs()`
-4. Bridge mode: `runtime().require_bridge().call("rhino.category.action", args.model_dump())`
-5. Standalone mode: use `rhino3dm` API directly
-6. Return format: `{"summary": {...}, "text": "..."}`
-7. Errors: `parameter_error()`, `not_found_error()`, `unsupported_in_standalone()`
-8. For bridge-only tools, create C# handler in `rhino_plugin/csharp/Handlers/<Category>Handler.cs`
-9. Register bridge method in `rhino_plugin/csharp/CommandDispatcher.cs`
-10. Add tests in `tests/tools/test_<category>.py`
 
 ## Conventions
 
-- Tool first argument: `args: _InputModel` (Pydantic BaseModel)
-- `doc_id` field: default `"active"` (DocumentHandle lookup)
-- Shared logic in `_helpers.py`
-- `Mode` enum: `STANDALONE`, `BRIDGE`, `BOTH`
-- Commit messages: English title + English body (Conventional Commits)
-- Code comments: English only
+- Tool first argument: `args: _InputModel` (Pydantic BaseModel).
+- `doc_id` defaults to `"active"`.
+- Shared logic lives in `tools/_helpers.py`.
+- `Mode` enum: `STANDALONE` / `BRIDGE` / `BOTH`.
+- **Commit messages: English title + English body**, Conventional Commits, no Co-Authored-By.
+- **Code comments: English only.**
+- **Korean prose** (chat replies, `*.ko.md`, `docs/ko/**`, CHANGELOG entries) uses **noun-form endings, no honorifics** (`-함`, `-임`, or noun direct termination; never `입니다 / 합니다 / 하세요`).
 
-## Key Environment Variables
+## Procedure docs (lazy-loaded under `.claude/rules/`)
+
+- Adding a new tool — `.claude/rules/adding-tool.md`.
+- C# handler authoring + RhinoCommon trap list — `.claude/rules/csharp-handler.md`.
+- Korean writing style — `.claude/rules/korean-style.md`.
+
+## Subagents (`.claude/agents/`)
+
+- `rhino3dm-api-checker` — verify Python-side rhino3dm signatures before use.
+- `csharp-rhinocommon-checker` — run `dotnet build` + decode RhinoCommon errors.
+- `release-coordinator` — sync version, tool counts, test counts across CHANGELOG / README / docs / commit-message.
+
+## Slash commands (`.claude/commands/`)
+
+- `/release-v [next_version]` — drive the release-coordinator.
+- `/validate-bridge` — bridge health check ladder.
+- `/sync-tool-docs` — refresh `docs/{en,ko}/capabilities.md` from live registrations.
+
+## Key environment variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `RHINO_MCP_TRANSPORT` | `stdio` | `stdio` or `http` |
 | `RHINO_MCP_FORCE_MODE` | auto | `standalone` or `bridge` |
-| `RHINO_MCP_BRIDGE_OPTIONAL` | `0` | `1` = fall back to standalone if bridge is unreachable (connector mode) |
+| `RHINO_MCP_BRIDGE_OPTIONAL` | `0` | `1` = fall back to standalone if bridge unreachable |
 | `RHINO_HOST` | `localhost` | Bridge TCP host |
 | `RHINO_PORT` | `4242` | Bridge TCP port |
 | `RHINO_MCP_LOG_LEVEL` | `INFO` | Logging level |

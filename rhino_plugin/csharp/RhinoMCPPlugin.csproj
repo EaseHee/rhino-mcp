@@ -5,11 +5,13 @@
     <EnableDynamicLoading>true</EnableDynamicLoading>
     <TargetExt>.rhp</TargetExt>
     <NoWarn>NU1701</NoWarn>
-    <Title>RhinoMCPBridge</Title>
-    <Description>MCP bridge plugin for Rhino 8 — JSON-RPC 2.0 over TCP.</Description>
-    <Version>0.1.0</Version>
-    <AssemblyName>RhinoMCPBridge</AssemblyName>
-    <RootNamespace>RhinoMCPBridge</RootNamespace>
+    <Title>rhino-mcp</Title>
+    <Description>rhino-mcp plugin for Rhino 8 — JSON-RPC 2.0 over a platform-native transport.</Description>
+    <Version>0.3.1</Version>
+    <Authors>GeonHee Lee (EaseHee) &lt;easehee.0@gmail.com&gt;</Authors>
+    <Copyright>Copyright (c) 2026 EaseHee &lt;easehee.0@gmail.com&gt;</Copyright>
+    <AssemblyName>rhino-mcp</AssemblyName>
+    <RootNamespace>RhinoMcp</RootNamespace>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
@@ -24,14 +26,14 @@
 
   <!-- macOS: copy to Rhino.app/Contents/PlugIns/ -->
   <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="$([MSBuild]::IsOSPlatform('OSX'))">
-    <Exec Command="cp '$(TargetDir)RhinoMCPBridge.rhp' '/Applications/Rhino 8.app/Contents/PlugIns/'" />
+    <Exec Command="cp '$(TargetDir)rhino-mcp.rhp' '/Applications/Rhino 8.app/Contents/PlugIns/'" />
     <Exec Command="cp '$(TargetDir)Newtonsoft.Json.dll' '/Applications/Rhino 8.app/Contents/PlugIns/'" Condition="Exists('$(TargetDir)Newtonsoft.Json.dll')" />
   </Target>
 
   <!-- Windows: copy to Plug-ins folder -->
   <Target Name="PostBuildWin" AfterTargets="PostBuildEvent" Condition="$([MSBuild]::IsOSPlatform('Windows'))">
-    <Copy SourceFiles="$(TargetDir)RhinoMCPBridge.rhp" DestinationFolder="$(APPDATA)/McNeel/Rhinoceros/8.0/Plug-ins/RhinoMCPBridge/" />
-    <Copy SourceFiles="$(TargetDir)Newtonsoft.Json.dll" DestinationFolder="$(APPDATA)/McNeel/Rhinoceros/8.0/Plug-ins/RhinoMCPBridge/" Condition="Exists('$(TargetDir)Newtonsoft.Json.dll')" />
+    <Copy SourceFiles="$(TargetDir)rhino-mcp.rhp" DestinationFolder="$(APPDATA)/McNeel/Rhinoceros/8.0/Plug-ins/rhino-mcp/" />
+    <Copy SourceFiles="$(TargetDir)Newtonsoft.Json.dll" DestinationFolder="$(APPDATA)/McNeel/Rhinoceros/8.0/Plug-ins/rhino-mcp/" Condition="Exists('$(TargetDir)Newtonsoft.Json.dll')" />
   </Target>
 
 </Project>

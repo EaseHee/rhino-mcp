@@ -3,7 +3,7 @@ using Rhino;
 using Rhino.DocObjects;
 using Rhino.Geometry;
 
-namespace RhinoMCPBridge.Handlers
+namespace RhinoMcp.Handlers
 {
     public class AnnotationHandler : HandlerBase
     {

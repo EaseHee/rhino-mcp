@@ -1,7 +1,7 @@
 """Grasshopper workflow — bridge-only end-to-end demo.
 
 Requires: Rhino 8 running with Grasshopper open and the
-``RhinoMCPBridge.rhp`` C# plugin loaded (see docs/en/installation.md).
+``rhino-mcp.rhp`` C# plugin loaded (see docs/en/installation.md).
 
 Steps:
   1. Open a parametric definition.

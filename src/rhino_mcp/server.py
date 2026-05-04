@@ -146,7 +146,7 @@ def build_server(
             "Each tool returns structured JSON (object IDs, bounding boxes, etc.) "
             "and a short human-readable summary. Standalone mode uses rhino3dm "
             "for headless 3DM I/O; bridge mode forwards calls to a live Rhino 8 "
-            "session running the RhinoMCPBridge.rhp C# plugin."
+            "session running the rhino-mcp.rhp C# plugin."
         ),
     )
 
@@ -224,7 +224,17 @@ def main(argv: list[str] | None = None) -> int:
         action="version",
         version=f"rhino-mcp {__version__}",
     )
+
+    subparsers = parser.add_subparsers(dest="command", metavar="<command>")
+    from rhino_mcp.install import add_install_subparser, run_install
+
+    add_install_subparser(subparsers)
+
     args = parser.parse_args(argv)
+
+    if args.command == "install":
+        configure_logging()
+        return run_install(args)
 
     configure_logging()
     transport_kind = resolve_transport(args.transport)

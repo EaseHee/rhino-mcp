@@ -36,7 +36,7 @@ class NamedPipeTransport(Transport):
         except ImportError as exc:
             raise ConnectionError(
                 "pywin32 is required for the named-pipe transport. "
-                "Install with `pip install rhino-mcp[windows]`."
+                "Install with `pip install rhino3dm-mcp[windows]`."
             ) from exc
 
         path = rf"\\.\pipe\{self.pipe_name}"

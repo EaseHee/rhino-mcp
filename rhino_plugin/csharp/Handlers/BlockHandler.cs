@@ -3,7 +3,7 @@ using Rhino;
 using Rhino.DocObjects;
 using Rhino.Geometry;
 
-namespace RhinoMCPBridge.Handlers
+namespace RhinoMcp.Handlers
 {
     /// <summary>
     /// Block / instance reuse — define / insert / list / explode / redefine.

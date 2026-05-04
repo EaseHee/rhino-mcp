@@ -2,7 +2,7 @@ using Newtonsoft.Json.Linq;
 using Rhino;
 using Rhino.Geometry;
 
-namespace RhinoMCPBridge.Handlers
+namespace RhinoMcp.Handlers
 {
     /// <summary>
     /// Document hygiene — units, tolerances, base point.

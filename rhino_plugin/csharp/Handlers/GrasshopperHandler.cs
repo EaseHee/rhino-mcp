@@ -1,7 +1,7 @@
 using Newtonsoft.Json.Linq;
 using Rhino;
 
-namespace RhinoMCPBridge.Handlers
+namespace RhinoMcp.Handlers
 {
     /// <summary>
     /// Grasshopper canvas, component, parameter, and data tree operations.

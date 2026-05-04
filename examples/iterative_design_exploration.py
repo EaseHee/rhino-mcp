@@ -4,7 +4,7 @@ Demonstrates the v0.2.0 GH templates flow: list → load → bind sliders →
 run → bake → screenshot, repeated across a small sweep of values so the
 user can compare variants side by side.
 
-BRIDGE-ONLY: requires a live Rhino 8 with the RhinoMCPBridge plugin
+BRIDGE-ONLY: requires a live Rhino 8 with the rhino-mcp plugin
 loaded. The first call (gh_template_list) reads the manifest and works
 in any mode, but loading and running the templates requires the bridge.
 

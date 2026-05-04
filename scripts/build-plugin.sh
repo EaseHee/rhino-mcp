@@ -46,14 +46,14 @@ if [ "$CLEAN" = true ]; then
   dotnet clean "$PROJECT" -c "$CONFIG" -q
 fi
 
-echo ">>> Building RhinoMCPBridge ($CONFIG)..."
+echo ">>> Building rhino-mcp ($CONFIG)..."
 dotnet build "$PROJECT" -c "$CONFIG"
 
 # Verify install
 if [ "$(uname -s)" = "Darwin" ]; then
-  RHP="/Applications/Rhino 8.app/Contents/PlugIns/RhinoMCPBridge.rhp"
+  RHP="/Applications/Rhino 8.app/Contents/PlugIns/rhino-mcp.rhp"
 else
-  RHP="$APPDATA/McNeel/Rhinoceros/8.0/Plug-ins/RhinoMCPBridge/RhinoMCPBridge.rhp"
+  RHP="$APPDATA/McNeel/Rhinoceros/8.0/Plug-ins/rhino-mcp/rhino-mcp.rhp"
 fi
 
 if [ -f "$RHP" ]; then

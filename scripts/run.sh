@@ -37,7 +37,7 @@ Network (HTTP mode):
   --host HOST         Listen host              [default: 127.0.0.1]
 
 Mode:
-  --bridge            Force bridge mode (requires Rhino 8 + RhinoMCPBridge.py)
+  --bridge            Force bridge mode (requires Rhino 8 + rhino-mcp.py)
   --standalone        Force standalone mode (rhino3dm only, no Rhino needed)
 
 Connector (claude.ai remote MCP):
@@ -58,7 +58,7 @@ claude.ai connector quick-start
   # Standalone (no Rhino required):
   ./scripts/run.sh --connector --standalone
 
-  # Bridge (all 130+ tools, Rhino 8 must be running with RhinoMCPBridge.py):
+  # Bridge (all 130+ tools, Rhino 8 must be running with rhino-mcp.py):
   ./scripts/run.sh --connector --bridge
 
   # Then expose with ngrok (separate terminal):
@@ -111,7 +111,7 @@ if [ "$CONNECTOR" = true ]; then
   echo "│  Endpoint  : http://localhost:$PORT/mcp                             │"
   echo "│                                                                  │"
   echo "│  Bridge fallback: if Rhino 8 is not running, server starts in   │"
-  echo "│  standalone mode. Restart after launching RhinoMCPBridge to     │"
+  echo "│  standalone mode. Restart after launching rhino-mcp to     │"
   echo "│  enable all bridge tools.                                        │"
   echo "│                                                                  │"
   echo "│  To expose publicly:                                             │"

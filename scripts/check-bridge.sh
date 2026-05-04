@@ -87,19 +87,19 @@ except Exception as e:
       echo "   $PASS  Socket is accepting connections"
     else
       echo "   $FAIL  Socket file exists but is NOT accepting connections"
-      echo "          → RhinoMCPBridge.py may have crashed or Rhino restarted."
-      echo "          → In Rhino: _-RunPythonScript \"<path>/RhinoMCPBridge.py\""
+      echo "          → rhino-mcp.py may have crashed or Rhino restarted."
+      echo "          → In Rhino: _-RunPythonScript \"<path>/rhino-mcp.py\""
     fi
   else
     echo "   $FAIL  Socket file not found at $SOCK_PATH"
-    echo "          → RhinoMCPBridge.py is not running inside Rhino 8."
+    echo "          → rhino-mcp.py is not running inside Rhino 8."
     echo ""
     echo "   Fix:"
     echo "     1. Open Rhino 8"
     echo "     2. Run in Rhino command line:"
-    BRIDGE_PATH="$(python3 -c "import os; print(os.path.expanduser('~/Library/Application Support/McNeel/Rhinoceros/8.0/scripts/RhinoMCPBridge.py'))" 2>/dev/null || echo "~/Library/Application Support/McNeel/Rhinoceros/8.0/scripts/RhinoMCPBridge.py")"
+    BRIDGE_PATH="$(python3 -c "import os; print(os.path.expanduser('~/Library/Application Support/McNeel/Rhinoceros/8.0/scripts/rhino-mcp.py'))" 2>/dev/null || echo "~/Library/Application Support/McNeel/Rhinoceros/8.0/scripts/rhino-mcp.py")"
     echo "          _-RunPythonScript \"$BRIDGE_PATH\""
-    echo "     3. Look for \"[RhinoMCPBridge] listening on unix://...\" in Rhino output"
+    echo "     3. Look for \"[rhino-mcp] listening on unix://...\" in Rhino output"
   fi
 fi
 
@@ -189,9 +189,9 @@ else
   echo "    1. Open Rhino 8"
   echo "    2. Install bridge (once):  python rhino_plugin/install.py"
   echo "    3. In Rhino command line:"
-  BRIDGE_PATH_2="$(python3 -c "import os; print(os.path.expanduser('~/Library/Application Support/McNeel/Rhinoceros/8.0/scripts/RhinoMCPBridge.py'))" 2>/dev/null || echo "~/Library/Application Support/McNeel/Rhinoceros/8.0/scripts/RhinoMCPBridge.py")"
+  BRIDGE_PATH_2="$(python3 -c "import os; print(os.path.expanduser('~/Library/Application Support/McNeel/Rhinoceros/8.0/scripts/rhino-mcp.py'))" 2>/dev/null || echo "~/Library/Application Support/McNeel/Rhinoceros/8.0/scripts/rhino-mcp.py")"
   echo "         _-RunPythonScript \"$BRIDGE_PATH_2\""
-  echo "    4. Confirm: \"[RhinoMCPBridge] listening on unix://...\" appears in output"
+  echo "    4. Confirm: \"[rhino-mcp] listening on unix://...\" appears in output"
   echo "    5. Re-run this script to verify"
   echo ""
   echo "  If Rhino is running but bridge still fails, try TCP mode:"

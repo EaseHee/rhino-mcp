@@ -1,7 +1,7 @@
 using Newtonsoft.Json.Linq;
 using Rhino;
 
-namespace RhinoMCPBridge.Handlers
+namespace RhinoMcp.Handlers
 {
     /// <summary>
     /// Undo / redo operations on the active document.

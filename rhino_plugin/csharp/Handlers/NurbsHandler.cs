@@ -2,7 +2,7 @@ using Newtonsoft.Json.Linq;
 using Rhino;
 using Rhino.Geometry;
 
-namespace RhinoMCPBridge.Handlers
+namespace RhinoMcp.Handlers
 {
     /// <summary>
     /// NURBS editing: rebuild, surface from points, unroll, closest point, evaluate.

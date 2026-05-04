@@ -1,12 +1,12 @@
 <div align="center">
 
-<img src="assets/rhino-logo.png" alt="rhino-logo"/>
+<img src="https://raw.githubusercontent.com/EaseHee/rhino-mcp/refs/heads/main/assets/rhino-mcp.png" alt="rhino-logo"/>
 
 # rhino-mcp
 
 **Drive McNeel Rhino 8 and Grasshopper from Claude through the Model Context Protocol.**
 
-![PyPI](https://img.shields.io/pypi/v/rhino-mcp)
+![PyPI](https://img.shields.io/pypi/v/rhino3dm-mcp)
 ![Python](https://img.shields.io/badge/python-3.11%2B-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Rhino](https://img.shields.io/badge/Rhino-8-red)
@@ -103,9 +103,25 @@ uv sync && uv run rhino-mcp
 ### Using pip
 
 ```bash
-pip install rhino-mcp
+pip install rhino3dm-mcp
 rhino-mcp --version
 ```
+
+### One-shot Claude Desktop wiring
+
+After installing the package, register the server with Claude Desktop in
+a single command instead of editing `claude_desktop_config.json` by hand:
+
+```bash
+rhino-mcp install                         # auto-detect launcher (uvx / rhino-mcp / python)
+rhino-mcp install --mode bridge           # force bridge mode in the env block
+rhino-mcp install --force                 # overwrite an existing entry
+rhino-mcp install --dry-run               # preview the JSON without writing
+```
+
+The command writes a timestamped `.bak.*` copy of the existing config
+before saving, and is idempotent — re-running with the same flags is a
+no-op. Restart Claude Desktop afterwards to pick up the change.
 
 ### Docker
 
@@ -123,7 +139,7 @@ The container exposes the server over Streamable HTTP on TCP `:8765`.
 
 | Use case                                | Command                                                                        |
 |-----------------------------------------|--------------------------------------------------------------------------------|
-| Stdio (Claude Desktop default)          | `uvx rhino-mcp` *or* `rhino-mcp`                                               |
+| Stdio (Claude Desktop default)          | `uvx rhino3dm-mcp` *or* `rhino-mcp`                                            |
 | Streamable HTTP (local dev / Cursor)    | `rhino-mcp --transport http --host 127.0.0.1 --port 8765`                      |
 | Streamable HTTP (claude.ai connector)   | `rhino-mcp --transport http --host 0.0.0.0 --port 8765 --allow-external --stateless` |
 | Docker (HTTP on `:8765`)                | `docker compose -f docker/docker-compose.yml up --build`                       |
@@ -151,7 +167,7 @@ Paste this entry under `mcpServers`:
   "mcpServers": {
     "rhino-mcp": {
       "command": "uvx",
-      "args": ["rhino-mcp"],
+      "args": ["rhino3dm-mcp"],
       "env": {
         "RHINO_MCP_TRANSPORT": "stdio",
         "RHINO_HOST": "127.0.0.1",
@@ -188,7 +204,7 @@ Cursor reads `~/.cursor/mcp.json` (global) or `<project>/.cursor/mcp.json` (per-
   "mcpServers": {
     "rhino-mcp": {
       "command": "uvx",
-      "args": ["rhino-mcp"],
+      "args": ["rhino3dm-mcp"],
       "env": { "RHINO_MCP_FORCE_MODE": "bridge" }
     }
   }
@@ -209,7 +225,7 @@ Cursor reads `~/.cursor/mcp.json` (global) or `<project>/.cursor/mcp.json` (per-
 
 ### Generic stdio MCP clients
 
-Any MCP-compatible client (mcp-inspector, Continue, Claude Code, etc.) that can spawn a subprocess will work — give it `uvx rhino-mcp` or the path to your `rhino-mcp` entry-point and inherit env vars from the table below.
+Any MCP-compatible client (mcp-inspector, Continue, Claude Code, etc.) that can spawn a subprocess will work — give it `uvx rhino3dm-mcp` or the path to your `rhino-mcp` entry-point and inherit env vars from the table below.
 
 ### Rhino-side bridge plugin (C# — recommended)
 
@@ -228,8 +244,8 @@ Post-build targets copy the `.rhp`:
 
 | OS      | Path                                                                                  |
 |---------|---------------------------------------------------------------------------------------|
-| macOS   | `/Applications/Rhino 8.app/Contents/PlugIns/RhinoMCPBridge.rhp`                       |
-| Windows | `%APPDATA%/McNeel/Rhinoceros/8.0/Plug-ins/RhinoMCPBridge/RhinoMCPBridge.rhp`           |
+| macOS   | `/Applications/Rhino 8.app/Contents/PlugIns/rhino-mcp.rhp`                       |
+| Windows | `%APPDATA%/McNeel/Rhinoceros/8.0/Plug-ins/rhino-mcp/rhino-mcp.rhp`           |
 
 Restart Rhino 8 — the bridge starts automatically on load (TCP `:4242` by default). Then restart `rhino-mcp` (or set `RHINO_MCP_FORCE_MODE=bridge`) and the bridge-only tools become available.
 
@@ -334,7 +350,7 @@ Detailed signatures live in [docs/en/tools-reference.md](docs/en/tools-reference
 
 ```text
 1. Start Rhino 8 → open Grasshopper → load your `.gh` definition.
-2. Ensure the C# bridge plugin (`RhinoMCPBridge.rhp`) is loaded in Rhino.
+2. Ensure the C# bridge plugin (`rhino-mcp.rhp`) is loaded in Rhino.
 3. Set `RHINO_MCP_FORCE_MODE=bridge` and restart rhino-mcp.
 4. From Claude:
    - "Open /work/wing.gh, set the 'span' slider to 12.5, run, bake to layer 'Wing'."

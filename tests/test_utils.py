@@ -31,7 +31,7 @@ def test_tool_error_categories_have_actionable_hints() -> None:
     assert nf.category is ErrorCategory.NOT_FOUND
 
     conn = connection_error("transport down")
-    assert "RhinoMCPBridge" in conn.hint
+    assert "rhino-mcp" in conn.hint
 
     unsupp = unsupported_in_standalone("rhino_loft")
     assert unsupp.category is ErrorCategory.UNSUPPORTED

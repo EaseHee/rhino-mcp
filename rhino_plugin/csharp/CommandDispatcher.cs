@@ -1,7 +1,7 @@
 using Newtonsoft.Json.Linq;
 using Rhino;
 
-namespace RhinoMCPBridge
+namespace RhinoMcp
 {
     /// <summary>
     /// Routes JSON-RPC method names to handler classes.

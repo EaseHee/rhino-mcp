@@ -1,8 +1,8 @@
 ---
-name: RhinoMCPBridge
-version: 0.3.0
+name: rhino-mcp
+version: 0.4.0
 authors:
-  - rhino-mcp contributors
+  - "EaseHee <26100044@snut.ac.kr>"
 description: |
   RhinoCommon + Grasshopper bridge for the rhino-mcp MCP server.
   Loads as a Rhino 8 plug-in and exposes a JSON-RPC listener over a
@@ -17,4 +17,4 @@ keywords:
   - architecture
   - bim
   - grasshopper
-icon: ../../assets/rhino-logo.png
+icon: ../../assets/rhino-mcp.png

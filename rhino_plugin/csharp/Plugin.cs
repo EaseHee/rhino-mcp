@@ -1,7 +1,7 @@
 using Rhino;
 using Rhino.PlugIns;
 
-namespace RhinoMCPBridge
+namespace RhinoMcp
 {
     /// <summary>
     /// Rhino 8 native plugin that auto-starts a JSON-RPC 2.0 TCP bridge on load.
@@ -20,7 +20,7 @@ namespace RhinoMCPBridge
 
         protected override LoadReturnCode OnLoad(ref string errorMessage)
         {
-            RhinoApp.WriteLine("[RhinoMCPBridge] Plugin loaded");
+            RhinoApp.WriteLine("[rhino-mcp] Plugin loaded");
 
             var port = 4242;
             var envPort = Environment.GetEnvironmentVariable("RHINO_PORT");
@@ -35,7 +35,7 @@ namespace RhinoMCPBridge
             }
             catch (Exception ex)
             {
-                RhinoApp.WriteLine($"[RhinoMCPBridge] Failed to start bridge: {ex.Message}");
+                RhinoApp.WriteLine($"[rhino-mcp] Failed to start bridge: {ex.Message}");
                 errorMessage = ex.Message;
                 return LoadReturnCode.ErrorShowDialog;
             }

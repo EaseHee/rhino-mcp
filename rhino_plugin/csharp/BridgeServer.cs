@@ -5,7 +5,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Rhino;
 
-namespace RhinoMCPBridge
+namespace RhinoMcp
 {
     /// <summary>
     /// TCP server that accepts newline-delimited JSON-RPC 2.0 requests and
@@ -35,11 +35,11 @@ namespace RhinoMCPBridge
             _acceptThread = new Thread(() => AcceptLoop(_cts.Token))
             {
                 IsBackground = true,
-                Name = "RhinoMCPBridge-Accept"
+                Name = "rhino-mcp-Accept"
             };
             _acceptThread.Start();
 
-            RhinoApp.WriteLine($"[RhinoMCPBridge] listening on tcp://{host}:{port}");
+            RhinoApp.WriteLine($"[rhino-mcp] listening on tcp://{host}:{port}");
         }
 
         public void Stop()
@@ -47,7 +47,7 @@ namespace RhinoMCPBridge
             _cts?.Cancel();
             _listener?.Stop();
             _listener = null;
-            RhinoApp.WriteLine("[RhinoMCPBridge] stopped");
+            RhinoApp.WriteLine("[rhino-mcp] stopped");
         }
 
         private void AcceptLoop(CancellationToken ct)
@@ -58,14 +58,14 @@ namespace RhinoMCPBridge
                 {
                     var client = _listener!.AcceptTcpClient();
                     var addr = client.Client.RemoteEndPoint;
-                    RhinoApp.WriteLine($"[RhinoMCPBridge] Connected to client: {addr}");
+                    RhinoApp.WriteLine($"[rhino-mcp] Connected to client: {addr}");
                     var thread = new Thread(() => HandleClient(client, ct))
                     {
                         IsBackground = true,
-                        Name = $"RhinoMCPBridge-Client-{addr}"
+                        Name = $"rhino-mcp-Client-{addr}"
                     };
                     thread.Start();
-                    RhinoApp.WriteLine("[RhinoMCPBridge] Client handler started");
+                    RhinoApp.WriteLine("[rhino-mcp] Client handler started");
                 }
                 catch (SocketException) when (ct.IsCancellationRequested)
                 {
@@ -73,7 +73,7 @@ namespace RhinoMCPBridge
                 }
                 catch (Exception ex)
                 {
-                    RhinoApp.WriteLine($"[RhinoMCPBridge] Accept error: {ex.Message}");
+                    RhinoApp.WriteLine($"[rhino-mcp] Accept error: {ex.Message}");
                 }
             }
         }
@@ -102,12 +102,12 @@ namespace RhinoMCPBridge
             }
             catch (Exception ex)
             {
-                RhinoApp.WriteLine($"[RhinoMCPBridge] Client error: {ex.Message}");
+                RhinoApp.WriteLine($"[rhino-mcp] Client error: {ex.Message}");
             }
             finally
             {
                 client.Close();
-                RhinoApp.WriteLine("[RhinoMCPBridge] Client disconnected");
+                RhinoApp.WriteLine("[rhino-mcp] Client disconnected");
             }
         }
 

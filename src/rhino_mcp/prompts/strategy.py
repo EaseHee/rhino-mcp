@@ -102,7 +102,7 @@ STEP 3: BEST PRACTICES
    ``error.category`` (connection, timeout, parameter, not_found,
    unsupported, gh_component, internal). Branch on this:
    - ``unsupported`` -> the tool requires bridge mode; prompt the user
-     to start Rhino 8 + RhinoMCPBridge and retry.
+     to start Rhino 8 + rhino-mcp and retry.
    - ``not_found``   -> object/file does not exist; re-discover via
      rhino_list_objects or rhino_document_summary.
    - ``parameter``   -> input invalid; read the ``hint`` for the allowed

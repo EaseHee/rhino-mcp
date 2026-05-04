@@ -20,18 +20,18 @@
 dotnet build rhino_plugin/csharp -c Release
 ```
 
-산출물 경로: `rhino_plugin/csharp/bin/Release/net8.0/RhinoMCPBridge.rhp`.
+산출물 경로: `rhino_plugin/csharp/bin/Release/net8.0/rhino-mcp.rhp`.
 
 ### 2단계 — Rhino 8에 .rhp 로드
 
-`.rhp` 파일을 Rhino 뷰포트로 드래그-앤-드롭하거나 `_PluginManager` → *Install...* 로 1회 로드 → 이후 Rhino 재시작에도 유지. `_-PluginManager`에서 `RhinoMCPBridge` 항목 확인 시 정상.
+`.rhp` 파일을 Rhino 뷰포트로 드래그-앤-드롭하거나 `_PluginManager` → *Install...* 로 1회 로드 → 이후 Rhino 재시작에도 유지. `_-PluginManager`에서 `rhino-mcp` 항목 확인 시 정상.
 
 **성공 시** Rhino CommandHistory 창에 출력:
 
 ```
-[RhinoMCPBridge] listening on unix:///tmp/rhino_mcp.sock    ← macOS/Linux
-[RhinoMCPBridge] listening on \\.\pipe\rhino_mcp            ← Windows
-[RhinoMCPBridge] listening on tcp://127.0.0.1:4242          ← TCP 강제 시
+[rhino-mcp] listening on unix:///tmp/rhino_mcp.sock    ← macOS/Linux
+[rhino-mcp] listening on \\.\pipe\rhino_mcp            ← Windows
+[rhino-mcp] listening on tcp://127.0.0.1:4242          ← TCP 강제 시
 ```
 
 ### 3단계 — 서버 연결 확인

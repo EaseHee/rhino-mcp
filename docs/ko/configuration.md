@@ -45,7 +45,7 @@ rhino-mcp [--transport {stdio,http}] [--host HOST] [--port PORT] [--version]
 ### Claude Desktop, Rhino 미설치
 
 ```json
-{ "rhino-mcp": { "command": "uvx", "args": ["rhino-mcp"],
+{ "rhino-mcp": { "command": "uvx", "args": ["rhino3dm-mcp"],
                  "env": {"RHINO_MCP_FORCE_MODE": "standalone"} } }
 ```
 

@@ -26,14 +26,14 @@ uv run rhino-mcp --help
 ### `pip` 사용
 
 ```bash
-pip install rhino-mcp
+pip install rhino3dm-mcp
 rhino-mcp --version
 ```
 
-Windows에서 named pipe 전송을 쓰려면 옵션 패키지를 설치하세요:
+Windows에서 named pipe 전송 사용 시 옵션 패키지 설치 필요:
 
 ```bash
-pip install 'rhino-mcp[windows]'
+pip install 'rhino3dm-mcp[windows]'
 ```
 
 ## Rhino 측 브리지 플러그인 설치
@@ -44,7 +44,7 @@ pip install 'rhino-mcp[windows]'
 dotnet build rhino_plugin/csharp -c Release
 ```
 
-빌드 산출물 경로: `rhino_plugin/csharp/bin/Release/net8.0/RhinoMCPBridge.rhp`. Rhino 8 뷰포트에 `.rhp` 드래그-앤-드롭(또는 `_PluginManager`)으로 1회 로드 → 플러그인이 플랫폼 기본 transport(Windows: 명명된 파이프, macOS/Linux: Unix domain socket)에서 JSON-RPC 리스너 시작. MCP 서버 기동 시 자동 감지.
+빌드 산출물 경로: `rhino_plugin/csharp/bin/Release/net8.0/rhino-mcp.rhp`. Rhino 8 뷰포트에 `.rhp` 드래그-앤-드롭(또는 `_PluginManager`)으로 1회 로드 → 플러그인이 플랫폼 기본 transport(Windows: 명명된 파이프, macOS/Linux: Unix domain socket)에서 JSON-RPC 리스너 시작. MCP 서버 기동 시 자동 감지.
 
 ## Claude Desktop 설정
 
@@ -55,7 +55,7 @@ dotnet build rhino_plugin/csharp -c Release
   "mcpServers": {
     "rhino-mcp": {
       "command": "uvx",
-      "args": ["rhino-mcp"],
+      "args": ["rhino3dm-mcp"],
       "env": {
         "RHINO_MCP_TRANSPORT": "stdio"
       }

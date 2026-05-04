@@ -22,21 +22,21 @@ The most common reason `rhino-mcp` starts in standalone mode is that the
 dotnet build rhino_plugin/csharp -c Release
 ```
 
-This emits `rhino_plugin/csharp/bin/Release/net8.0/RhinoMCPBridge.rhp`.
+This emits `rhino_plugin/csharp/bin/Release/net8.0/rhino-mcp.rhp`.
 
 ### Step 2 — Load the .rhp in Rhino 8
 
 Drag-and-drop the `.rhp` onto a Rhino viewport, or open `_PluginManager`
 and click *Install...*. The plugin is loaded once and survives Rhino
 restarts. You can verify with `_-PluginManager` and looking for the
-`RhinoMCPBridge` entry.
+`rhino-mcp` entry.
 
 On **success** the Rhino command history shows:
 
 ```
-[RhinoMCPBridge] listening on unix:///tmp/rhino_mcp.sock    ← macOS/Linux
-[RhinoMCPBridge] listening on \\.\pipe\rhino_mcp            ← Windows
-[RhinoMCPBridge] listening on tcp://127.0.0.1:4242          ← TCP forced
+[rhino-mcp] listening on unix:///tmp/rhino_mcp.sock    ← macOS/Linux
+[rhino-mcp] listening on \\.\pipe\rhino_mcp            ← Windows
+[rhino-mcp] listening on tcp://127.0.0.1:4242          ← TCP forced
 ```
 
 ### Step 3 — Verify connectivity

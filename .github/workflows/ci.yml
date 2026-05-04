@@ -22,7 +22,7 @@ jobs:
       - name: Install uv
         run: pip install uv
       - name: Sync deps
-        run: uv sync
+        run: uv sync --extra dev
       - name: ruff
         run: uv run ruff check src/ tests/
       - name: pytest
@@ -33,7 +33,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-dotnet@v6
+      - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: "8.0.x"
       - run: dotnet build rhino_plugin/csharp -c Release

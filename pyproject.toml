@@ -1,10 +1,13 @@
 [project]
-name = "rhino-mcp"
-version = "0.3.0"
+name = "rhino3dm-mcp"
+version = "0.4.0"
 description = "MCP server connecting Claude to McNeel Rhino 8 and Grasshopper via rhino3dm and an in-Rhino bridge plugin."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
+authors = [
+    { name = "EaseHee", email = "easehee.0@gmail.com" },
+]
 keywords = ["mcp", "rhino", "rhino3dm", "grasshopper", "claude", "anthropic", "cad", "3d", "nurbs"]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -41,6 +44,7 @@ Issues = "https://github.com/easehee/rhino-mcp/issues"
 
 [project.scripts]
 rhino-mcp = "rhino_mcp.server:main"
+rhino3dm-mcp = "rhino_mcp.server:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -72,7 +76,7 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 addopts = "-q --strict-markers"
 markers = [
-    "live: requires a running Rhino 8 instance with the RhinoMCPBridge.rhp C# plugin loaded (set RHINO_LIVE=1)",
+    "live: requires a running Rhino 8 instance with the rhino-mcp.rhp C# plugin loaded (set RHINO_LIVE=1)",
     "bridge: tests the bridge protocol with a fake transport",
 ]
 

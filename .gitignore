@@ -8,6 +8,7 @@ venv/
 env/
 build/
 dist/
+rhino_plugin/csharp/yak-stage/
 *.egg-info/
 *.egg
 .pytest_cache/

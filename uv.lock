@@ -869,8 +869,34 @@ wheels = [
 ]
 
 [[package]]
-name = "rhino-mcp"
-version = "0.3.0"
+name = "rhino3dm"
+version = "8.17.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/5f/c9/7390e9e6c4a494bbe3c2394e36149b5b7af53011ec6ceda60a4e8f37084f/rhino3dm-8.17.0.tar.gz", hash = "sha256:86d9d3c3b47bd70286df9daf40785821914d1e0c93387be34bcbd81d9f3ec9bf", size = 75965396, upload-time = "2025-03-12T22:55:57.252Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ba/8a/39ab47af6acee5059d5f9c965a780d0e9214fcac2452541e5d0a34a504be/rhino3dm-8.17.0-cp311-cp311-macosx_13_0_universal2.whl", hash = "sha256:3121b6af349176f25fb7b5842391478e9ac55223f5a3eeb106c9d5261879bc4f", size = 8434013, upload-time = "2025-03-12T22:54:10.417Z" },
+    { url = "https://files.pythonhosted.org/packages/de/1c/f7ba5afb63e6df331243733c087202d9948ebe63d02abb26609ae1d33050/rhino3dm-8.17.0-cp311-cp311-macosx_14_0_universal2.whl", hash = "sha256:2bfc348a56cb43b087ba718f0c9f2a65a513a03a5acd2d220dcfd592ac8f3701", size = 8401616, upload-time = "2025-03-12T22:54:13.883Z" },
+    { url = "https://files.pythonhosted.org/packages/f3/81/86506eca027b7dfb845557cff1db1923388f87c9df65d03740da9d4d7178/rhino3dm-8.17.0-cp311-cp311-macosx_15_0_universal2.whl", hash = "sha256:4e9db665973cb24a634d99837f2c33394f966174fbeee657b5d09b5a21216a7a", size = 8346899, upload-time = "2025-03-12T22:54:16.237Z" },
+    { url = "https://files.pythonhosted.org/packages/cf/95/b1edb4155aad408dce5c5a32478770a9ed75ede1ec6160cf649f603f27f9/rhino3dm-8.17.0-cp311-cp311-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:633e2c6406f720de2b597e59380e1114db69c2048e4d600b96c0b078cf200b06", size = 5141890, upload-time = "2025-03-12T22:54:18.396Z" },
+    { url = "https://files.pythonhosted.org/packages/2d/d4/0c3f493b4374c12247cda2097c2a1b4cd1c448d661952f44dcf6773d33c3/rhino3dm-8.17.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:ac26972e5225505a5e83c3c60f18d5fc7a78f87eb7e3cc4282a9f7732e381398", size = 5424242, upload-time = "2025-03-12T22:54:20.079Z" },
+    { url = "https://files.pythonhosted.org/packages/85/92/98c649430d1a9de2ee935f2a103cb724bfdc8ee4eaced9f28dcbcc2af794/rhino3dm-8.17.0-cp311-cp311-win_amd64.whl", hash = "sha256:ce41a98088e823b5652e87eb3886cc51ee68ca3e99bb87efa18f068eb40678cf", size = 2376788, upload-time = "2025-03-12T22:54:21.574Z" },
+    { url = "https://files.pythonhosted.org/packages/cc/fa/5a134317af3f4377064292bbd5f5b1d82932446e49c20ccd907adb02baf2/rhino3dm-8.17.0-cp312-cp312-macosx_13_0_universal2.whl", hash = "sha256:6e6372d3b4b5661bf694e49099aae12dec946e4b558e9d42ab9ab7ebda0ff5db", size = 8463324, upload-time = "2025-03-12T22:54:23.627Z" },
+    { url = "https://files.pythonhosted.org/packages/15/e4/377dcb111f08db40c1301ff9b337e414bbdc651407966ead6ff8784f3f16/rhino3dm-8.17.0-cp312-cp312-macosx_14_0_universal2.whl", hash = "sha256:2f21e64fb69d9ccb3c419e43292de2c2868650d740bdc13c2f91ced48ff9303a", size = 8450695, upload-time = "2025-03-12T22:54:26.014Z" },
+    { url = "https://files.pythonhosted.org/packages/40/a9/5bbf67901d6f5b0554a8a3c95cd2f74deba4fcd300175a154ff669e7b9e8/rhino3dm-8.17.0-cp312-cp312-macosx_15_0_universal2.whl", hash = "sha256:84cde05f6bd028e8e49806b7b541b30198982c9857e9af7515f4538dc456ed79", size = 8392441, upload-time = "2025-03-12T22:54:29.446Z" },
+    { url = "https://files.pythonhosted.org/packages/6e/72/d5e19cfbaf733c59761921a59fd23b015ee5b9d6739096ca36eae1713a12/rhino3dm-8.17.0-cp312-cp312-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:060371194daf99009fb5f4987c5a3a107a9643a0e6d6d811c36d00c91e741a61", size = 5146401, upload-time = "2025-03-12T22:54:31.541Z" },
+    { url = "https://files.pythonhosted.org/packages/a7/c6/886b34d08d6e10eda94644c4ae522a56c8639e8aa45b78d6a508903262a9/rhino3dm-8.17.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:5e8219af0d008645d16a67649cfa5e810fbfa8726ff17f0cda347e7967e1620c", size = 5425393, upload-time = "2025-03-12T22:54:33.854Z" },
+    { url = "https://files.pythonhosted.org/packages/7e/25/656b1db956ec11257d25fc45070a6ee8fbaa05c5447bce68bc17ca233caa/rhino3dm-8.17.0-cp312-cp312-win_amd64.whl", hash = "sha256:aafd0a37cc08a0618e81cb9f8da52d503dfcc19f774f0ed1f0da7f749746f6df", size = 2378249, upload-time = "2025-03-12T22:54:35.811Z" },
+    { url = "https://files.pythonhosted.org/packages/47/c2/8978334412691b70a595c9b1a17f1ff51895b3d590bbaa508804db572734/rhino3dm-8.17.0-cp313-cp313-macosx_13_0_universal2.whl", hash = "sha256:6fda8a119e7889590ab39f8a6e542450a9370d6c910d80611d827e2295b2d103", size = 8463354, upload-time = "2025-03-12T22:54:38.358Z" },
+    { url = "https://files.pythonhosted.org/packages/2f/a0/5018dbeea51a654332b9201ca7d61850d7c3cf153a1e40b997f50d6dff52/rhino3dm-8.17.0-cp313-cp313-macosx_14_0_universal2.whl", hash = "sha256:5311f99128abd8a0d8b83f5293ca78d6dba022563375584d61824d4d53dd89e8", size = 8450488, upload-time = "2025-03-12T22:54:44.383Z" },
+    { url = "https://files.pythonhosted.org/packages/00/a0/684309e8ef65bf354b3ed26e8ed5e22c6c22173ec0713b6b12613a34e21a/rhino3dm-8.17.0-cp313-cp313-macosx_15_0_universal2.whl", hash = "sha256:c5be116af4a128a995f29263115d9e049264680f9b58459e7b5b6cdd30686068", size = 8392458, upload-time = "2025-03-12T22:54:51.946Z" },
+    { url = "https://files.pythonhosted.org/packages/5c/3e/7a174155d4da96f2298d3805849ca77e39ddc29abfb3f39cb76c9ddde5a2/rhino3dm-8.17.0-cp313-cp313-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:056a9da37da061e2a92274876de375d55365ad64528c9cc48f8b018fc60ca27f", size = 5149591, upload-time = "2025-03-12T22:54:56.562Z" },
+    { url = "https://files.pythonhosted.org/packages/75/4c/760626ee1d98e668045f6b4f044ad370a45aea395383a46fb38485ccf8a2/rhino3dm-8.17.0-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:b5dc1d6e0e8e0ee4f3bf6463eb3536b0154f74e7284ea590b8f328bee757a786", size = 5429896, upload-time = "2025-03-12T22:55:01.075Z" },
+    { url = "https://files.pythonhosted.org/packages/cb/01/19dde08558483c772981c6fd331a3cd501e547c58bf0d9959b9eeb19d3db/rhino3dm-8.17.0-cp313-cp313-win_amd64.whl", hash = "sha256:fade438d3acb71053ba709d92f77bdd742ab7f713a7d2f1bdd85023491072c78", size = 2378286, upload-time = "2025-03-12T22:55:03.237Z" },
+]
+
+[[package]]
+name = "rhino3dm-mcp"
+version = "0.4.0"
 source = { editable = "." }
 dependencies = [
     { name = "mcp", extra = ["cli"] },
@@ -903,32 +929,6 @@ requires-dist = [
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.6" },
 ]
 provides-extras = ["windows", "dev"]
-
-[[package]]
-name = "rhino3dm"
-version = "8.17.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/5f/c9/7390e9e6c4a494bbe3c2394e36149b5b7af53011ec6ceda60a4e8f37084f/rhino3dm-8.17.0.tar.gz", hash = "sha256:86d9d3c3b47bd70286df9daf40785821914d1e0c93387be34bcbd81d9f3ec9bf", size = 75965396, upload-time = "2025-03-12T22:55:57.252Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/ba/8a/39ab47af6acee5059d5f9c965a780d0e9214fcac2452541e5d0a34a504be/rhino3dm-8.17.0-cp311-cp311-macosx_13_0_universal2.whl", hash = "sha256:3121b6af349176f25fb7b5842391478e9ac55223f5a3eeb106c9d5261879bc4f", size = 8434013, upload-time = "2025-03-12T22:54:10.417Z" },
-    { url = "https://files.pythonhosted.org/packages/de/1c/f7ba5afb63e6df331243733c087202d9948ebe63d02abb26609ae1d33050/rhino3dm-8.17.0-cp311-cp311-macosx_14_0_universal2.whl", hash = "sha256:2bfc348a56cb43b087ba718f0c9f2a65a513a03a5acd2d220dcfd592ac8f3701", size = 8401616, upload-time = "2025-03-12T22:54:13.883Z" },
-    { url = "https://files.pythonhosted.org/packages/f3/81/86506eca027b7dfb845557cff1db1923388f87c9df65d03740da9d4d7178/rhino3dm-8.17.0-cp311-cp311-macosx_15_0_universal2.whl", hash = "sha256:4e9db665973cb24a634d99837f2c33394f966174fbeee657b5d09b5a21216a7a", size = 8346899, upload-time = "2025-03-12T22:54:16.237Z" },
-    { url = "https://files.pythonhosted.org/packages/cf/95/b1edb4155aad408dce5c5a32478770a9ed75ede1ec6160cf649f603f27f9/rhino3dm-8.17.0-cp311-cp311-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:633e2c6406f720de2b597e59380e1114db69c2048e4d600b96c0b078cf200b06", size = 5141890, upload-time = "2025-03-12T22:54:18.396Z" },
-    { url = "https://files.pythonhosted.org/packages/2d/d4/0c3f493b4374c12247cda2097c2a1b4cd1c448d661952f44dcf6773d33c3/rhino3dm-8.17.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:ac26972e5225505a5e83c3c60f18d5fc7a78f87eb7e3cc4282a9f7732e381398", size = 5424242, upload-time = "2025-03-12T22:54:20.079Z" },
-    { url = "https://files.pythonhosted.org/packages/85/92/98c649430d1a9de2ee935f2a103cb724bfdc8ee4eaced9f28dcbcc2af794/rhino3dm-8.17.0-cp311-cp311-win_amd64.whl", hash = "sha256:ce41a98088e823b5652e87eb3886cc51ee68ca3e99bb87efa18f068eb40678cf", size = 2376788, upload-time = "2025-03-12T22:54:21.574Z" },
-    { url = "https://files.pythonhosted.org/packages/cc/fa/5a134317af3f4377064292bbd5f5b1d82932446e49c20ccd907adb02baf2/rhino3dm-8.17.0-cp312-cp312-macosx_13_0_universal2.whl", hash = "sha256:6e6372d3b4b5661bf694e49099aae12dec946e4b558e9d42ab9ab7ebda0ff5db", size = 8463324, upload-time = "2025-03-12T22:54:23.627Z" },
-    { url = "https://files.pythonhosted.org/packages/15/e4/377dcb111f08db40c1301ff9b337e414bbdc651407966ead6ff8784f3f16/rhino3dm-8.17.0-cp312-cp312-macosx_14_0_universal2.whl", hash = "sha256:2f21e64fb69d9ccb3c419e43292de2c2868650d740bdc13c2f91ced48ff9303a", size = 8450695, upload-time = "2025-03-12T22:54:26.014Z" },
-    { url = "https://files.pythonhosted.org/packages/40/a9/5bbf67901d6f5b0554a8a3c95cd2f74deba4fcd300175a154ff669e7b9e8/rhino3dm-8.17.0-cp312-cp312-macosx_15_0_universal2.whl", hash = "sha256:84cde05f6bd028e8e49806b7b541b30198982c9857e9af7515f4538dc456ed79", size = 8392441, upload-time = "2025-03-12T22:54:29.446Z" },
-    { url = "https://files.pythonhosted.org/packages/6e/72/d5e19cfbaf733c59761921a59fd23b015ee5b9d6739096ca36eae1713a12/rhino3dm-8.17.0-cp312-cp312-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:060371194daf99009fb5f4987c5a3a107a9643a0e6d6d811c36d00c91e741a61", size = 5146401, upload-time = "2025-03-12T22:54:31.541Z" },
-    { url = "https://files.pythonhosted.org/packages/a7/c6/886b34d08d6e10eda94644c4ae522a56c8639e8aa45b78d6a508903262a9/rhino3dm-8.17.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:5e8219af0d008645d16a67649cfa5e810fbfa8726ff17f0cda347e7967e1620c", size = 5425393, upload-time = "2025-03-12T22:54:33.854Z" },
-    { url = "https://files.pythonhosted.org/packages/7e/25/656b1db956ec11257d25fc45070a6ee8fbaa05c5447bce68bc17ca233caa/rhino3dm-8.17.0-cp312-cp312-win_amd64.whl", hash = "sha256:aafd0a37cc08a0618e81cb9f8da52d503dfcc19f774f0ed1f0da7f749746f6df", size = 2378249, upload-time = "2025-03-12T22:54:35.811Z" },
-    { url = "https://files.pythonhosted.org/packages/47/c2/8978334412691b70a595c9b1a17f1ff51895b3d590bbaa508804db572734/rhino3dm-8.17.0-cp313-cp313-macosx_13_0_universal2.whl", hash = "sha256:6fda8a119e7889590ab39f8a6e542450a9370d6c910d80611d827e2295b2d103", size = 8463354, upload-time = "2025-03-12T22:54:38.358Z" },
-    { url = "https://files.pythonhosted.org/packages/2f/a0/5018dbeea51a654332b9201ca7d61850d7c3cf153a1e40b997f50d6dff52/rhino3dm-8.17.0-cp313-cp313-macosx_14_0_universal2.whl", hash = "sha256:5311f99128abd8a0d8b83f5293ca78d6dba022563375584d61824d4d53dd89e8", size = 8450488, upload-time = "2025-03-12T22:54:44.383Z" },
-    { url = "https://files.pythonhosted.org/packages/00/a0/684309e8ef65bf354b3ed26e8ed5e22c6c22173ec0713b6b12613a34e21a/rhino3dm-8.17.0-cp313-cp313-macosx_15_0_universal2.whl", hash = "sha256:c5be116af4a128a995f29263115d9e049264680f9b58459e7b5b6cdd30686068", size = 8392458, upload-time = "2025-03-12T22:54:51.946Z" },
-    { url = "https://files.pythonhosted.org/packages/5c/3e/7a174155d4da96f2298d3805849ca77e39ddc29abfb3f39cb76c9ddde5a2/rhino3dm-8.17.0-cp313-cp313-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:056a9da37da061e2a92274876de375d55365ad64528c9cc48f8b018fc60ca27f", size = 5149591, upload-time = "2025-03-12T22:54:56.562Z" },
-    { url = "https://files.pythonhosted.org/packages/75/4c/760626ee1d98e668045f6b4f044ad370a45aea395383a46fb38485ccf8a2/rhino3dm-8.17.0-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:b5dc1d6e0e8e0ee4f3bf6463eb3536b0154f74e7284ea590b8f328bee757a786", size = 5429896, upload-time = "2025-03-12T22:55:01.075Z" },
-    { url = "https://files.pythonhosted.org/packages/cb/01/19dde08558483c772981c6fd331a3cd501e547c58bf0d9959b9eeb19d3db/rhino3dm-8.17.0-cp313-cp313-win_amd64.whl", hash = "sha256:fade438d3acb71053ba709d92f77bdd742ab7f713a7d2f1bdd85023491072c78", size = 2378286, upload-time = "2025-03-12T22:55:03.237Z" },
-]
 
 [[package]]
 name = "rich"

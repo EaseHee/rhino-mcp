@@ -7,6 +7,93 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-05-05
+
+### Added — packaging and release pipeline
+
+- YAK packaging path for the Rhino bridge plugin: `scripts/publish-yak.sh`
+  stages the `.rhp` + `manifest.yml` + icon under `rhino_plugin/csharp/yak-stage/`
+  per platform (`win`, `mac`) and drives `yak.exe build` so that the plugin
+  ships as a Yak package alongside the raw `.rhp`.
+- `.github/workflows/release.yml` gains `build-rhp` (Windows runner,
+  `dotnet build -c Release`) and `build-yak` (Yak CLI, optional, attaches
+  `.yak` files to the GitHub Release) jobs, so that tagging `v0.4.0`
+  produces a single Release containing the Python wheel + sdist
+  (PyPI), the `rhino-mcp.rhp` plugin, and the per-platform `.yak`
+  packages.
+
+### Added — one-shot Claude Desktop wiring
+
+- New `rhino-mcp install` sub-command writes (or updates) the
+  `mcpServers.rhino-mcp` entry inside `claude_desktop_config.json` so
+  users no longer have to edit JSON by hand after `pip install`.
+  Auto-detects the platform-specific config path (macOS / Windows /
+  Linux), preserves any other registered servers, writes a timestamped
+  `.bak.*` of the previous file, and is idempotent on re-run.
+- Flags: `--mode {auto,standalone,bridge}`,
+  `--transport {stdio,http}`, `--name`, `--launcher
+  {auto,uvx,rhino-mcp,python}`, `--config-path`, `--force`,
+  `--no-backup`, `--dry-run`.
+
+### Changed — PyPI distribution name and version sync
+
+- Renamed PyPI distribution from `rhino-mcp` to `rhino3dm-mcp`: the bare
+  `rhino-mcp` name was already registered on PyPI by an unrelated
+  project, so the first PyPI release of this server ships as
+  `rhino3dm-mcp`. The console-script entry point `rhino-mcp` is kept,
+  and a parallel alias `rhino3dm-mcp` is added so that
+  `uvx rhino3dm-mcp` resolves a matching script name without `--from`.
+- Bumped the Rhino plugin manifest, the Python distribution, and
+  `rhino_mcp.__version__` together to `0.4.0` so that the YAK package
+  and the PyPI wheel ship as a matched pair.
+- Refreshed `pip install` / `uvx` snippets across `README.md`,
+  `README.ko.md`, `docs/{en,ko}/installation.md`, and
+  `docs/{en,ko}/configuration.md` to use the new distribution name.
+  MCP-client `mcpServers` keys, the `rhino-mcp` CLI command, the
+  `rhino-mcp.rhp` plugin filename, and the internal `rhino_mcp` Python
+  module path all stay unchanged — existing user configs keep working
+  with no edits.
+- Replaced the legacy `assets/rhino-logo.png` with `assets/rhino-mcp.png`
+  (used both in the README header and as the YAK plugin icon).
+
+### 추가 — 패키징 및 릴리스 파이프라인
+
+- Rhino 브리지 플러그인용 YAK 패키징 경로 추가: `scripts/publish-yak.sh`
+  가 플랫폼별로 `.rhp` + `manifest.yml` + icon 을
+  `rhino_plugin/csharp/yak-stage/{win,mac}/` 으로 stage 후
+  `yak.exe build` 호출 → 기존 `.rhp` 와 더불어 Yak 패키지 동시 배포.
+- `.github/workflows/release.yml` 에 `build-rhp` (Windows runner,
+  `dotnet build -c Release`), `build-yak` (Yak CLI, optional) 잡 추가.
+  `v0.4.0` 태그 1회로 PyPI wheel + sdist, `rhino-mcp.rhp`, 플랫폼별
+  `.yak` 까지 GitHub Release 단일 산출물로 통합 배포.
+
+### 추가 — Claude Desktop 자동 등록
+
+- `rhino-mcp install` 서브 명령 신규: `claude_desktop_config.json` 의
+  `mcpServers.rhino-mcp` 항목 자동 작성/갱신. macOS / Windows / Linux
+  config 경로 자동 탐지, 다른 등록 서버 보존, 직전 파일은 타임스탬프
+  `.bak.*` 백업, 동일 플래그 재실행 시 no-op (idempotent).
+- 플래그: `--mode {auto,standalone,bridge}`,
+  `--transport {stdio,http}`, `--name`, `--launcher
+  {auto,uvx,rhino-mcp,python}`, `--config-path`, `--force`,
+  `--no-backup`, `--dry-run`.
+
+### 변경 — PyPI 배포명 및 버전 동기화
+
+- PyPI 배포명 `rhino-mcp` → `rhino3dm-mcp`. 기존 `rhino-mcp` 가
+  타 프로젝트로 선점되어 있어 본 서버 첫 게시 시 명칭 변경 필요.
+  콘솔 스크립트 `rhino-mcp` 유지, alias `rhino3dm-mcp` 추가 →
+  `uvx rhino3dm-mcp` 단독 호출 가능.
+- Rhino 플러그인 manifest, Python 배포, `rhino_mcp.__version__` 모두
+  `0.4.0` 으로 동기화 (YAK 패키지 + PyPI wheel 동시 배포 정합성).
+- `pip install` / `uvx` 안내 문구 갱신: `README.md`, `README.ko.md`,
+  `docs/{en,ko}/installation.md`, `docs/{en,ko}/configuration.md`.
+  MCP 클라이언트 `mcpServers` key, `rhino-mcp` CLI 명령, `rhino-mcp.rhp`
+  플러그인 파일명, 내부 `rhino_mcp` Python 모듈 경로 모두 유지 —
+  기존 사용자 설정 그대로 동작.
+- 기존 `assets/rhino-logo.png` 제거, 신규 `assets/rhino-mcp.png` 로 교체
+  (README 헤더 + YAK 플러그인 아이콘 공용).
+
 ## [0.3.0] - 2026-05-03
 
 ### Added — drawing-set and quantity workflow upgrade
@@ -319,7 +406,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.0 — pre-release notes (was Unreleased)]
 
 ### Added
-- Project logo at `assets/rhino-logo.png` referenced from both READMEs;
+- Project logo at `assets/rhino-mcp.png` referenced from both READMEs;
   `pyproject.toml` sdist `include` now ships the `assets/` directory.
 - MCP prompts package (`src/rhino_mcp/prompts/strategy.py`) with three
   guides: `general_strategy`, `rhinoscript_workflow`, `viewport_workflow`.

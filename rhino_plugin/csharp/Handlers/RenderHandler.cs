@@ -5,7 +5,7 @@ using Rhino.DocObjects;
 using Rhino.Geometry;
 using Rhino.Render;
 
-namespace RhinoMCPBridge.Handlers
+namespace RhinoMcp.Handlers
 {
     /// <summary>
     /// Render automation — camera, light, render setup, render to file,

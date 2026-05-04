@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Tag to publish (e.g. v0.3.0)"
+        description: "Tag to publish (e.g. v0.3.1)"
         required: true
 
 permissions:
@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   build-python:
-    name: Build & publish Python wheel + sdist
+    name: Build rhino-mcp Python wheel + sdist
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -26,7 +26,7 @@ jobs:
       - name: Install uv
         run: pip install uv
       - name: Sync dev deps
-        run: uv sync
+        run: uv sync --extra dev
       - name: Run tests
         run: uv run pytest tests/ -q
       - name: Static analysis
@@ -48,11 +48,11 @@ jobs:
             dist/*.tar.gz
 
   build-rhp:
-    name: Build C# bridge plugin (.rhp)
+    name: Build rhino-mcp .rhp
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-dotnet@v6
+      - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: "8.0.x"
       - name: Build Release .rhp
@@ -60,42 +60,44 @@ jobs:
       - name: Upload artefact
         uses: actions/upload-artifact@v6
         with:
-          name: RhinoMCPBridge-rhp
-          path: rhino_plugin/csharp/bin/Release/net8.0/RhinoMCPBridge.rhp
+          name: rhino-mcp-build
+          path: rhino_plugin/csharp/bin/Release/net8.0/
       - name: Attach .rhp to release
         if: github.event_name == 'push'
         uses: softprops/action-gh-release@v2
         with:
-          files: rhino_plugin/csharp/bin/Release/net8.0/RhinoMCPBridge.rhp
+          files: rhino_plugin/csharp/bin/Release/net8.0/rhino-mcp.rhp
 
   build-yak:
-    name: Build Yak package (.yak)
+    name: Build rhino-mcp .yak
     needs: build-rhp
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/download-artifact@v6
+      - uses: actions/download-artifact@v7
         with:
-          name: RhinoMCPBridge-rhp
-          path: rhino_plugin/csharp/dist/
-      - name: Stage Yak content
-        shell: pwsh
-        run: |
-          $stage = "rhino_plugin/csharp/yak-stage"
-          New-Item -ItemType Directory -Force -Path $stage | Out-Null
-          Copy-Item rhino_plugin/csharp/manifest.yml $stage/
-          Copy-Item rhino_plugin/csharp/dist/RhinoMCPBridge.rhp $stage/
+          name: rhino-mcp-build
+          path: rhino_plugin/csharp/bin/Release/net8.0/
       - name: Locate yak.exe
-        shell: pwsh
+        id: yak
+        shell: bash
         run: |
-          $yak = "C:/Program Files/Rhino 8/System/yak.exe"
-          if (-not (Test-Path $yak)) {
-            Write-Host "Yak not present on the runner; skipping .yak build."
+          yak="C:/Program Files/Rhino 8/System/yak.exe"
+          if [ ! -f "$yak" ]; then
+            echo "Yak not present on the runner; skipping .yak build."
+            echo "found=false" >> "$GITHUB_OUTPUT"
             exit 0
-          }
-          & $yak build --platform win rhino_plugin/csharp/yak-stage
+          fi
+          echo "found=true" >> "$GITHUB_OUTPUT"
+          echo "path=$yak" >> "$GITHUB_OUTPUT"
+      - name: Build .yak (win)
+        if: steps.yak.outputs.found == 'true'
+        shell: bash
+        env:
+          YAK_CLI: ${{ steps.yak.outputs.path }}
+        run: ./scripts/publish-yak.sh --skip-build --platform=win
       - name: Attach .yak to release
-        if: github.event_name == 'push'
+        if: steps.yak.outputs.found == 'true' && github.event_name == 'push'
         uses: softprops/action-gh-release@v2
         with:
-          files: rhino_plugin/csharp/yak-stage/*.yak
+          files: rhino_plugin/csharp/dist/*.yak

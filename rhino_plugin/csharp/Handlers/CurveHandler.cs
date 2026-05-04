@@ -1,7 +1,7 @@
 using Newtonsoft.Json.Linq;
 using Rhino.Geometry;
 
-namespace RhinoMCPBridge.Handlers
+namespace RhinoMcp.Handlers
 {
     public class CurveHandler : HandlerBase
     {

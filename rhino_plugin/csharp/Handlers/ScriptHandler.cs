@@ -5,7 +5,7 @@ using Rhino;
 using Rhino.Geometry;
 using Rhino.DocObjects;
 
-namespace RhinoMCPBridge.Handlers
+namespace RhinoMcp.Handlers
 {
     /// <summary>
     /// Globals exposed to C# scripts executed via Roslyn.

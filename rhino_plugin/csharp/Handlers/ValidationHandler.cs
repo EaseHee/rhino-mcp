@@ -1,7 +1,7 @@
 using Newtonsoft.Json.Linq;
 using Rhino.Geometry;
 
-namespace RhinoMCPBridge.Handlers
+namespace RhinoMcp.Handlers
 {
     /// <summary>
     /// Geometry validation — surface topology issues that silently break booleans

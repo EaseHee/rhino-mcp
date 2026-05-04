@@ -26,14 +26,14 @@ uv run rhino-mcp --help
 ### `pip`
 
 ```bash
-pip install rhino-mcp
+pip install rhino3dm-mcp
 rhino-mcp --version
 ```
 
 On Windows, install the optional extra for the named-pipe transport:
 
 ```bash
-pip install 'rhino-mcp[windows]'
+pip install 'rhino3dm-mcp[windows]'
 ```
 
 ## Install the Rhino bridge plugin
@@ -44,7 +44,7 @@ The bridge is a C# Rhino plugin (`rhino_plugin/csharp/`) that runs inside Rhino 
 dotnet build rhino_plugin/csharp -c Release
 ```
 
-The build emits `rhino_plugin/csharp/bin/Release/net8.0/RhinoMCPBridge.rhp`. Drag-and-drop that `.rhp` onto a Rhino 8 viewport (or load it via `_PluginManager`). Once loaded the plugin starts a JSON-RPC listener on the platform-native transport (named pipe on Windows, Unix domain socket on macOS/Linux) and the MCP server auto-detects it on startup.
+The build emits `rhino_plugin/csharp/bin/Release/net8.0/rhino-mcp.rhp`. Drag-and-drop that `.rhp` onto a Rhino 8 viewport (or load it via `_PluginManager`). Once loaded the plugin starts a JSON-RPC listener on the platform-native transport (named pipe on Windows, Unix domain socket on macOS/Linux) and the MCP server auto-detects it on startup.
 
 ## Configure Claude Desktop
 
@@ -55,7 +55,7 @@ Edit `claude_desktop_config.json` (Claude Desktop → *Settings → Developer �
   "mcpServers": {
     "rhino-mcp": {
       "command": "uvx",
-      "args": ["rhino-mcp"],
+      "args": ["rhino3dm-mcp"],
       "env": {
         "RHINO_MCP_TRANSPORT": "stdio"
       }
