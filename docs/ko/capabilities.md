@@ -2,7 +2,7 @@
 
 각 도구의 동작 모드와 그 이유.
 
-`rhino3dm`은 OpenNURBS 파일 포맷과 일부 형상 생성자만 제공하므로 다음을 수행하지 못합니다.
+`rhino3dm`은 OpenNURBS 파일 포맷과 일부 형상 생성자만 제공 → 다음 동작 불가.
 
 - Brep/메쉬 부울 연산(union/difference/intersection).
 - 서피스 로프트, 1/2-rail 스윕, 네트워크 서피스, 패치, 블렌드, 필렛, 오프셋.
@@ -10,7 +10,8 @@
 - 뷰포트(viewport) 상호작용(named view, display mode, zoom-extent, render).
 - Grasshopper.
 
-위 기능은 Rhino 8 안의 브리지 플러그인이 필요합니다. 다음 표가 정리한 것입니다.
+위 기능은 Rhino 8 내부 브리지 플러그인 필요.
+정리표는 아래.
 
 | 도구                                | Standalone(rhino3dm) | Bridge(Rhino 8 + RhinoCommon/Grasshopper) |
 |-------------------------------------|:-------------------:|:-----------------------------------------:|
@@ -40,7 +41,7 @@
 | `rhino_bounding_box`, `rhino_distance` | ✓ | ✓ |
 | `rhino_curvature_analysis`, `rhino_draft_angle`, `rhino_zebra`, `rhino_section`, `rhino_contour` | ✗ | ✓ |
 | `rhino_view_set`, `rhino_zoom_extent`, `rhino_named_view_save`, `rhino_display_mode_set`, `rhino_turntable` | ✗ | ✓ |
-| 모든 `gh_*`(22개) | ✗ | ✓ |
+| 모든 `gh_*`(26개) | ✗ | ✓ |
 | `rhino_execute_python`, `rhino_execute_csharp` (스크립트 실행) | ✗ | ✓ |
 | `rhino_search_rhinoscript_functions`, `rhino_get_rhinoscript_docs` 등 4개 (RS 문서) | ✓ | ✓ |
 | `rhino_undo`, `rhino_redo` (실행 취소) | ✗ | ✓ |
@@ -77,5 +78,10 @@
 | `rhino_environment_set` (HDRI 환경, v0.3) | ✗ | ✓ |
 | `rhino_camera_set`, `rhino_light_add`, `rhino_render_setup`, `rhino_render_to_file`, `rhino_turntable_render` (렌더, v0.3) | ✗ | ✓ |
 | `rhino_direct_irradiance`, `rhino_daylight_factor` (정밀 주광, v0.3) | ✓ | ✓ |
+| `gh_plugin_list`, `gh_components_search` (GH 플러그인 카탈로그, v0.5) | ✗ | ✓ |
+| `gh_data_tree_get_batch`, `gh_data_tree_set_batch` (DataTree 일괄 접근, v0.5) | ✗ | ✓ |
+| `rhino_bim_pset_get`, `rhino_bim_pset_set`, `rhino_bim_pset_delete` (IFC PropertySet 단위 읽기/쓰기/삭제, v0.5) | ✓ | ✓ |
+| `rhino_viewport_preview` (선택/레이어 필터 부분 캡처, v0.5) | ✗ | ✓ |
+| `rhino_render_queue_submit`, `rhino_render_queue_status`, `rhino_render_queue_cancel`, `rhino_render_queue_list` (렌더 큐, v0.5) | ✗ | ✓ |
 
-요약: standalone 약 126개, C# 브리지 활성 시 223개.
+요약: standalone 약 129개, C# 브리지 활성 시 235개.

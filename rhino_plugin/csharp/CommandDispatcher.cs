@@ -16,6 +16,14 @@ namespace RhinoMcp
             // Core
             Register("rhino.ping", _ => Ping());
 
+            // Bridge utilities (chunked responses, batch execute)
+            var chunk = new Handlers.BridgeChunkHandler();
+            Register("rhino.bridge.fetch_chunk", chunk.FetchChunk);
+            Register("rhino.bridge.chunk_release", chunk.Release);
+            Register("rhino.bridge.chunk_stats", chunk.Stats);
+            var batch = new Handlers.BridgeBatchHandler(this);
+            Register("rhino.batch.execute", batch.Execute);
+
             // Geometry (points, curves, primitives)
             var geo = new Handlers.GeometryHandler();
             Register("rhino.geometry.point", geo.Point);
@@ -143,6 +151,7 @@ namespace RhinoMcp
             Register("rhino.io.export_stl", io.ExportStl);
             Register("rhino.io.export_dxf", io.ExportDxf);
             Register("rhino.io.screenshot", io.Screenshot);
+            Register("rhino.io.viewport_preview", io.ViewportPreview);
 
             // Object operations
             var obj = new Handlers.ObjectHandler();
@@ -254,6 +263,10 @@ namespace RhinoMcp
             Register("gh.parameter.set_panel", gh.ParameterSetPanel);
             Register("gh.data_tree.get", gh.DataTreeGet);
             Register("gh.data_tree.set", gh.DataTreeSet);
+            Register("gh.plugin.list", gh.PluginList);
+            Register("gh.components.search", gh.ComponentsSearch);
+            Register("gh.data_tree.get_batch", gh.DataTreeGetBatch);
+            Register("gh.data_tree.set_batch", gh.DataTreeSetBatch);
 
             // Composition (multi-object placement)
             var comp = new Handlers.CompositionHandler();
@@ -311,6 +324,16 @@ namespace RhinoMcp
             Register("rhino.bim.import_ifc", bim.ImportIfc);
             Register("rhino.bim.export_gbxml", bim.ExportGbXml);
             Register("rhino.bim.metadata_set", bim.MetadataSet);
+            Register("rhino.bim.pset_get", bim.PsetGet);
+            Register("rhino.bim.pset_set", bim.PsetSet);
+            Register("rhino.bim.pset_delete", bim.PsetDelete);
+
+            // Render queue (v0.5)
+            var rqueue = new Handlers.RenderQueueHandler();
+            Register("rhino.render.queue.submit", rqueue.Submit);
+            Register("rhino.render.queue.status", rqueue.Status);
+            Register("rhino.render.queue.cancel", rqueue.Cancel);
+            Register("rhino.render.queue.list", rqueue.List);
 
             // Render automation (v0.3)
             var rnd = new Handlers.RenderHandler();
@@ -370,7 +393,9 @@ namespace RhinoMcp
                 ["rhino"] = rhinoVersion,
                 ["grasshopper"] = ghVersion,
                 ["bridge_version"] = "0.1.0",
-                ["bridge_type"] = "csharp"
+                ["bridge_type"] = "csharp",
+                ["protocol_version"] = BridgeServer.ProtocolVersion,
+                ["connected_clients"] = BridgeServer.Instance.ConnectedClientCount
             };
         }
     }

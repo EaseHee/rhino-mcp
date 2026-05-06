@@ -22,7 +22,7 @@ namespace RhinoMcp.Handlers
                 var tgtId = p["target_id"]!.ToString();
                 string cmd = $"_-MatchSrf _SelId {srcId} _Enter _SelId {tgtId} _Enter " +
                     $"_Continuity={continuity} _Enter";
-                RhinoApp.RunScript(cmd, false);
+                SafeRunScript(cmd);
                 Doc.Views.Redraw();
 
                 return new JObject
@@ -50,7 +50,7 @@ namespace RhinoMcp.Handlers
             try
             {
                 string cmd = $"_-BlendSrf _SelId {edge1.Id} _Enter _SelId {edge2.Id} _Enter _Enter";
-                RhinoApp.RunScript(cmd, false);
+                SafeRunScript(cmd);
                 Doc.Views.Redraw();
 
                 return new JObject
@@ -76,7 +76,7 @@ namespace RhinoMcp.Handlers
             {
                 string selCmd = string.Join(" ", ids.Select(id => $"_SelId {id}"));
                 string cmd = $"_-MergeSrf {selCmd} _Enter _Enter";
-                RhinoApp.RunScript(cmd, false);
+                SafeRunScript(cmd);
                 Doc.Views.Redraw();
 
                 return new JObject

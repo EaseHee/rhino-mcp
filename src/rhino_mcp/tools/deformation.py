@@ -10,13 +10,14 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 from rhino_mcp.models.geometry_types import Point3dModel
+from rhino_mcp.tools._helpers import MAX_OBJECT_IDS
 from rhino_mcp.tools.context import runtime
 from rhino_mcp.utils.error_handling import unsupported_in_standalone
 from rhino_mcp.utils.registry import Mode
 
 
 class _BendIn(BaseModel):
-    object_ids: list[str] = Field(..., min_length=1)
+    object_ids: list[str] = Field(..., min_length=1, max_length=MAX_OBJECT_IDS)
     start: Point3dModel = Field(..., description="Bend axis start point.")
     end: Point3dModel = Field(..., description="Bend axis end point.")
     point: Point3dModel = Field(..., description="Through point defining the bend.")
@@ -24,7 +25,7 @@ class _BendIn(BaseModel):
 
 
 class _TwistIn(BaseModel):
-    object_ids: list[str] = Field(..., min_length=1)
+    object_ids: list[str] = Field(..., min_length=1, max_length=MAX_OBJECT_IDS)
     axis_start: Point3dModel = Field(..., description="Twist axis start.")
     axis_end: Point3dModel = Field(..., description="Twist axis end.")
     angle_degrees: float = Field(..., description="Twist angle in degrees.")
@@ -32,7 +33,7 @@ class _TwistIn(BaseModel):
 
 
 class _TaperIn(BaseModel):
-    object_ids: list[str] = Field(..., min_length=1)
+    object_ids: list[str] = Field(..., min_length=1, max_length=MAX_OBJECT_IDS)
     axis_start: Point3dModel = Field(..., description="Taper axis start.")
     axis_end: Point3dModel = Field(..., description="Taper axis end.")
     start_radius: float = Field(..., gt=0)
@@ -41,7 +42,7 @@ class _TaperIn(BaseModel):
 
 
 class _FlowIn(BaseModel):
-    object_ids: list[str] = Field(..., min_length=1)
+    object_ids: list[str] = Field(..., min_length=1, max_length=MAX_OBJECT_IDS)
     base_curve_id: str = Field(..., description="GUID of the base curve.")
     target_curve_id: str = Field(..., description="GUID of the target curve.")
     make_copy: bool = True

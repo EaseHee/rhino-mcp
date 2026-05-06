@@ -28,6 +28,15 @@ class Transport(ABC):
     def close(self) -> None:
         """Idempotent close."""
 
+    def reset_buffers(self) -> None:  # noqa: B027 — intentional default no-op
+        """Discard any partially-buffered inbound bytes.
+
+        Called on the error path before reconnecting so that a half-read
+        framing line cannot corrupt the next request/response cycle. The
+        default is a no-op for transports that do not buffer; line-buffered
+        socket transports override this to clear their pending bytes.
+        """
+
     @property
     @abstractmethod
     def name(self) -> str:

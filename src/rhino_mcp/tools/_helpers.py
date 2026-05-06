@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from typing import Any
 from uuid import UUID
 
@@ -16,6 +17,70 @@ from rhino_mcp.utils.registry import Mode
 from rhino_mcp.utils.serialization import bbox_to_dict
 
 _tool_log = get_logger("tool")
+
+
+def _resolve_max_object_ids() -> int:
+    """Per-tool ceiling on multi-id input arrays (override via env)."""
+    raw = os.environ.get("RHINO_MCP_MAX_OBJECT_IDS")
+    if raw:
+        try:
+            value = int(raw)
+            if value > 0:
+                return value
+        except ValueError:
+            pass
+    return 500
+
+
+MAX_OBJECT_IDS: int = _resolve_max_object_ids()
+"""Default upper bound for any ``object_ids`` (or peer) input array.
+
+Tools annotate their multi-id Pydantic fields with ``max_length=MAX_OBJECT_IDS``
+so a Pydantic ``ValidationError`` triggers before the call reaches the
+bridge. Override the ceiling at process start with ``RHINO_MCP_MAX_OBJECT_IDS``.
+"""
+
+
+# Pagination defaults applied across listing/extraction tools.
+DEFAULT_PAGE_LIMIT = 100
+MAX_PAGE_LIMIT = 500
+
+
+def paginate(
+    rows: list[Any],
+    cursor: int = 0,
+    limit: int = DEFAULT_PAGE_LIMIT,
+) -> tuple[list[Any], int | None]:
+    """Slice ``rows`` into a single page.
+
+    Returns ``(page, next_cursor)``. ``next_cursor`` is ``None`` when the
+    page exhausts the input. ``cursor`` is clamped to ``[0, len(rows)]``,
+    ``limit`` is clamped to ``[1, MAX_PAGE_LIMIT]``.
+    """
+    n = len(rows)
+    start = max(0, min(int(cursor or 0), n))
+    page_limit = max(1, min(int(limit or DEFAULT_PAGE_LIMIT), MAX_PAGE_LIMIT))
+    end = min(start + page_limit, n)
+    nxt = end if end < n else None
+    return rows[start:end], nxt
+
+
+def bridge_call_batch(
+    steps: list[dict[str, Any]],
+    *,
+    on_error: str = "stop",
+) -> dict[str, Any]:
+    """Execute multiple bridge methods in a single round-trip.
+
+    ``steps`` is a list of ``{"method": str, "params": dict}`` entries; the
+    bridge dispatches each on the Rhino UI thread sequentially and returns
+    a result envelope ``{"summary": {...}, "results": [...]}`` where each
+    result entry mirrors the step's status (``"ok"`` | ``"error"``).
+    """
+    return runtime().require_bridge().call(
+        "rhino.batch.execute",
+        {"steps": steps, "on_error": on_error},
+    )
 
 
 def bridge_call(method: str, args: dict[str, Any]) -> dict[str, Any]:

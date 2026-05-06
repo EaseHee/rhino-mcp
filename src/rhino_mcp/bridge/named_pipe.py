@@ -92,6 +92,9 @@ class NamedPipeTransport(Transport):
         del self._buffer[: nl + 1]
         return line
 
+    def reset_buffers(self) -> None:
+        self._buffer.clear()
+
     def close(self) -> None:
         if self._handle is not None:
             try:

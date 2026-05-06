@@ -2,10 +2,248 @@
 
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.5.0] - 2026-05-06
+
+### Added — bridge transport features
+
+- **Response chunking** for large payloads. When a result exceeds
+  ``RHINO_MCP_CHUNK_THRESHOLD`` (default 4 MB) the bridge stashes the
+  bytes server-side and returns ``{__chunked__: true, chunk_id, ...}``;
+  the Python client transparently calls ``rhino.bridge.fetch_chunk``
+  in fixed-size slices and ``rhino.bridge.chunk_release`` to clean up.
+  Chunks evict after ``RHINO_MCP_CHUNK_TTL_SEC`` (default 60 s).
+- **Opt-in gzip response compression**. The Python client adds
+  ``_accept_encoding: ["gzip"]`` to every request unless
+  ``RHINO_MCP_GZIP=0``. The bridge gzips results larger than
+  ``RHINO_MCP_COMPRESS_THRESHOLD`` (default 16 KB) and returns
+  ``{__compressed__: true, encoding: "gzip", data_b64: ...}``.
+  Compression and chunking compose: a result is compressed first, then
+  the compressed bytes are chunked if still oversized.
+- **`rhino.batch.execute`** — single-roundtrip multi-step dispatch.
+  Steps run sequentially on the UI thread; the network/IPC cost is paid
+  once. ``on_error`` controls "stop on first failure" vs "continue and
+  collect errors". Reachable from Python via
+  ``_helpers.bridge_call_batch(steps)``.
+- **JSON-RPC error code matrix** consolidated in
+  ``docs/dev/rpc-error-codes.md`` and mirrored in
+  ``src/rhino_mcp/utils/rpc_errors.py`` (Python ``RpcErrorCode`` enum +
+  ``raise_rpc_error``) and ``rhino_plugin/csharp/RpcErrorCodes.cs``
+  (C# constants). New codes: ``-50002 PayloadTooLarge``,
+  ``-50003 ChunkNotFound``, ``-50004 TooManyObjectIds``,
+  ``-50005 BatchStepFailed``, ``-50006 RenderJobUnknown``.
+
+### Added — Grasshopper
+
+- **`gh_plugin_list`** enumerates loaded GH plugin libraries (id, name,
+  version, author, on-disk path). Lets the LLM detect LunchBox /
+  Ladybug / Pufferfish before attempting to drop in a custom component.
+- **`gh_components_search`** queries the full GH component catalog
+  (built-in + plugin-supplied) by name / nickname / category /
+  subcategory / plugin and returns the GUID needed by
+  ``gh_add_component``.
+- **`gh_data_tree_get_batch` / `gh_data_tree_set_batch`** —  multi-
+  branch DataTree access in a single round-trip. The set_batch variant
+  suspends the GH solver via ``defer_solve`` so a parameter sweep
+  triggers exactly one recompute instead of N.
+
+### Added — BIM / IFC
+
+- **`rhino_bim_pset_get` / `rhino_bim_pset_set` /
+  `rhino_bim_pset_delete`** — read, write, and delete PropertySet
+  entries (e.g. ``Pset_WallCommon::IsExternal``) on individual objects.
+  Persistence uses ``UserString`` keyed as ``<pset>::<key>`` so values
+  survive Save/Load and the existing IFC export pipeline picks them up
+  unchanged.
+
+### Added — viewport + render
+
+- **`rhino_viewport_preview`** captures the viewport restricted to a
+  selection list and/or layer filter. Non-target objects are ghosted
+  (default) or hidden for the duration of the capture and restored
+  after. Optional ``zoom_to_selection`` re-centres the view.
+- **`rhino_render_queue_submit` / `_status` / `_cancel` / `_list`** —
+  frame-sequence render queue. Submissions return immediately with a
+  ``job_id``; frames are captured on a background worker that hops to
+  the UI thread per frame. v0.5 backend uses
+  ``_-ViewCaptureToFile``; photo-realistic engine integration is
+  tracked separately.
+
+### Changed — input validation
+
+- **Tool-wide ``object_ids`` ceiling**. Every multi-id Pydantic input
+  model now applies ``max_length=MAX_OBJECT_IDS`` (default 500,
+  override via ``RHINO_MCP_MAX_OBJECT_IDS``). Affects analysis, BIM,
+  blocks, deformation, drawing, environment, extraction, layers,
+  materials, schedule, transform, freeform/fields. Bad inputs reject
+  with ``InvalidParams`` before the call reaches the bridge.
+- **Pagination helper** (``_helpers.paginate``,
+  ``DEFAULT_PAGE_LIMIT=100``, ``MAX_PAGE_LIMIT=500``) is now exported
+  for tool-level adoption. Per-tool migration is incremental — existing
+  page implementations (``query.list_objects``) are unchanged.
+
+### Added — observability
+
+- **Request-id trace** in ``SafeRunScript``. When
+  ``RHINO_MCP_TRACE_RUNSCRIPT=1`` is set, every wrapped RunScript line
+  carries a ``[req:<jsonrpc-id>]`` prefix so the C# command-line trace
+  ties back to the originating MCP request. Implemented via
+  ``BridgeContext.CurrentRequestId`` (thread-local on the UI thread).
+
+### Changed — environment variables
+
+- New: ``RHINO_MCP_CHUNK_THRESHOLD`` (default 4 MB),
+  ``RHINO_MCP_CHUNK_BYTES`` (default 512 KB),
+  ``RHINO_MCP_CHUNK_TTL_SEC`` (default 60 s),
+  ``RHINO_MCP_COMPRESS_THRESHOLD`` (default 16 KB),
+  ``RHINO_MCP_GZIP=0`` to disable opt-in compression,
+  ``RHINO_MCP_BATCH_MAX_STEPS`` (default 256),
+  ``RHINO_MCP_MAX_OBJECT_IDS`` (default 500).
+- Bridge ``protocol_version`` bumped to ``1.2`` (chunking + batch
+  + gzip + render-queue).
+
+### Documentation
+
+- ``docs/dev/rpc-error-codes.md`` — code matrix + extension policy.
+- ``docs/dev/work-queue-spike.md`` — RhinoCommon thread-affinity
+  findings and follow-up plan for ``batch_modify``-style handlers.
+- ``docs/dev/runscript-migration.md`` and
+  ``docs/dev/manual-verification.md`` (carried over from v0.4.2)
+  remain the source of truth for RunScript replacement priorities and
+  scenario-level verification.
+
+### Tests
+
+- Total: **254 tests** in standalone (was 213 at v0.3.0).
+
+### 추가 — 브리지 전송 계층 (한글 요약)
+
+- **응답 chunking** — 결과 크기가 ``RHINO_MCP_CHUNK_THRESHOLD`` (기본 4 MB)
+  초과 시 bridge에 byte buffer 보관 후 메타데이터만 응답. Python 클라이언트가
+  ``rhino.bridge.fetch_chunk`` 루프로 자동 재조립.
+- **opt-in gzip 응답 압축** — ``RHINO_MCP_GZIP=0``로 비활성. 16 KB 초과 응답에 대해
+  자동 적용. chunking과 결합 가능.
+- **`rhino.batch.execute`** — 한 round-trip에 N step 실행. ``on_error=stop|continue``.
+- **JSON-RPC error code 매트릭스** — Python/C#/문서 3곳 동기화.
+
+### 추가 — Grasshopper / BIM / 뷰포트 / 렌더
+
+- **`gh_plugin_list` / `gh_components_search`** — 설치된 GH 플러그인 카탈로그 노출.
+- **`gh_data_tree_get_batch` / `gh_data_tree_set_batch`** — 단일 솔버 재계산으로
+  N branch 일괄 set. ``defer_solve=True`` (기본).
+- **`rhino_bim_pset_get` / `_set` / `_delete`** — PropertySet 단위 read/write/delete.
+- **`rhino_viewport_preview`** — 선택/레이어 필터 부분 미리보기 + 자동 viewport 복원.
+- **`rhino_render_queue_submit/status/cancel/list`** — 프레임 시퀀스 렌더 큐.
+
+### 변경
+
+- 모든 다중 ID 도구에 ``MAX_OBJECT_IDS=500`` 강제. ``RHINO_MCP_MAX_OBJECT_IDS``로 override.
+- bridge ``protocol_version`` → ``1.2``.
+
+## [0.4.2] - 2026-05-06
+
+### Fixed — bridge connection stability
+
+- `BridgeServer.cs` no longer silently sends an empty `OK` response when
+  the UI-thread dispatch exceeds the wait window. The `done.Wait(...)`
+  return value is now respected; on timeout the client receives a
+  structured JSON-RPC error (`code = -50001`, message references
+  `RHINO_MCP_UI_TIMEOUT`). Previously a long-running command (modal
+  dialog, blocking script) would let the dispatch keep running on the UI
+  thread while the client believed the call had completed, causing the
+  next request to race against stale state and the connection to
+  "drop" intermittently.
+- `BridgeServer` enables `SO_KEEPALIVE` on every accepted client so the
+  OS detects half-closed peers across idle periods. Adds a `SendTimeout`
+  (default 30 s, `RHINO_MCP_SEND_TIMEOUT_MS` override) to detect dead
+  peers on response writes. `ConnectedClientCount` is now tracked and
+  surfaced in the `rhino.ping` reply.
+- The Python `BridgeClient` now calls `Transport.reset_buffers()` on the
+  error path before tearing down the socket, so a half-read framing line
+  cannot corrupt the next reconnect cycle. `TcpTransport.connect` enables
+  `SO_KEEPALIVE` plus per-OS keepalive intervals
+  (`RHINO_MCP_KEEPALIVE_IDLE/INTERVAL/COUNT`).
+- `rhino.ping` reply gains `protocol_version` (currently `1.1`). The
+  client logs a warning when a connected plugin advertises an older
+  version than required so v0.4.2 stability fixes can be detected at
+  connection time.
+
+### Fixed — `_Width` / `_Enter` token leakage on Rhino's command line
+
+- New `HandlerBase.SafeRunScript(...)` wraps every `RhinoApp.RunScript`
+  call site. On any exception inside the wrapped block it issues an
+  `_Escape` to flush partially-tokenised commands so a half-built
+  `_-ViewCaptureToFile "..." _Width=…` can no longer leave `_Width` (or
+  any other sub-option) sitting in Rhino's command prompt when validation
+  or dispatch fails mid-sequence. Tracing is gated on
+  `RHINO_MCP_TRACE_RUNSCRIPT=1` for diagnostics.
+- `IOHandler.Screenshot` now validates `path` (non-empty, no double
+  quotes) and `width`/`height` (positive integers, ≤ 16384) **before**
+  the RunScript line is constructed. The other IO methods
+  (`Open`/`Save`/`Import`/`Export*`/`BlockInsert`) gained the same path
+  guard. Bad arguments now reject with a structured error and never
+  reach the command line.
+- Every other handler (`SurfaceHandler`, `SurfaceMatchHandler`,
+  `TransformHandler`, `RenderHandler`, `DisplayHandler`,
+  `LayerHandler`, `BimIoHandler`, `DrawingHandler`, `AnnotationHandler`,
+  `AnalysisHandler`, `GrasshopperHandler`, `ExtractionHandler`)
+  routes through `SafeRunScript` instead of calling `RhinoApp.RunScript`
+  directly. Phase B of the migration (replace RunScript with direct
+  RhinoCommon APIs where available) is tracked in
+  `docs/dev/runscript-migration.md`.
+
+### Changed — environment variables
+
+- New: `RHINO_MCP_UI_TIMEOUT` (seconds, default 30),
+  `RHINO_MCP_SEND_TIMEOUT_MS` (default 30000),
+  `RHINO_MCP_KEEPALIVE_IDLE` / `RHINO_MCP_KEEPALIVE_INTERVAL` /
+  `RHINO_MCP_KEEPALIVE_COUNT` (per-OS keepalive tuning, Linux/macOS
+  only), `RHINO_MCP_TRACE_RUNSCRIPT=1` to log every wrapped RunScript
+  line to Rhino's command window.
+
+### 수정 — 브리지 연결 안정성
+
+- `BridgeServer.cs` UI thread dispatch 타임아웃 시 빈 `OK` 응답 전송 버그 수정.
+  `done.Wait(...)` 반환값 검사 추가, 타임아웃 시 JSON-RPC 에러
+  (`code = -50001`, `RHINO_MCP_UI_TIMEOUT`) 응답. 이전에는 모달 대화상자
+  등 장기 실행 명령이 UI thread를 점유한 동안 클라이언트가 이미 성공으로
+  믿고 다음 요청을 보내, race 발생으로 연결이 간헐적 단절.
+- 매 클라이언트 연결에 `SO_KEEPALIVE` 활성화. 응답 write 타임아웃
+  (`RHINO_MCP_SEND_TIMEOUT_MS`, 기본 30 s) 적용으로 dead peer 감지.
+  `ConnectedClientCount` 추적 + `rhino.ping` 응답 노출.
+- Python `BridgeClient` 에러 경로에서 `Transport.reset_buffers()` 호출 →
+  reconnect 직전 half-read 라인 폐기. `TcpTransport.connect` 에 keepalive
+  + per-OS interval (`RHINO_MCP_KEEPALIVE_IDLE/INTERVAL/COUNT`) 적용.
+- `rhino.ping` 응답에 `protocol_version` (현재 `1.1`) 추가. 클라이언트가
+  연결 시점에 plugin 버전 호환성 경고.
+
+### 수정 — Rhino 명령행에 `_Width`/`_Enter` 토큰 잔류 문제
+
+- `HandlerBase.SafeRunScript(...)` 헬퍼 신설. 모든 RunScript 호출 wrapping,
+  예외 발생 시 `_Escape` 강제 송출 → 부분 토큰화된 명령
+  (`_-ViewCaptureToFile "..." _Width=…` 같은 미완성)이 더 이상 Rhino
+  명령창에 잔류 불가. 디버그 트레이스: `RHINO_MCP_TRACE_RUNSCRIPT=1`.
+- `IOHandler.Screenshot`: RunScript 진입 전 `path` (non-empty, 큰따옴표 금지)
+  + `width`/`height` (양수, ≤16384) 검증. 다른 IO 메소드
+  (`Open`/`Save`/`Import`/`Export*`/`BlockInsert`) 도 동일 path 가드.
+  잘못된 인자는 구조화된 에러 반환, 명령창 도달 차단.
+- 나머지 모든 handler (`SurfaceHandler`, `SurfaceMatchHandler`,
+  `TransformHandler`, `RenderHandler`, `DisplayHandler`, `LayerHandler`,
+  `BimIoHandler`, `DrawingHandler`, `AnnotationHandler`,
+  `AnalysisHandler`, `GrasshopperHandler`, `ExtractionHandler`) →
+  `SafeRunScript` 경유. Phase B (RunScript → RhinoCommon API 점진 전환)
+  로드맵: `docs/dev/runscript-migration.md`.
+
+### 변경 — 환경 변수
+
+- 추가: `RHINO_MCP_UI_TIMEOUT` (초, 기본 30),
+  `RHINO_MCP_SEND_TIMEOUT_MS` (기본 30000),
+  `RHINO_MCP_KEEPALIVE_IDLE` / `RHINO_MCP_KEEPALIVE_INTERVAL` /
+  `RHINO_MCP_KEEPALIVE_COUNT` (Linux/macOS keepalive 튜닝),
+  `RHINO_MCP_TRACE_RUNSCRIPT=1` (RunScript 라인 trace 활성화).
 
 ## [0.4.1] - 2026-05-05
 

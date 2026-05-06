@@ -1,6 +1,7 @@
 # Grasshopper 가이드
 
-모든 Grasshopper 도구는 브리지 전용. Rhino 8에 로드된 `rhino-mcp.rhp` C# 플러그인으로 JSON-RPC 요청 전달.
+모든 Grasshopper 도구는 브리지 전용.
+Rhino 8에 로드된 `rhino-mcp.rhp` C# 플러그인으로 JSON-RPC 요청 전달.
 
 ## 사전 준비
 
@@ -21,14 +22,15 @@ gh_run        → 재계산(기본은 새로운 솔루션 강제)
 
 ## 컴포넌트 추가
 
-이름은 Grasshopper의 nickname 사전과 대소문자 무시 매칭됩니다. 모호하면 플러그인 접두사: `"Pufferfish.TweenCurves"`.
+이름은 Grasshopper의 nickname 사전과 대소문자 무시 매칭.
+모호하면 플러그인 접두사: `"Pufferfish.TweenCurves"`.
 
 ```jsonc
 gh_add_component { "name": "Number Slider", "x": -100, "y": 0 }
 gh_add_component { "name": "Move",          "x":  100, "y": 0 }
 ```
 
-브리지가 새 컴포넌트의 GUID를 반환하므로, 이 GUID로 와이어를 연결합니다:
+브리지가 새 컴포넌트의 GUID 반환 → 이 GUID로 와이어 연결:
 
 ```jsonc
 gh_connect_components {
@@ -37,7 +39,7 @@ gh_connect_components {
 }
 ```
 
-입출력은 0-기반 인덱스 또는 파라미터 nickname 모두 허용됩니다.
+입출력은 0-기반 인덱스 또는 파라미터 nickname 모두 허용.
 
 ## 입력값 주입
 
@@ -48,7 +50,7 @@ gh_connect_components {
 | Boolean Toggle | `gh_set_toggle`       | `true` / `false` |
 | 일반 파라미터  | `gh_set_parameter`    | `GhParameterValue` 디스크리미네이터 사용 |
 
-`GhParameterValue.type` ∈ `{number, integer, boolean, text, point, vector, plane, geometry_json}`. `geometry_json`은 rhino3dm `Encode()` JSON; 브리지가 Rhino 측에서 `Decode`합니다.
+`GhParameterValue.type` ∈ `{number, integer, boolean, text, point, vector, plane, geometry_json}`. `geometry_json`은 rhino3dm `Encode()` JSON; 브리지가 Rhino 측에서 `Decode`.
 
 ## 출력 읽기
 
@@ -56,7 +58,8 @@ gh_connect_components {
 gh_get_parameter { "component_id": "<id>", "output": "Result" }
 ```
 
-단일 값 또는 평탄화된 리스트가 반환됩니다. 브랜치 구조가 중요할 때는 `gh_data_tree_get`:
+단일 값 또는 평탄화된 리스트 반환.
+브랜치 구조가 중요할 때는 `gh_data_tree_get`:
 
 ```jsonc
 gh_data_tree_get { "component_id": "<id>", "output": 0 }
@@ -81,7 +84,7 @@ gh_data_tree_set {
 gh_bake_to_rhino { "component_ids": ["<id1>", "<id2>"], "layer": "Bake/Output" }
 ```
 
-새로 추가된 Rhino 객체의 GUID를 반환합니다.
+새로 추가된 Rhino 객체의 GUID 반환.
 
 ## Claude 세션 예시
 

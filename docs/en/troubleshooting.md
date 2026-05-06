@@ -6,15 +6,13 @@
 ./scripts/check-bridge.sh
 ```
 
-Prints a PASS / FAIL / WARN verdict for every layer of the bridge detection stack
-and shows the exact fix for each failure.
+Prints a PASS / FAIL / WARN verdict for every layer of the bridge detection stack and shows the exact fix for each failure.
 
 ---
 
 ## Bridge setup inside Rhino 8
 
-The most common reason `rhino-mcp` starts in standalone mode is that the
-**C# bridge plugin is not loaded in Rhino 8**.
+The most common reason `rhino-mcp` starts in standalone mode is that the **C# bridge plugin is not loaded in Rhino 8**.
 
 ### Step 1 — Build the plugin (once)
 
@@ -26,10 +24,9 @@ This emits `rhino_plugin/csharp/bin/Release/net8.0/rhino-mcp.rhp`.
 
 ### Step 2 — Load the .rhp in Rhino 8
 
-Drag-and-drop the `.rhp` onto a Rhino viewport, or open `_PluginManager`
-and click *Install...*. The plugin is loaded once and survives Rhino
-restarts. You can verify with `_-PluginManager` and looking for the
-`rhino-mcp` entry.
+Drag-and-drop the `.rhp` onto a Rhino viewport, or open `_PluginManager` and click *Install...*.
+The plugin is loaded once and survives Rhino restarts.
+You can verify with `_-PluginManager` and looking for the `rhino-mcp` entry.
 
 On **success** the Rhino command history shows:
 
@@ -105,8 +102,8 @@ RHINO_MCP_TRANSPORT_KIND=tcp ./scripts/check-bridge.sh --tcp
 
 ### "Tool 'X' requires Rhino bridge mode."
 
-Server started in standalone mode before the bridge was up. Start the bridge in
-Rhino first, then restart the server:
+Server started in standalone mode before the bridge was up.
+Start the bridge in Rhino first, then restart the server:
 
 ```bash
 ./scripts/run.sh --bridge
@@ -116,18 +113,18 @@ Rhino first, then restart the server:
 
 ### "Invalid parameter: axis" on `rhino_cylinder`
 
-`rhino3dm` cannot place a circle on an arbitrary plane in standalone mode. Use the
-world-Z axis (`{x:0,y:0,z:1}`) or switch to bridge mode.
+`rhino3dm` cannot place a circle on an arbitrary plane in standalone mode.
+Use the world-Z axis (`{x:0,y:0,z:1}`) or switch to bridge mode.
 
 ### "non-3DM" import error
 
-`rhino_import` only handles `.3dm` in standalone. STEP/IGES/DXF imports require
-Rhino's importers — use bridge mode.
+`rhino_import` only handles `.3dm` in standalone.
+STEP/IGES/DXF imports require Rhino's importers — use bridge mode.
 
 ### MCP stdio transport corrupted
 
-JSON-decode errors in Claude Desktop mean something is writing to stdout. `rhino-mcp`
-logs to stderr only. Run with `RHINO_MCP_LOG_LEVEL=DEBUG` to confirm.
+JSON-decode errors in Claude Desktop mean something is writing to stdout. `rhino-mcp` logs to stderr only.
+Run with `RHINO_MCP_LOG_LEVEL=DEBUG` to confirm.
 
 ### Grasshopper bake is empty
 

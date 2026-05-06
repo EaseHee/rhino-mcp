@@ -22,7 +22,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from rhino_mcp.tools._helpers import bridge_call, doc, require_bridge_only
+from rhino_mcp.tools._helpers import MAX_OBJECT_IDS, bridge_call, doc, require_bridge_only
 from rhino_mcp.tools.context import runtime
 from rhino_mcp.utils.error_handling import not_found_error, parameter_error
 from rhino_mcp.utils.registry import Mode
@@ -95,8 +95,34 @@ class _ExportGbXmlIn(_DocArg):
     )
 
 
+class _PsetGetIn(_DocArg):
+    object_id: str = Field(..., description="GUID of the target object.")
+    pset_name: str | None = Field(
+        None,
+        description="If set, only properties under this PropertySet are returned.",
+    )
+
+
+class _PsetSetIn(_DocArg):
+    object_id: str = Field(..., description="GUID of the target object.")
+    pset_name: str = Field(..., min_length=1, description="PropertySet name (e.g. 'Pset_WallCommon').")
+    properties: dict[str, str] = Field(
+        ...,
+        description="Key/value pairs persisted as user_text. Values are stringified.",
+    )
+    replace_existing: bool = Field(
+        False,
+        description="When True, drop other properties under this PropertySet before writing.",
+    )
+
+
+class _PsetDeleteIn(_DocArg):
+    object_id: str = Field(..., description="GUID of the target object.")
+    pset_name: str = Field(..., min_length=1, description="PropertySet to remove entirely.")
+
+
 class _BimMetadataIn(_DocArg):
-    object_ids: list[str] = Field(..., min_length=1)
+    object_ids: list[str] = Field(..., min_length=1, max_length=MAX_OBJECT_IDS)
     entity_type: str = Field(
         ..., description="IFC entity name (e.g. 'IfcWallStandardCase')."
     )
@@ -167,4 +193,104 @@ def register(mcp, mode: Mode) -> None:  # type: ignore[no-untyped-def]
                 "property_count": len(args.properties),
             },
             "text": f"Tagged {len(applied)} object(s) as {args.entity_type}",
+        }
+
+    @mcp.tool(annotations={"title": "Read IFC PropertySet", "readOnlyHint": True, "idempotentHint": True})
+    def rhino_bim_pset_get(args: _PsetGetIn) -> dict[str, Any]:
+        """Read PropertySet entries off an object.
+
+        Bridge mode reads from the live RhinoCommon UserString table; standalone
+        mode reads from rhino3dm UserStrings on the saved 3dm document. The
+        result groups properties by PropertySet name (``psets`` field).
+        """
+        if runtime().mode is Mode.BRIDGE:
+            return bridge_call("rhino.bim.pset_get", args.model_dump())
+        h = doc(args.doc_id)
+        obj = h.file3dm.Objects.FindId(args.object_id)
+        if obj is None:
+            raise not_found_error("object", args.object_id)
+        psets: dict[str, dict[str, str]] = {}
+        attrs = obj.Attributes
+        keys = attrs.GetUserStrings()
+        try:
+            iterable = list(keys)
+        except TypeError:
+            iterable = [keys.GetKey(i) for i in range(keys.Count)] if hasattr(keys, "Count") else []
+        for key in iterable:
+            if not key or "::" not in key:
+                continue
+            pset, prop = key.split("::", 1)
+            if args.pset_name and pset != args.pset_name:
+                continue
+            psets.setdefault(pset, {})[prop] = attrs.GetUserString(key)
+        total = sum(len(v) for v in psets.values())
+        return {
+            "summary": {
+                "object_id": args.object_id,
+                "entity_type": attrs.GetUserString("ifc_entity") or "",
+                "property_count": total,
+                "pset_count": len(psets),
+            },
+            "psets": psets,
+            "text": f"Read {total} properties across {len(psets)} PropertySet(s).",
+        }
+
+    @mcp.tool(annotations={"title": "Write IFC PropertySet", "readOnlyHint": False})
+    def rhino_bim_pset_set(args: _PsetSetIn) -> dict[str, Any]:
+        """Persist a PropertySet block on an object."""
+        if runtime().mode is Mode.BRIDGE:
+            return bridge_call("rhino.bim.pset_set", args.model_dump())
+        h = doc(args.doc_id)
+        obj = h.file3dm.Objects.FindId(args.object_id)
+        if obj is None:
+            raise not_found_error("object", args.object_id)
+        attrs = obj.Attributes
+        if args.replace_existing:
+            keys = attrs.GetUserStrings()
+            try:
+                iterable = list(keys)
+            except TypeError:
+                iterable = [keys.GetKey(i) for i in range(keys.Count)] if hasattr(keys, "Count") else []
+            for k in iterable:
+                if k and k.startswith(f"{args.pset_name}::"):
+                    attrs.SetUserString(k, "")
+        for k, v in args.properties.items():
+            attrs.SetUserString(f"{args.pset_name}::{k}", str(v))
+        return {
+            "summary": {
+                "object_id": args.object_id,
+                "pset_name": args.pset_name,
+                "property_count": len(args.properties),
+                "replace_existing": args.replace_existing,
+            },
+            "text": f"Wrote {len(args.properties)} properties under {args.pset_name}.",
+        }
+
+    @mcp.tool(annotations={"title": "Delete IFC PropertySet", "readOnlyHint": False, "destructiveHint": True})
+    def rhino_bim_pset_delete(args: _PsetDeleteIn) -> dict[str, Any]:
+        """Remove every property under a named PropertySet from an object."""
+        if runtime().mode is Mode.BRIDGE:
+            return bridge_call("rhino.bim.pset_delete", args.model_dump())
+        h = doc(args.doc_id)
+        obj = h.file3dm.Objects.FindId(args.object_id)
+        if obj is None:
+            raise not_found_error("object", args.object_id)
+        attrs = obj.Attributes
+        keys = attrs.GetUserStrings()
+        try:
+            iterable = list(keys)
+        except TypeError:
+            iterable = [keys.GetKey(i) for i in range(keys.Count)] if hasattr(keys, "Count") else []
+        removed = 0
+        for k in iterable:
+            if k and k.startswith(f"{args.pset_name}::"):
+                attrs.SetUserString(k, "")
+                removed += 1
+        return {
+            "summary": {
+                "object_id": args.object_id,
+                "pset_name": args.pset_name,
+                "removed_count": removed,
+            },
+            "text": f"Removed {removed} properties under {args.pset_name}.",
         }

@@ -14,7 +14,7 @@
 uv tool install rhino-mcp
 ```
 
-체크아웃에서 개발 실행:
+git clone본에서 개발 실행:
 
 ```bash
 git clone https://github.com/easehee/rhino-mcp.git
@@ -44,7 +44,9 @@ pip install 'rhino3dm-mcp[windows]'
 dotnet build rhino_plugin/csharp -c Release
 ```
 
-빌드 산출물 경로: `rhino_plugin/csharp/bin/Release/net8.0/rhino-mcp.rhp`. Rhino 8 뷰포트에 `.rhp` 드래그-앤-드롭(또는 `_PluginManager`)으로 1회 로드 → 플러그인이 플랫폼 기본 transport(Windows: 명명된 파이프, macOS/Linux: Unix domain socket)에서 JSON-RPC 리스너 시작. MCP 서버 기동 시 자동 감지.
+빌드 산출물 경로: `rhino_plugin/csharp/bin/Release/net8.0/rhino-mcp.rhp`.
+Rhino 8 뷰포트에 `.rhp` 드래그-앤-드롭(또는 `_PluginManager`)으로 1회 로드 → 플러그인이 플랫폼 기본 transport(Windows: 명명된 파이프, macOS/Linux: Unix domain socket)에서 JSON-RPC 리스너 시작.
+MCP 서버 기동 시 자동 감지.
 
 ## Claude Desktop 설정
 
@@ -64,7 +66,7 @@ dotnet build rhino_plugin/csharp -c Release
 }
 ```
 
-Claude Desktop을 재시작하면 도구 팔레트(palette)에 `rhino_*`/`gh_*` 도구가 표시됩니다.
+Claude Desktop 재시작 후 도구 팔레트(palette)에 `rhino_*`/`gh_*` 도구 표시.
 
 ## 동작 확인
 

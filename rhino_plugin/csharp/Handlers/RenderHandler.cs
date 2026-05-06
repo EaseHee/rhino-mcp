@@ -143,7 +143,7 @@ namespace RhinoMcp.Handlers
                 // Switching engines is plug-in dependent; surface the request
                 // through the script alias and let Rhino resolve the right
                 // RenderContent provider.
-                RhinoApp.RunScript($"_-SetCurrentRenderPlugIn \"{engine}\"", false);
+                SafeRunScript($"_-SetCurrentRenderPlugIn \"{engine}\"");
             }
             return new JObject
             {
@@ -167,8 +167,8 @@ namespace RhinoMcp.Handlers
 
             // _-Render + _-SaveRenderWindowAs pipes the active engine's output
             // to disk without opening the dialog.
-            RhinoApp.RunScript($"_-Render", false);
-            RhinoApp.RunScript($"_-SaveRenderWindowAs \"{path}\" _Enter", false);
+            SafeRunScript($"_-Render");
+            SafeRunScript($"_-SaveRenderWindowAs \"{path}\" _Enter");
             return new JObject
             {
                 ["summary"] = new JObject
@@ -207,8 +207,8 @@ namespace RhinoMcp.Handlers
                 vp.SetCameraTarget(target, false);
                 view.Redraw();
                 var path = System.IO.Path.Combine(dir, $"frame_{i:000}.png");
-                RhinoApp.RunScript($"_-Render", false);
-                RhinoApp.RunScript($"_-SaveRenderWindowAs \"{path}\" _Enter", false);
+                SafeRunScript($"_-Render");
+                SafeRunScript($"_-SaveRenderWindowAs \"{path}\" _Enter");
                 paths.Add(path);
             }
             return new JObject

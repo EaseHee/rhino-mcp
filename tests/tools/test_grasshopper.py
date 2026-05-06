@@ -131,6 +131,58 @@ class TestComponentTools:
         _call_tool(tools, "gh_cluster_expand", {"cluster_id": "cls1"})
         assert bridge.calls[-1][0] == "gh.cluster.expand"
 
+    def test_gh_plugin_list(self, server_with_mock_bridge) -> None:
+        tools, bridge = server_with_mock_bridge
+        _call_tool(tools, "gh_plugin_list", {})
+        assert bridge.calls[-1] == ("gh.plugin.list", {})
+
+    def test_gh_data_tree_get_batch(self, server_with_mock_bridge) -> None:
+        tools, bridge = server_with_mock_bridge
+        _call_tool(
+            tools,
+            "gh_data_tree_get_batch",
+            {"queries": [{"component_id": "c1", "output": 0}]},
+        )
+        method, _ = bridge.calls[-1]
+        assert method == "gh.data_tree.get_batch"
+
+    def test_gh_data_tree_set_batch(self, server_with_mock_bridge) -> None:
+        tools, bridge = server_with_mock_bridge
+        _call_tool(
+            tools,
+            "gh_data_tree_set_batch",
+            {
+                "assignments": [
+                    {
+                        "component_id": "c1",
+                        "input": 0,
+                        "branches": [
+                            [
+                                {"indices": [0]},
+                                [{"type": "number", "value": 1.0}],
+                            ]
+                        ],
+                    }
+                ],
+                "defer_solve": True,
+            },
+        )
+        method, params = bridge.calls[-1]
+        assert method == "gh.data_tree.set_batch"
+        assert params["defer_solve"] is True
+
+    def test_gh_components_search(self, server_with_mock_bridge) -> None:
+        tools, bridge = server_with_mock_bridge
+        _call_tool(
+            tools,
+            "gh_components_search",
+            {"query": "loft", "plugin": "Pufferfish", "category": "Surface", "limit": 25},
+        )
+        method, params = bridge.calls[-1]
+        assert method == "gh.components.search"
+        assert params["query"] == "loft"
+        assert params["limit"] == 25
+
 
 # --- Parameter tools ---
 

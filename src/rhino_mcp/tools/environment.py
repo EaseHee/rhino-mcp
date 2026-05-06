@@ -22,7 +22,7 @@ import rhino3dm as r3
 from pydantic import BaseModel, Field
 
 from rhino_mcp.models.geometry_types import Point3dModel
-from rhino_mcp.tools._helpers import bridge_call, doc, require_bridge_only, to_point
+from rhino_mcp.tools._helpers import MAX_OBJECT_IDS, bridge_call, doc, require_bridge_only, to_point
 from rhino_mcp.tools.context import runtime
 from rhino_mcp.utils.error_handling import not_found_error, parameter_error
 from rhino_mcp.utils.registry import Mode
@@ -63,7 +63,7 @@ class _SunPathIn(_DocArg):
 
 
 class _ShadowProjectIn(_DocArg):
-    object_ids: list[str] = Field(..., min_length=1)
+    object_ids: list[str] = Field(..., min_length=1, max_length=MAX_OBJECT_IDS)
     sun_vector: Point3dModel = Field(
         ..., description="Vector pointing FROM the sun TO the object (use the negative of sun-direction)."
     )
@@ -79,7 +79,7 @@ class _SolarExposureIn(_DocArg):
     hour_range: tuple[int, int] = Field((8, 18))
     step_minutes: Annotated[int, Field(ge=10, le=120)] = 60
     timezone_offset_h: Annotated[float, Field(ge=-12, le=14)] = 9.0
-    obstruction_object_ids: list[str] = Field(default_factory=list)
+    obstruction_object_ids: list[str] = Field(default_factory=list, max_length=MAX_OBJECT_IDS)
 
 
 class _DirectIrradianceIn(BaseModel):

@@ -16,7 +16,7 @@ import rhino3dm as r3
 from pydantic import BaseModel, Field
 
 from rhino_mcp.models.geometry_types import Point3dModel
-from rhino_mcp.tools._helpers import bridge_call, doc, to_point
+from rhino_mcp.tools._helpers import MAX_OBJECT_IDS, bridge_call, doc, to_point
 from rhino_mcp.tools.context import runtime
 from rhino_mcp.utils.error_handling import not_found_error, parameter_error
 from rhino_mcp.utils.registry import Mode
@@ -33,6 +33,7 @@ class _AttractorIn(_DocArg):
     point_object_ids: list[str] = Field(
         ...,
         min_length=1,
+        max_length=MAX_OBJECT_IDS,
         description="Object IDs of point objects to displace. (Curves and meshes are skipped.)",
     )
     attractor_point: Point3dModel | None = Field(

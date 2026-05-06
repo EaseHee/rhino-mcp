@@ -1,6 +1,7 @@
 # Grasshopper guide
 
-All Grasshopper tools are bridge-only. They forward JSON-RPC requests to the `rhino-mcp.rhp` C# plugin loaded inside Rhino 8 with Grasshopper open.
+All Grasshopper tools are bridge-only.
+They forward JSON-RPC requests to the `rhino-mcp.rhp` C# plugin loaded inside Rhino 8 with Grasshopper open.
 
 ## Prerequisites
 
@@ -21,14 +22,16 @@ gh_run        → recompute (force a fresh solution by default)
 
 ## Adding components
 
-Component names are matched against Grasshopper's nickname dictionary (case-insensitive). If a name is ambiguous, prefix with the plug-in: `"Pufferfish.TweenCurves"`.
+Component names are matched against Grasshopper's nickname dictionary (case-insensitive).
+If a name is ambiguous, prefix with the plug-in: `"Pufferfish.TweenCurves"`.
 
 ```jsonc
 gh_add_component { "name": "Number Slider", "x": -100, "y": 0 }
 gh_add_component { "name": "Move",          "x":  100, "y": 0 }
 ```
 
-The bridge returns the new component's GUID. Use that GUID to wire it:
+The bridge returns the new component's GUID.
+Use that GUID to wire it:
 
 ```jsonc
 gh_connect_components {
@@ -48,7 +51,8 @@ Outputs and inputs accept either a zero-based index or the parameter nickname.
 | Boolean Toggle  | `gh_set_toggle`       | `true` / `false` |
 | Generic param   | `gh_set_parameter`    | uses `GhParameterValue` discriminator |
 
-`GhParameterValue.type` ∈ `{number, integer, boolean, text, point, vector, plane, geometry_json}`. For `geometry_json`, pass the rhino3dm `Encode()` JSON of the geometry; the bridge `Decode`s it on the Rhino side.
+`GhParameterValue.type` ∈ `{number, integer, boolean, text, point, vector, plane, geometry_json}`.
+For `geometry_json`, pass the rhino3dm `Encode()` JSON of the geometry; the bridge `Decode`s it on the Rhino side.
 
 ## Reading outputs
 
@@ -56,7 +60,8 @@ Outputs and inputs accept either a zero-based index or the parameter nickname.
 gh_get_parameter { "component_id": "<id>", "output": "Result" }
 ```
 
-Returns either a single value or a flattened list. Use `gh_data_tree_get` when branch structure matters:
+Returns either a single value or a flattened list.
+Use `gh_data_tree_get` when branch structure matters:
 
 ```jsonc
 gh_data_tree_get { "component_id": "<id>", "output": 0 }

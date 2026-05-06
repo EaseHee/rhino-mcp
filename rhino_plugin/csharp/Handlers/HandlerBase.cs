@@ -129,5 +129,53 @@ namespace RhinoMcp.Handlers
         {
             return new JObject { ["status"] = message };
         }
+
+        /// <summary>
+        /// Wraps <see cref="RhinoApp.RunScript(string, bool)"/> with a debug
+        /// trace and an emergency <c>_Escape</c> on failure. Use this from
+        /// every handler that drives Rhino through scripted commands so a
+        /// half-built command (e.g. trailing <c>_Width</c> with no value)
+        /// cannot leak to the command line if validation/dispatch throws
+        /// mid-sequence.
+        /// </summary>
+        /// <param name="script">The full RunScript line. Must already include
+        /// any required <c>_Enter</c> tokens.</param>
+        /// <param name="opName">Short identifier used in the trace prefix
+        /// (typically the handler method name).</param>
+        /// <summary>Single-arg overload: derives an opName from the call site
+        /// (just <c>"runscript"</c>; toggle <c>RHINO_MCP_TRACE_RUNSCRIPT=1</c>
+        /// if a more specific tag is needed).</summary>
+        protected static void SafeRunScript(string script)
+            => SafeRunScript(script, "runscript");
+
+        protected static void SafeRunScript(string script, string opName)
+        {
+            if (string.IsNullOrWhiteSpace(script))
+                throw new System.ArgumentException("SafeRunScript: empty script", nameof(script));
+
+            var traceEnabled = string.Equals(
+                System.Environment.GetEnvironmentVariable("RHINO_MCP_TRACE_RUNSCRIPT"),
+                "1",
+                System.StringComparison.Ordinal);
+            if (traceEnabled)
+            {
+                var rid = BridgeContext.CurrentRequestId;
+                var prefix = string.IsNullOrEmpty(rid) ? "" : $"[req:{rid}] ";
+                RhinoApp.WriteLine($"[rhino-mcp][runscript:{opName}] {prefix}{script}");
+            }
+
+            try
+            {
+                RhinoApp.RunScript(script, false);
+            }
+            catch
+            {
+                // Push an _Escape so any partially-tokenised command
+                // (e.g. ``_-ViewCaptureToFile "..." _Width=`` with the value
+                // missing) cannot remain pending in Rhino's command line.
+                try { RhinoApp.RunScript("_Escape", false); } catch { /* best-effort */ }
+                throw;
+            }
+        }
     }
 }

@@ -9,7 +9,7 @@ import rhino3dm as r3
 from pydantic import BaseModel, Field
 
 from rhino_mcp.models.geometry_types import PlaneModel, Point3dModel, Vector3dModel
-from rhino_mcp.tools._helpers import doc, to_point, to_vector
+from rhino_mcp.tools._helpers import MAX_OBJECT_IDS, doc, to_point, to_vector
 from rhino_mcp.tools.context import runtime
 from rhino_mcp.utils.error_handling import parameter_error, unsupported_in_standalone
 from rhino_mcp.utils.registry import Mode
@@ -24,13 +24,13 @@ class _DocArg(BaseModel):
 
 
 class _MoveIn(_DocArg):
-    object_ids: list[str] = Field(..., min_length=1)
+    object_ids: list[str] = Field(..., min_length=1, max_length=MAX_OBJECT_IDS)
     translation: Vector3dModel
     make_copy: bool = Field(False, description="Duplicate before transforming.")
 
 
 class _RotateIn(_DocArg):
-    object_ids: list[str] = Field(..., min_length=1)
+    object_ids: list[str] = Field(..., min_length=1, max_length=MAX_OBJECT_IDS)
     center: Point3dModel
     axis: Vector3dModel = Field(default_factory=lambda: Vector3dModel(x=0.0, y=0.0, z=1.0))
     angle_degrees: float
@@ -38,7 +38,7 @@ class _RotateIn(_DocArg):
 
 
 class _ScaleIn(_DocArg):
-    object_ids: list[str] = Field(..., min_length=1)
+    object_ids: list[str] = Field(..., min_length=1, max_length=MAX_OBJECT_IDS)
     center: Point3dModel
     factor_x: Annotated[float, Field(gt=0)]
     factor_y: Annotated[float, Field(gt=0)]
@@ -47,20 +47,20 @@ class _ScaleIn(_DocArg):
 
 
 class _MirrorIn(_DocArg):
-    object_ids: list[str] = Field(..., min_length=1)
+    object_ids: list[str] = Field(..., min_length=1, max_length=MAX_OBJECT_IDS)
     plane: PlaneModel
     make_copy: bool = Field(True)
 
 
 class _ArrayLinearIn(_DocArg):
-    object_ids: list[str] = Field(..., min_length=1)
+    object_ids: list[str] = Field(..., min_length=1, max_length=MAX_OBJECT_IDS)
     direction: Vector3dModel
     spacing: Annotated[float, Field(gt=0)]
     count: Annotated[int, Field(ge=2, le=1024)]
 
 
 class _ArrayPolarIn(_DocArg):
-    object_ids: list[str] = Field(..., min_length=1)
+    object_ids: list[str] = Field(..., min_length=1, max_length=MAX_OBJECT_IDS)
     center: Point3dModel
     axis: Vector3dModel = Field(default_factory=lambda: Vector3dModel(x=0.0, y=0.0, z=1.0))
     count: Annotated[int, Field(ge=2, le=512)]
@@ -68,7 +68,7 @@ class _ArrayPolarIn(_DocArg):
 
 
 class _ArrayRectangularIn(_DocArg):
-    object_ids: list[str] = Field(..., min_length=1)
+    object_ids: list[str] = Field(..., min_length=1, max_length=MAX_OBJECT_IDS)
     count_x: Annotated[int, Field(ge=1, le=256)]
     count_y: Annotated[int, Field(ge=1, le=256)]
     count_z: Annotated[int, Field(ge=1, le=256)] = 1
@@ -78,7 +78,7 @@ class _ArrayRectangularIn(_DocArg):
 
 
 class _OrientIn(_DocArg):
-    object_ids: list[str] = Field(..., min_length=1)
+    object_ids: list[str] = Field(..., min_length=1, max_length=MAX_OBJECT_IDS)
     from_plane: PlaneModel
     to_plane: PlaneModel
     make_copy: bool = Field(False)

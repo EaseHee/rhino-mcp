@@ -198,3 +198,50 @@ def test_bridge_client_reconnect_failure(monkeypatch) -> None:
     result = client.reconnect()
     assert result is False
     assert not client._connected
+
+
+# Tool-helper utilities (pagination, MAX_OBJECT_IDS).
+from rhino_mcp.tools._helpers import (  # noqa: E402
+    DEFAULT_PAGE_LIMIT,
+    MAX_OBJECT_IDS,
+    MAX_PAGE_LIMIT,
+    paginate,
+)
+
+
+def test_paginate_returns_first_page_and_next_cursor() -> None:
+    rows = list(range(120))
+    page, nxt = paginate(rows, cursor=0, limit=50)
+    assert page == list(range(50))
+    assert nxt == 50
+
+
+def test_paginate_returns_none_cursor_when_exhausted() -> None:
+    rows = list(range(10))
+    page, nxt = paginate(rows, cursor=5, limit=50)
+    assert page == list(range(5, 10))
+    assert nxt is None
+
+
+def test_paginate_clamps_limit_above_max() -> None:
+    rows = list(range(MAX_PAGE_LIMIT + 50))
+    page, nxt = paginate(rows, cursor=0, limit=10_000)
+    assert len(page) == MAX_PAGE_LIMIT
+    assert nxt == MAX_PAGE_LIMIT
+
+
+def test_paginate_clamps_cursor_above_length() -> None:
+    rows = list(range(10))
+    page, nxt = paginate(rows, cursor=999, limit=10)
+    assert page == []
+    assert nxt is None
+
+
+def test_paginate_default_limit_matches_constant() -> None:
+    rows = list(range(DEFAULT_PAGE_LIMIT * 2))
+    page, _ = paginate(rows)
+    assert len(page) == DEFAULT_PAGE_LIMIT
+
+
+def test_max_object_ids_constant_is_positive() -> None:
+    assert MAX_OBJECT_IDS > 0

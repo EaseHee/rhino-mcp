@@ -7,7 +7,7 @@
     <NoWarn>NU1701</NoWarn>
     <Title>rhino-mcp</Title>
     <Description>rhino-mcp plugin for Rhino 8 — JSON-RPC 2.0 over a platform-native transport.</Description>
-    <Version>0.4.1</Version>
+    <Version>0.5.0</Version>
     <Authors>GeonHee Lee (EaseHee) &lt;easehee.0@gmail.com&gt;</Authors>
     <Copyright>Copyright (c) 2026 EaseHee &lt;easehee.0@gmail.com&gt;</Copyright>
     <AssemblyName>rhino-mcp</AssemblyName>

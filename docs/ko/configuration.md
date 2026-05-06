@@ -1,6 +1,6 @@
 # 환경 설정(Configuration)
 
-`rhino-mcp`는 환경 변수와 소수의 CLI 플래그로만 설정합니다.
+`rhino-mcp`는 환경 변수와 소수의 CLI 플래그로만 설정.
 
 ## CLI 플래그
 
@@ -8,7 +8,7 @@
 rhino-mcp [--transport {stdio,http}] [--host HOST] [--port PORT] [--version]
 ```
 
-`--transport`는 `RHINO_MCP_TRANSPORT`를 덮어씁니다. `--host` / `--port`는 HTTP 전송에서만 적용됩니다.
+`--transport`는 `RHINO_MCP_TRANSPORT`를 override. `--host` / `--port`는 HTTP 전송에만 적용.
 
 ## 환경 변수
 

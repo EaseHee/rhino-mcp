@@ -150,7 +150,7 @@ namespace RhinoMcp.Handlers
                 bool showHidden = p["show_hidden"]?.Value<bool>() ?? false;
                 string hiddenOpt = showHidden ? "_Yes" : "_No";
                 string cmd = $"_-Make2D _ShowHiddenLines={hiddenOpt} _Enter";
-                RhinoApp.RunScript(cmd, false);
+                SafeRunScript(cmd);
 
                 Doc.Objects.UnselectAll();
                 Doc.Views.Redraw();

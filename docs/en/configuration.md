@@ -1,6 +1,7 @@
 # Configuration
 
-`rhino-mcp` is configured entirely by environment variables and a small set of CLI flags. Everything else flows from those.
+`rhino-mcp` is configured entirely by environment variables and a small set of CLI flags.
+Everything else flows from those.
 
 ## CLI flags
 

@@ -141,7 +141,7 @@ namespace RhinoMcp.Handlers
                 throw new KeyNotFoundException("Surface edge not found");
             // Use RhinoScript command as fallback for complex blend
             var script = $"_BlendSrf _SelId {p["edge_a_id"]} _SelId {p["edge_b_id"]} _Enter";
-            RhinoApp.RunScript(script, false);
+            SafeRunScript(script);
             return StatusOk("BlendSurface command executed");
         }
 
@@ -149,7 +149,7 @@ namespace RhinoMcp.Handlers
         {
             var radius = p["radius"]!.Value<double>();
             var script = $"_FilletSrf _Radius {radius} _SelId {p["surface_a_id"]} _SelId {p["surface_b_id"]} _Enter";
-            RhinoApp.RunScript(script, false);
+            SafeRunScript(script);
             return StatusOk("FilletSurface command executed");
         }
 

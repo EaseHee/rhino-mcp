@@ -60,9 +60,7 @@ The capability column says when each tool is registered:
 
 ## Surfaces (bridge-only)
 
-`rhino_plane_surface`, `rhino_extrude`, `rhino_revolve`, `rhino_loft`,
-`rhino_sweep1`, `rhino_sweep2`, `rhino_network_surface`, `rhino_patch`,
-`rhino_blend_surface`, `rhino_fillet_surface`, `rhino_offset_surface`.
+`rhino_plane_surface`, `rhino_extrude`, `rhino_revolve`, `rhino_loft`, `rhino_sweep1`, `rhino_sweep2`, `rhino_network_surface`, `rhino_patch`, `rhino_blend_surface`, `rhino_fillet_surface`, `rhino_offset_surface`.
 
 ## Mesh
 

@@ -12,7 +12,7 @@ import rhino3dm as r3
 from pydantic import BaseModel, Field, field_validator
 
 from rhino_mcp.models.geometry_types import ColorRGBA
-from rhino_mcp.tools._helpers import doc, find_layer_index
+from rhino_mcp.tools._helpers import MAX_OBJECT_IDS, doc, find_layer_index
 from rhino_mcp.tools.context import runtime
 from rhino_mcp.utils.error_handling import not_found_error
 from rhino_mcp.utils.registry import Mode
@@ -40,12 +40,12 @@ class _LayerColorIn(_LayerNameIn):
 
 
 class _MoveToLayerIn(_DocArg):
-    object_ids: list[str] = Field(..., min_length=1)
+    object_ids: list[str] = Field(..., min_length=1, max_length=MAX_OBJECT_IDS)
     layer: str
 
 
 class _ObjectsIn(_DocArg):
-    object_ids: list[str] = Field(..., min_length=1)
+    object_ids: list[str] = Field(..., min_length=1, max_length=MAX_OBJECT_IDS)
 
 
 class _ObjectSelectIn(_DocArg):
@@ -101,7 +101,7 @@ class _ObjectSelectIn(_DocArg):
 
 
 class _GroupIn(_DocArg):
-    object_ids: list[str] = Field(..., min_length=1)
+    object_ids: list[str] = Field(..., min_length=1, max_length=MAX_OBJECT_IDS)
     name: str | None = None
 
 

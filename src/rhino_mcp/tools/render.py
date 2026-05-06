@@ -81,6 +81,25 @@ class _RenderToFileIn(BaseModel):
     transparent_background: bool | None = Field(None)
 
 
+class _RenderQueueFrame(BaseModel):
+    output_path: str = Field(..., description="Absolute path for this frame's PNG.")
+    width: Annotated[int, Field(ge=64, le=8192)] = 1920
+    height: Annotated[int, Field(ge=64, le=8192)] = 1080
+    view: str | None = Field(None, description="Optional named view (uses active viewport when None).")
+
+
+class _RenderQueueSubmitIn(BaseModel):
+    frames: list[_RenderQueueFrame] = Field(..., min_length=1, max_length=1024)
+
+
+class _RenderQueueJobIdIn(BaseModel):
+    job_id: str = Field(..., description="GUID returned by ``rhino_render_queue_submit``.")
+
+
+class _RenderQueueListIn(BaseModel):
+    pass
+
+
 class _TurntableRenderIn(BaseModel):
     output_dir: str = Field(..., description="Directory the frame sequence is written into.")
     frame_count: Annotated[int, Field(ge=4, le=720)] = 36
@@ -134,3 +153,34 @@ def register(mcp, mode: Mode) -> None:  # type: ignore[no-untyped-def]
         """Render a turntable sequence (camera orbits around ``target``) to ``output_dir``."""
         require_bridge_only("rhino_turntable_render")
         return bridge_call("rhino.render.turntable", args.model_dump())
+
+    @mcp.tool(annotations={"title": "Render Queue: Submit", "readOnlyHint": False})
+    def rhino_render_queue_submit(args: _RenderQueueSubmitIn) -> dict[str, Any]:
+        """Submit a frame sequence to the bridge render queue (bridge only).
+
+        Returns a ``job_id`` immediately while frames are captured on a
+        background worker. Use ``rhino_render_queue_status`` to poll
+        progress and ``rhino_render_queue_cancel`` to interrupt. The v0.5
+        backend captures viewport frames (``_-ViewCaptureToFile``); true
+        photo-realistic engine integration is on the roadmap.
+        """
+        require_bridge_only("rhino_render_queue_submit")
+        return bridge_call("rhino.render.queue.submit", args.model_dump())
+
+    @mcp.tool(annotations={"title": "Render Queue: Status", "readOnlyHint": True, "idempotentHint": True})
+    def rhino_render_queue_status(args: _RenderQueueJobIdIn) -> dict[str, Any]:
+        """Inspect a queued render job's status, progress, and completed frames."""
+        require_bridge_only("rhino_render_queue_status")
+        return bridge_call("rhino.render.queue.status", args.model_dump())
+
+    @mcp.tool(annotations={"title": "Render Queue: Cancel", "readOnlyHint": False})
+    def rhino_render_queue_cancel(args: _RenderQueueJobIdIn) -> dict[str, Any]:
+        """Cancel a running or queued render job."""
+        require_bridge_only("rhino_render_queue_cancel")
+        return bridge_call("rhino.render.queue.cancel", args.model_dump())
+
+    @mcp.tool(annotations={"title": "Render Queue: List", "readOnlyHint": True, "idempotentHint": True})
+    def rhino_render_queue_list(args: _RenderQueueListIn) -> dict[str, Any]:
+        """List recent render jobs and their progress."""
+        require_bridge_only("rhino_render_queue_list")
+        return bridge_call("rhino.render.queue.list", args.model_dump())

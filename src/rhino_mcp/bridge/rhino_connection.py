@@ -11,6 +11,8 @@ Detection strategy:
 from __future__ import annotations
 
 import asyncio
+import base64
+import gzip
 import json
 import os
 import random
@@ -34,6 +36,51 @@ _MAX_RECONNECT_RETRIES = int(os.environ.get("RHINO_MCP_RECONNECT_RETRIES", "1"))
 _RECONNECT_BASE_DELAY = float(os.environ.get("RHINO_MCP_RECONNECT_BASE_DELAY", "0.5"))
 # Jitter ratio (±). 0 disables jitter (useful for deterministic tests).
 _RECONNECT_JITTER = float(os.environ.get("RHINO_MCP_RECONNECT_JITTER", "0.25"))
+
+# Minimum bridge protocol version this client understands. The C# plugin
+# advertises ``protocol_version`` in its ``rhino.ping`` reply (added in
+# v0.4.2). Older plugins omit the field; we treat that as "0" and warn
+# without aborting so existing deployments keep working.
+_REQUIRED_PROTOCOL_VERSION = "1.0"
+
+# Honour ``RHINO_MCP_GZIP=0`` to disable opt-in response compression. The
+# bridge falls back to plain JSON when the flag is empty / 0 / "off".
+def _gzip_enabled() -> bool:
+    raw = os.environ.get("RHINO_MCP_GZIP", "1").lower()
+    return raw not in {"0", "false", "off", "no", ""}
+
+
+def _check_protocol(pong: dict[str, Any], transport_name: str) -> None:
+    """Log a warning when the bridge advertises an older protocol version."""
+    advertised = str(pong.get("protocol_version", "0"))
+    try:
+        ours = tuple(int(x) for x in _REQUIRED_PROTOCOL_VERSION.split("."))
+        theirs = tuple(int(x) for x in advertised.split("."))
+    except ValueError:
+        return
+    if theirs < ours:
+        log.warning(
+            "Bridge on %s advertises protocol_version=%s (client expects >=%s). "
+            "Some stability fixes from v0.4.2 require the matching plugin build.",
+            transport_name, advertised, _REQUIRED_PROTOCOL_VERSION,
+        )
+
+
+def _decompress_payload(meta: dict[str, Any]) -> dict[str, Any]:
+    """Inverse of the bridge's gzip path. Decode and parse the inner JSON."""
+    encoding = str(meta.get("encoding", "")).lower()
+    raw = meta.get("data_b64")
+    if encoding != "gzip" or not isinstance(raw, str):
+        raise connection_error(f"unsupported compressed payload: {meta!r}")
+    try:
+        blob = base64.b64decode(raw)
+        text = gzip.decompress(blob).decode("utf-8")
+        decoded = json.loads(text)
+    except Exception as exc:
+        raise connection_error(f"failed to decompress payload: {exc}") from exc
+    if not isinstance(decoded, dict):
+        raise connection_error("decompressed payload is not a JSON object.")
+    return decoded
 
 
 def _backoff_delay(attempt: int) -> float:
@@ -102,6 +149,7 @@ class BridgeClient:
             try:
                 pong = client.call("rhino.ping", {})
                 log.info("Bridge connected via %s (rhino=%s)", t.name, pong.get("rhino"))
+                _check_protocol(pong, t.name)
                 return client
             except Exception as exc:
                 log.debug("Bridge ping on %s failed: %s", t.name, exc)
@@ -140,10 +188,15 @@ class BridgeClient:
             pass
         self._connected = False
         try:
+            self._transport.reset_buffers()
+        except Exception:
+            pass
+        try:
             self._transport.connect(timeout=self._timeout)
             self._connected = True
             pong = self._call_once("rhino.ping", {})
             log.info("Reconnected via %s (rhino=%s)", self._transport.name, pong.get("rhino"))
+            _check_protocol(pong, self._transport.name)
             return True
         except Exception as exc:
             log.warning("Reconnect failed: %s", exc)
@@ -191,12 +244,14 @@ class BridgeClient:
         if not self._connected:
             raise connection_error(f"transport {self._transport.name} not connected")
         request_id = uuid.uuid4().hex
-        request = {
+        request: dict[str, Any] = {
             "jsonrpc": "2.0",
             "id": request_id,
             "method": method,
             "params": params,
         }
+        if _gzip_enabled():
+            request["_accept_encoding"] = ["gzip"]
         payload = json.dumps(request, separators=(",", ":")).encode("utf-8")
         effective_timeout = timeout if timeout is not None else self._timeout
         try:
@@ -205,6 +260,13 @@ class BridgeClient:
                 line = self._transport.recv_line(timeout=effective_timeout)
         except (ConnectionError, OSError, TimeoutError) as exc:
             self._connected = False
+            # Drop any partially-buffered bytes before tearing down the
+            # underlying socket. Otherwise a stale half-line would survive
+            # into the next reconnect attempt and corrupt framing.
+            try:
+                self._transport.reset_buffers()
+            except Exception:
+                pass
             self._transport.close()
             raise connection_error(f"transport failure on {self._transport.name}: {exc}") from exc
         try:
@@ -225,7 +287,52 @@ class BridgeClient:
                 err.get("data", {}).get("hint", "Check Rhino's command-line for stack traces."),
                 details=err,
             )
-        return response.get("result", {})
+        result = response.get("result", {})
+        if isinstance(result, dict) and result.get("__chunked__") is True:
+            result = self._reassemble_chunked(result, effective_timeout)
+        if isinstance(result, dict) and result.get("__compressed__") is True:
+            result = _decompress_payload(result)
+        return result
+
+    def _reassemble_chunked(self, meta: dict[str, Any], timeout: float) -> dict[str, Any]:
+        """Pull all chunk slices, concatenate, and parse as the original result."""
+        chunk_id = str(meta.get("chunk_id"))
+        total = int(meta.get("total_chunks", 0))
+        encoding = str(meta.get("encoding", "json"))
+        if not chunk_id or total <= 0:
+            raise connection_error(f"invalid chunked metadata: {meta!r}")
+        log.debug(
+            "Reassembling chunked response chunk_id=%s total=%d size=%s",
+            chunk_id, total, meta.get("size"),
+        )
+        parts: list[bytes] = []
+        try:
+            for index in range(total):
+                slice_resp = self._call_once(
+                    "rhino.bridge.fetch_chunk",
+                    {"chunk_id": chunk_id, "index": index},
+                    timeout=timeout,
+                )
+                parts.append(base64.b64decode(slice_resp["data_b64"]))
+                if slice_resp.get("is_last") and index + 1 != total:
+                    break
+        finally:
+            try:
+                self._call_once(
+                    "rhino.bridge.chunk_release",
+                    {"chunk_id": chunk_id},
+                    timeout=timeout,
+                )
+            except Exception:
+                pass
+        blob = b"".join(parts)
+        if encoding != "json":
+            raise connection_error(f"unsupported chunk encoding: {encoding}")
+        try:
+            return json.loads(blob.decode("utf-8"))
+        except json.JSONDecodeError as exc:
+            truncated = blob[:200]
+            raise connection_error(f"chunked payload not valid JSON: {truncated!r}") from exc
 
 
 def detect_mode() -> tuple[Mode, BridgeClient | None]:

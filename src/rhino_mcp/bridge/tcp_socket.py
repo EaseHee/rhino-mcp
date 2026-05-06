@@ -2,9 +2,48 @@
 
 from __future__ import annotations
 
+import os
 import socket
+import sys
 
 from rhino_mcp.bridge.transport_base import Transport
+
+
+def _enable_keepalive(sock: socket.socket) -> None:
+    """Enable SO_KEEPALIVE plus per-OS interval tuning when supported.
+
+    Idle TCP connections in container/router/VPN paths are sometimes
+    silently dropped after a few minutes. SO_KEEPALIVE asks the kernel to
+    probe the peer; the bridge has no application-level heartbeat.
+    """
+    try:
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+    except OSError:
+        return
+
+    keepidle = int(os.environ.get("RHINO_MCP_KEEPALIVE_IDLE", "60"))
+    keepintvl = int(os.environ.get("RHINO_MCP_KEEPALIVE_INTERVAL", "30"))
+    keepcnt = int(os.environ.get("RHINO_MCP_KEEPALIVE_COUNT", "5"))
+
+    if sys.platform == "darwin":
+        TCP_KEEPALIVE = 0x10  # ``TCP_KEEPALIVE`` on macOS sets the idle interval.
+        try:
+            sock.setsockopt(socket.IPPROTO_TCP, TCP_KEEPALIVE, keepidle)
+        except OSError:
+            pass
+    elif sys.platform.startswith("linux"):
+        for name, value in (
+            ("TCP_KEEPIDLE", keepidle),
+            ("TCP_KEEPINTVL", keepintvl),
+            ("TCP_KEEPCNT", keepcnt),
+        ):
+            opt = getattr(socket, name, None)
+            if opt is None:
+                continue
+            try:
+                sock.setsockopt(socket.IPPROTO_TCP, opt, value)
+            except OSError:
+                pass
 
 
 class TcpTransport(Transport):
@@ -24,6 +63,8 @@ class TcpTransport(Transport):
         except OSError as exc:
             raise ConnectionError(f"TCP connect to {self.host}:{self.port} failed: {exc}") from exc
         self._sock.settimeout(timeout)
+        _enable_keepalive(self._sock)
+        self._buffer.clear()
 
     def send_line(self, payload: bytes) -> None:
         if self._sock is None:
@@ -57,6 +98,9 @@ class TcpTransport(Transport):
         line = bytes(self._buffer[:nl])
         del self._buffer[: nl + 1]
         return line
+
+    def reset_buffers(self) -> None:
+        self._buffer.clear()
 
     def close(self) -> None:
         if self._sock is not None:

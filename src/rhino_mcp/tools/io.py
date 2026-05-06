@@ -51,6 +51,32 @@ class _ScreenshotIn(_DocArg):
     mime: str = Field("image/png", description="Output MIME type (PNG only).")
 
 
+class _ViewportPreviewIn(_DocArg):
+    path: str = Field(..., description="Absolute output PNG path.")
+    width: Annotated[int, Field(ge=64, le=8192)] = 1280
+    height: Annotated[int, Field(ge=64, le=8192)] = 720
+    selection_ids: list[str] | None = Field(
+        None,
+        description="Object GUIDs to spotlight; everything else is ghosted or hidden.",
+    )
+    layers: list[str] | None = Field(
+        None,
+        description="Full-path layer names to spotlight (e.g. 'Arch::Walls').",
+    )
+    ghost_others: bool = Field(
+        True,
+        description=(
+            "When True, non-target objects stay visible but unselected; when "
+            "False they are hidden for the duration of the capture and restored "
+            "afterwards."
+        ),
+    )
+    zoom_to_selection: bool = Field(
+        True,
+        description="When True, run _Zoom _Selected before capturing.",
+    )
+
+
 def _resolve_objects(handle, ids: list[str] | None) -> list[r3.File3dmObject]:
     if not ids:
         return [handle.file3dm.Objects[i] for i in range(len(handle.file3dm.Objects))]
@@ -179,6 +205,22 @@ def register(mcp, mode: Mode) -> None:  # type: ignore[no-untyped-def]
         if isinstance(result, dict):
             result.setdefault("mime", args.mime)
         return result
+
+    @mcp.tool(annotations={"title": "Viewport Preview (filtered)", "readOnlyHint": False})
+    def rhino_viewport_preview(args: _ViewportPreviewIn) -> dict[str, Any]:
+        """Capture a viewport preview restricted to a selection or layer set.
+
+        Spotlights ``selection_ids`` and/or objects on ``layers``; everything
+        else is either ghosted (default) or hidden during the capture and
+        restored afterwards. Useful for multi-step LLM verification flows
+        where only the recently added objects need to be visualised. Bridge
+        only.
+        """
+        if runtime().mode is Mode.STANDALONE:
+            raise unsupported_in_standalone("rhino_viewport_preview")
+        return runtime().require_bridge().call(
+            "rhino.io.viewport_preview", args.model_dump()
+        )
 
 
 def _write_mesh_obj(f, mesh: r3.Mesh, v_offset: int) -> None:

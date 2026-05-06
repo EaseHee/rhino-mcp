@@ -6,12 +6,7 @@
 
 **Drive McNeel Rhino 8 and Grasshopper from Claude through the Model Context Protocol.**
 
-![PyPI](https://img.shields.io/pypi/v/rhino3dm-mcp)
-![Python](https://img.shields.io/badge/python-3.11%2B-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
-![Rhino](https://img.shields.io/badge/Rhino-8-red)
-![MCP](https://img.shields.io/badge/MCP-compatible-purple)
-![Platform](https://img.shields.io/badge/platform-windows%20%7C%20macos%20%7C%20linux-lightgrey)
+![PyPI](https://img.shields.io/pypi/v/rhino3dm-mcp) ![Python](https://img.shields.io/badge/python-3.11%2B-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![Rhino](https://img.shields.io/badge/Rhino-8-red) ![MCP](https://img.shields.io/badge/MCP-compatible-purple) ![Platform](https://img.shields.io/badge/platform-windows%20%7C%20macos%20%7C%20linux-lightgrey)
 
 [English](./README.md) · [한국어](./README.ko.md)
 
@@ -21,10 +16,11 @@
 
 ## Overview
 
-`rhino-mcp` is a Model Context Protocol server that lets Claude (or any MCP client) drive Rhino 8 — creating geometry, manipulating layers and materials, baking Grasshopper output, exporting STEP/IGES/STL/OBJ — through plain natural-language tool calls. It runs in two modes:
+`rhino-mcp` is a Model Context Protocol server that lets Claude (or any MCP client) drive Rhino 8 — creating geometry, manipulating layers and materials, baking Grasshopper output, exporting STEP/IGES/STL/OBJ — through plain natural-language tool calls.
+It runs in two modes:
 
-- **Standalone** (default): backed by [`rhino3dm`](https://github.com/mcneel/rhino3dm) for headless `.3dm` file authoring; works without Rhino installed and exposes **~126 tools** (geometry, file-I/O, transform, layer, material, analysis, RhinoScript docs, composition, document hygiene, geometry validation, GH template catalogue, freeform skin / panelisation / curvature / fields, drawing-set sheet + title block, schedule / quantity, block definition, sun-position + shadow projection, BIM metadata tagging, 19 physical material presets, BRE daylight factor + Bird DNI clear-sky model).
-- **Bridge**: when the C# bridge plugin is loaded in a live Rhino 8 session, the server transparently forwards every call (booleans, lofts, sweeps, viewport, render, scripting, deformation, NURBS editing, SubD, paneling, freeform analysis with true Gaussian curvature, drawing-set view placement + section cuts + PDF export, accurate Brep-area schedules, block explode/redefine, ray-cast solar exposure, IFC / gbXML import-export, HDRI environment, camera / light / render / turntable automation, *and* every Grasshopper operation including templates) to RhinoCommon and Grasshopper.Instances, exposing **~223 tools**.
+- **Standalone** (default): backed by [`rhino3dm`](https://github.com/mcneel/rhino3dm) for headless `.3dm` file authoring; works without Rhino installed and exposes **~129 tools** (geometry, file-I/O, transform, layer, material, analysis, RhinoScript docs, composition, document hygiene, geometry validation, GH template catalogue, freeform skin / panelisation / curvature / fields, drawing-set sheet + title block, schedule / quantity, block definition, sun-position + shadow projection, BIM metadata tagging, 19 physical material presets, BRE daylight factor + Bird DNI clear-sky model).
+- **Bridge**: when the C# bridge plugin is loaded in a live Rhino 8 session, the server transparently forwards every call (booleans, lofts, sweeps, viewport, render, scripting, deformation, NURBS editing, SubD, paneling, freeform analysis with true Gaussian curvature, drawing-set view placement + section cuts + PDF export, accurate Brep-area schedules, block explode/redefine, ray-cast solar exposure, IFC / gbXML import-export, HDRI environment, camera / light / render / turntable automation, *and* every Grasshopper operation including templates) to RhinoCommon and Grasshopper.Instances, exposing **~235 tools**.
 
 ## Features
 
@@ -62,7 +58,7 @@
 ## Architecture
 
 ```
-┌──────────────┐     stdio | HTTP      ┌────────────────┐
+┌──────────────┐     stdio | HTTP     ┌────────────────┐
 │  Claude /    │ ◀──────────────────▶ │   rhino-mcp    │
 │  MCP client  │                      │   (Python)     │
 └──────────────┘                      └─────┬──────────┘
@@ -109,8 +105,7 @@ rhino-mcp --version
 
 ### One-shot Claude Desktop wiring
 
-After installing the package, register the server with Claude Desktop in
-a single command instead of editing `claude_desktop_config.json` by hand:
+After installing the package, register the server with Claude Desktop in a single command instead of editing `claude_desktop_config.json` by hand:
 
 ```bash
 rhino-mcp install                         # auto-detect launcher (uvx / rhino-mcp / python)
@@ -119,21 +114,14 @@ rhino-mcp install --force                 # overwrite an existing entry
 rhino-mcp install --dry-run               # preview the JSON without writing
 ```
 
-The command writes a timestamped `.bak.*` copy of the existing config
-before saving, and is idempotent — re-running with the same flags is a
-no-op. Restart Claude Desktop afterwards to pick up the change.
+The command writes a timestamped `.bak.*` copy of the existing config before saving, and is idempotent — re-running with the same flags is a no-op.
+Restart Claude Desktop afterwards to pick up the change.
 
 #### From inside Rhino — `_McpInstall`
 
-If the bridge plugin is loaded, type `_McpInstall` on the Rhino command
-line. The command is non-interactive: it locates `uvx` / `rhino-mcp`
-/ `python` on `PATH` (with `~/.local/bin`, `~/.cargo/bin`,
-`/opt/homebrew/bin`, and `/usr/local/bin` searched on macOS so the
-GUI-app `PATH` is enough), runs the same install pipeline as
-`rhino-mcp install`, and streams the outcome to the Rhino command
-line. The MCP server is registered with `--mode auto` so Claude
-Desktop attaches to the bridge when Rhino is running and falls back
-to standalone (rhino3dm) when it is not.
+If the bridge plugin is loaded, type `_McpInstall` on the Rhino command line.
+The command is non-interactive: it locates `uvx` / `rhino-mcp` / `python` on `PATH` (with `~/.local/bin`, `~/.cargo/bin`, `/opt/homebrew/bin`, and `/usr/local/bin` searched on macOS so the GUI-app `PATH` is enough), runs the same install pipeline as `rhino-mcp install`, and streams the outcome to the Rhino command line.
+The MCP server is registered with `--mode auto` so Claude Desktop attaches to the bridge when Rhino is running and falls back to standalone (rhino3dm) when it is not.
 
 ### Docker
 
@@ -145,7 +133,8 @@ The container exposes the server over Streamable HTTP on TCP `:8765`.
 
 ## Running the server
 
-`rhino-mcp` is normally launched by an MCP client (Claude Desktop / Cursor / claude.ai connector) via the `command + args` you put into the client's config. You can also run it manually for debugging.
+`rhino-mcp` is normally launched by an MCP client (Claude Desktop / Cursor / claude.ai connector) via the `command + args` you put into the client's config.
+You can also run it manually for debugging.
 
 ### Launch modes
 
@@ -160,7 +149,9 @@ The container exposes the server over Streamable HTTP on TCP `:8765`.
 | Force bridge with HTTP fallback         | `RHINO_MCP_FORCE_MODE=bridge RHINO_MCP_BRIDGE_OPTIONAL=1 rhino-mcp --transport http` |
 | Show all CLI flags                      | `rhino-mcp --help`                                                             |
 
-The HTTP endpoint is `http://<host>:<port>/mcp`. Use `--allow-external` only when exposing the server through ngrok / Cloudflare Tunnel / etc. — it disables DNS-rebinding protection.
+The HTTP endpoint is `http://<host>:<port>/mcp`.
+Use `--allow-external` only when exposing the server through ngrok / Cloudflare Tunnel / etc.
+— it disables DNS-rebinding protection.
 
 ### Claude Desktop (stdio)
 
@@ -191,7 +182,8 @@ Paste this entry under `mcpServers`:
 }
 ```
 
-Prefer a checkout? Point `command` at `uv` and run from the repo:
+Prefer a checkout?
+Point `command` at `uv` and run from the repo:
 
 ```json
 {
@@ -241,7 +233,8 @@ Any MCP-compatible client (mcp-inspector, Continue, Claude Code, etc.) that can 
 
 ### Rhino-side bridge plugin (C# — recommended)
 
-Build and install the C# plugin for full 130+ tool support. The included helper script wraps `dotnet build` and verifies the post-build install location:
+Build and install the C# plugin for full 130+ tool support.
+The included helper script wraps `dotnet build` and verifies the post-build install location:
 
 ```bash
 ./scripts/build-plugin.sh             # debug build + install
@@ -259,7 +252,8 @@ Post-build targets copy the `.rhp`:
 | macOS   | `/Applications/Rhino 8.app/Contents/PlugIns/rhino-mcp.rhp`                       |
 | Windows | `%APPDATA%/McNeel/Rhinoceros/8.0/Plug-ins/rhino-mcp/rhino-mcp.rhp`           |
 
-Restart Rhino 8 — the bridge starts automatically on load (TCP `:4242` by default). Then restart `rhino-mcp` (or set `RHINO_MCP_FORCE_MODE=bridge`) and the bridge-only tools become available.
+Restart Rhino 8 — the bridge starts automatically on load (TCP `:4242` by default).
+Then restart `rhino-mcp` (or set `RHINO_MCP_FORCE_MODE=bridge`) and the bridge-only tools become available.
 
 
 ## Quick start
@@ -373,7 +367,8 @@ See [docs/en/grasshopper-guide.md](docs/en/grasshopper-guide.md) for canvas/comp
 
 ## Configuration
 
-Every knob is controlled by an environment variable. CLI flags override env where applicable.
+Every knob is controlled by an environment variable.
+CLI flags override env where applicable.
 
 | Variable                            | Default            | Purpose |
 |-------------------------------------|--------------------|---------|

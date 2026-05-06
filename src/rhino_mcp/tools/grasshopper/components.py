@@ -40,6 +40,34 @@ class _ClusterExpandIn(BaseModel):
     cluster_id: str
 
 
+class _PluginListIn(BaseModel):
+    pass
+
+
+class _ComponentSearchIn(BaseModel):
+    query: str | None = Field(
+        None,
+        description=(
+            "Case-insensitive substring matched against component name, nickname, "
+            "and subcategory. Empty/None returns the first 'limit' entries."
+        ),
+    )
+    plugin: str | None = Field(
+        None,
+        description=(
+            "Filter by source plugin (file name match, case-insensitive). Useful "
+            "for narrowing to LunchBox / Ladybug / Pufferfish, etc."
+        ),
+    )
+    category: str | None = Field(
+        None,
+        description="Filter by category or subcategory (case-insensitive substring).",
+    )
+    limit: int = Field(
+        50, ge=1, le=500, description="Maximum number of rows returned in 'rows'."
+    )
+
+
 def register(mcp, mode: Mode) -> None:  # type: ignore[no-untyped-def]
     @mcp.tool(annotations={"title": "GH: Add Component", "readOnlyHint": False})
     def gh_add_component(args: _AddComponentIn) -> dict[str, Any]:
@@ -70,3 +98,25 @@ def register(mcp, mode: Mode) -> None:  # type: ignore[no-untyped-def]
     def gh_cluster_expand(args: _ClusterExpandIn) -> dict[str, Any]:
         """Expand a cluster back into its constituent components."""
         return runtime().require_bridge().call("gh.cluster.expand", args.model_dump())
+
+    @mcp.tool(annotations={"title": "GH: List Loaded Plugins", "readOnlyHint": True, "idempotentHint": True})
+    def gh_plugin_list(args: _PluginListIn) -> dict[str, Any]:
+        """Enumerate Grasshopper plugin libraries currently loaded.
+
+        Returns one entry per ``GH_AssemblyInfo`` library: id, name, author,
+        version, description, and the on-disk path. Useful for the LLM to
+        discover whether the user has LunchBox / Ladybug / Kangaroo etc.
+        installed before attempting to drop in a custom component.
+        """
+        return runtime().require_bridge().call("gh.plugin.list", args.model_dump())
+
+    @mcp.tool(annotations={"title": "GH: Search Components", "readOnlyHint": True, "idempotentHint": True})
+    def gh_components_search(args: _ComponentSearchIn) -> dict[str, Any]:
+        """Search the Grasshopper component catalog (built-in + plugin-supplied).
+
+        Returns ``rows`` of ``{guid, name, nickname, category, subcategory,
+        description, plugin}`` and a ``summary`` block with match counts.
+        Use this to find the GUID needed by ``gh_add_component`` before
+        dropping a component on the canvas.
+        """
+        return runtime().require_bridge().call("gh.components.search", args.model_dump())

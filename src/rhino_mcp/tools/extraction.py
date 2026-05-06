@@ -10,6 +10,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from rhino_mcp.tools._helpers import MAX_OBJECT_IDS
 from rhino_mcp.tools.context import runtime
 from rhino_mcp.utils.error_handling import unsupported_in_standalone
 from rhino_mcp.utils.registry import Mode
@@ -40,7 +41,7 @@ class _IsocurveIn(BaseModel):
 
 
 class _Make2DIn(BaseModel):
-    object_ids: list[str] = Field(..., min_length=1)
+    object_ids: list[str] = Field(..., min_length=1, max_length=MAX_OBJECT_IDS)
     view_name: str | None = Field(None, description="Named view to project from (None = active viewport).")
     show_hidden: bool = Field(False, description="Include hidden lines.")
     layer: str | None = None

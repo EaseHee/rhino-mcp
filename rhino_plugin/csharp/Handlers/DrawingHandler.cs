@@ -368,9 +368,9 @@ namespace RhinoMcp.Handlers
             // arguments depend on user preferences and Rhino version, so we
             // route through a script line that requests a PDF target. Users
             // who need pixel-perfect control should use Rhino's UI directly.
-            RhinoApp.RunScript(
+            SafeRunScript(
                 $"_-Print _Setup _Destination _PDF _Enter _Resolution {dpi} _Enter _Save \"{path}\" _Enter _Enter",
-                false);
+                "ExportPdf");
             return new JObject
             {
                 ["summary"] = new JObject

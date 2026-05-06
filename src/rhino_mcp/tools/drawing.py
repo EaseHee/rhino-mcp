@@ -22,6 +22,7 @@ from pydantic import BaseModel, Field
 
 from rhino_mcp.models.geometry_types import Point3dModel
 from rhino_mcp.tools._helpers import (
+    MAX_OBJECT_IDS,
     bridge_call,
     doc,
     require_bridge_only,
@@ -54,7 +55,7 @@ class _SheetCreateIn(_DocArg):
 
 class _ViewPlaceIn(_DocArg):
     sheet_id: str = Field(..., description="Sheet id from rhino_drawing_sheet_create.")
-    object_ids: list[str] = Field(..., min_length=1)
+    object_ids: list[str] = Field(..., min_length=1, max_length=MAX_OBJECT_IDS)
     view_plane: str = Field(
         "Top",
         description="Top | Front | Right | Back | Left | Bottom (world projection).",
@@ -72,7 +73,7 @@ class _ViewPlaceIn(_DocArg):
 
 class _SectionCutIn(_DocArg):
     sheet_id: str = Field(...)
-    object_ids: list[str] = Field(..., min_length=1)
+    object_ids: list[str] = Field(..., min_length=1, max_length=MAX_OBJECT_IDS)
     plane_origin: Point3dModel
     plane_normal: Point3dModel
     target_origin: Point3dModel

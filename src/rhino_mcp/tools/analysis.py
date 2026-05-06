@@ -8,7 +8,7 @@ import rhino3dm as r3
 from pydantic import BaseModel, Field
 
 from rhino_mcp.models.geometry_types import Point3dModel
-from rhino_mcp.tools._helpers import doc, to_point
+from rhino_mcp.tools._helpers import MAX_OBJECT_IDS, doc, to_point
 from rhino_mcp.tools.context import runtime
 from rhino_mcp.utils.error_handling import parameter_error, unsupported_in_standalone
 from rhino_mcp.utils.registry import Mode
@@ -27,7 +27,7 @@ class _ObjectIn(_DocArg):
 
 
 class _ObjectsIn(_DocArg):
-    object_ids: list[str] = Field(..., min_length=1)
+    object_ids: list[str] = Field(..., min_length=1, max_length=MAX_OBJECT_IDS)
 
 
 class _DistancePointsIn(_DocArg):
@@ -36,13 +36,13 @@ class _DistancePointsIn(_DocArg):
 
 
 class _SectionIn(_DocArg):
-    object_ids: list[str] = Field(..., min_length=1)
+    object_ids: list[str] = Field(..., min_length=1, max_length=MAX_OBJECT_IDS)
     plane_origin: Point3dModel
     plane_normal: Point3dModel
 
 
 class _ContourIn(_DocArg):
-    object_ids: list[str] = Field(..., min_length=1)
+    object_ids: list[str] = Field(..., min_length=1, max_length=MAX_OBJECT_IDS)
     base_point: Point3dModel
     direction: Point3dModel
     interval: float = Field(..., gt=0)

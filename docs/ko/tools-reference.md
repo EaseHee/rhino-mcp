@@ -1,6 +1,6 @@
 # 도구 레퍼런스(Tools Reference)
 
-모든 도구는 다음 형태의 구조화된 페이로드(payload)를 반환합니다.
+모든 도구는 다음 형태의 구조화된 payload 반환.
 
 ```json
 {
@@ -9,9 +9,9 @@
 }
 ```
 
-오류는 `ToolError`로 발생되며 `category`, `message`, `hint`, `details`를 포함합니다.
+오류는 `ToolError`로 발생, `category`, `message`, `hint`, `details` 포함.
 
-“capability” 컬럼이 등록 모드를 나타냅니다.
+"capability" 컬럼이 등록 모드 표시.
 
 - **standalone** — 인-프로세스 `rhino3dm.File3dm`에서 실행
 - **bridge** — Rhino 측 브리지가 도달 가능할 때만 등록
@@ -60,9 +60,7 @@
 
 ## 서피스(Surfaces, 브리지 전용)
 
-`rhino_plane_surface`, `rhino_extrude`, `rhino_revolve`, `rhino_loft`,
-`rhino_sweep1`, `rhino_sweep2`, `rhino_network_surface`, `rhino_patch`,
-`rhino_blend_surface`, `rhino_fillet_surface`, `rhino_offset_surface`.
+`rhino_plane_surface`, `rhino_extrude`, `rhino_revolve`, `rhino_loft`, `rhino_sweep1`, `rhino_sweep2`, `rhino_network_surface`, `rhino_patch`, `rhino_blend_surface`, `rhino_fillet_surface`, `rhino_offset_surface`.
 
 ## 메쉬(Mesh)
 

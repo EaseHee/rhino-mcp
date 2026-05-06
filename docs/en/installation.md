@@ -44,7 +44,9 @@ The bridge is a C# Rhino plugin (`rhino_plugin/csharp/`) that runs inside Rhino 
 dotnet build rhino_plugin/csharp -c Release
 ```
 
-The build emits `rhino_plugin/csharp/bin/Release/net8.0/rhino-mcp.rhp`. Drag-and-drop that `.rhp` onto a Rhino 8 viewport (or load it via `_PluginManager`). Once loaded the plugin starts a JSON-RPC listener on the platform-native transport (named pipe on Windows, Unix domain socket on macOS/Linux) and the MCP server auto-detects it on startup.
+The build emits `rhino_plugin/csharp/bin/Release/net8.0/rhino-mcp.rhp`.
+Drag-and-drop that `.rhp` onto a Rhino 8 viewport (or load it via `_PluginManager`).
+Once loaded the plugin starts a JSON-RPC listener on the platform-native transport (named pipe on Windows, Unix domain socket on macOS/Linux) and the MCP server auto-detects it on startup.
 
 ## Configure Claude Desktop
 
@@ -64,7 +66,8 @@ Edit `claude_desktop_config.json` (Claude Desktop → *Settings → Developer �
 }
 ```
 
-Restart Claude Desktop. The `rhino_*` and `gh_*` tools should appear in the tool palette.
+Restart Claude Desktop.
+The `rhino_*` and `gh_*` tools should appear in the tool palette.
 
 ## Verify
 

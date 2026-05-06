@@ -164,7 +164,7 @@ namespace RhinoMcp.Handlers
             Doc.Strings.SetString("rhino_mcp::env_strength", strength.ToString("R"));
             Doc.Strings.SetString("rhino_mcp::env_for_lighting", forLighting ? "1" : "0");
             Doc.Strings.SetString("rhino_mcp::env_for_background", forBackground ? "1" : "0");
-            Rhino.RhinoApp.RunScript($"_-Environment _SetActive _File \"{hdri}\" _Enter", false);
+            SafeRunScript($"_-Environment _SetActive _File \"{hdri}\" _Enter");
             return new JObject
             {
                 ["summary"] = new JObject

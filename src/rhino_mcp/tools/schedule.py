@@ -18,7 +18,7 @@ from typing import Any
 import rhino3dm as r3
 from pydantic import BaseModel, Field
 
-from rhino_mcp.tools._helpers import bridge_call, doc
+from rhino_mcp.tools._helpers import MAX_OBJECT_IDS, bridge_call, doc
 from rhino_mcp.tools.context import runtime
 from rhino_mcp.utils.error_handling import not_found_error, parameter_error
 from rhino_mcp.utils.registry import Mode
@@ -63,7 +63,7 @@ class _ByMaterialIn(_DocArg):
 
 
 class _ObjectQuantityIn(_DocArg):
-    object_ids: list[str] = Field(..., min_length=1)
+    object_ids: list[str] = Field(..., min_length=1, max_length=MAX_OBJECT_IDS)
     fields: list[str] = Field(
         default_factory=lambda: ["area", "volume", "length", "centroid", "bbox"],
         description="Per-object measurements to include.",

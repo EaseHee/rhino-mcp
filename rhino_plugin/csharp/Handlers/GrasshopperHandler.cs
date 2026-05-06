@@ -198,15 +198,129 @@ namespace RhinoMcp.Handlers
             return new JObject { ["summary"] = new JObject { ["components"] = components } };
         }
 
+        // ── Plugin catalog ────────────────────────────────────────────────────
+        public JObject PluginList(JObject p)
+        {
+            var server = Grasshopper.Instances.ComponentServer;
+            var libraries = new JArray();
+            if (server != null)
+            {
+                foreach (var lib in server.Libraries)
+                {
+                    // GH_AssemblyInfo exposes a small fixed set of fields; the
+                    // author surface is typed differently between Rhino 7/8 so
+                    // we read it via reflection and degrade gracefully.
+                    string author = "";
+                    try
+                    {
+                        var prop = lib.GetType().GetProperty("AuthorName")
+                            ?? lib.GetType().GetProperty("Author");
+                        author = prop?.GetValue(lib)?.ToString() ?? "";
+                    }
+                    catch
+                    {
+                        // best-effort
+                    }
+                    libraries.Add(new JObject
+                    {
+                        ["id"] = lib.Id.ToString(),
+                        ["name"] = lib.Name,
+                        ["author"] = author,
+                        ["version"] = lib.Version,
+                        ["description"] = lib.Description,
+                        ["assembly_full_name"] = lib.Assembly?.FullName,
+                        ["assembly_path"] = lib.Location,
+                    });
+                }
+            }
+            return new JObject
+            {
+                ["summary"] = new JObject
+                {
+                    ["library_count"] = libraries.Count,
+                    ["libraries"] = libraries,
+                },
+                ["text"] = $"{libraries.Count} Grasshopper plugin libraries loaded.",
+            };
+        }
+
+        public JObject ComponentsSearch(JObject p)
+        {
+            var server = Grasshopper.Instances.ComponentServer;
+            if (server == null)
+                throw new InvalidOperationException("Grasshopper.ComponentServer not available.");
+
+            var query = (p["query"]?.ToString() ?? "").Trim();
+            var pluginFilter = (p["plugin"]?.ToString() ?? "").Trim();
+            var category = (p["category"]?.ToString() ?? "").Trim();
+            var limit = p["limit"]?.Value<int>() ?? 50;
+            if (limit <= 0) limit = 50;
+            if (limit > 500) limit = 500;
+
+            var rows = new JArray();
+            int matched = 0;
+            foreach (var proxy in server.ObjectProxies)
+            {
+                if (proxy == null || proxy.Obsolete) continue;
+                var name = proxy.Desc.Name ?? "";
+                var nick = proxy.Desc.NickName ?? "";
+                var cat = proxy.Desc.Category ?? "";
+                var sub = proxy.Desc.SubCategory ?? "";
+                var plugin = proxy.Location?.Split('/', '\\') is { Length: > 0 } parts
+                    ? parts[parts.Length - 1]
+                    : "";
+
+                if (!string.IsNullOrEmpty(query)
+                    && name.IndexOf(query, StringComparison.OrdinalIgnoreCase) < 0
+                    && nick.IndexOf(query, StringComparison.OrdinalIgnoreCase) < 0
+                    && sub.IndexOf(query, StringComparison.OrdinalIgnoreCase) < 0)
+                    continue;
+                if (!string.IsNullOrEmpty(category)
+                    && cat.IndexOf(category, StringComparison.OrdinalIgnoreCase) < 0
+                    && sub.IndexOf(category, StringComparison.OrdinalIgnoreCase) < 0)
+                    continue;
+                if (!string.IsNullOrEmpty(pluginFilter)
+                    && plugin.IndexOf(pluginFilter, StringComparison.OrdinalIgnoreCase) < 0)
+                    continue;
+
+                matched++;
+                if (rows.Count >= limit) continue;
+                rows.Add(new JObject
+                {
+                    ["guid"] = proxy.Guid.ToString(),
+                    ["name"] = name,
+                    ["nickname"] = nick,
+                    ["category"] = cat,
+                    ["subcategory"] = sub,
+                    ["description"] = proxy.Desc.Description ?? "",
+                    ["plugin"] = plugin,
+                });
+            }
+            return new JObject
+            {
+                ["summary"] = new JObject
+                {
+                    ["query"] = query,
+                    ["plugin_filter"] = pluginFilter,
+                    ["category_filter"] = category,
+                    ["matched"] = matched,
+                    ["returned"] = rows.Count,
+                    ["limit"] = limit,
+                },
+                ["rows"] = rows,
+                ["text"] = $"Matched {matched} components, returning {rows.Count}.",
+            };
+        }
+
         public JObject ClusterCreate(JObject p)
         {
-            RhinoApp.RunScript("_GrasshopperCluster", false);
+            SafeRunScript("_GrasshopperCluster");
             return StatusOk("Cluster creation invoked");
         }
 
         public JObject ClusterExpand(JObject p)
         {
-            RhinoApp.RunScript("_GrasshopperClusterExpand", false);
+            SafeRunScript("_GrasshopperClusterExpand");
             return StatusOk("Cluster expand invoked");
         }
 
@@ -309,6 +423,96 @@ namespace RhinoMcp.Handlers
         {
             // Setting data tree values is complex — delegate to parameter set
             return ParameterSet(p);
+        }
+
+        public JObject DataTreeGetBatch(JObject p)
+        {
+            var queries = p["queries"] as JArray
+                ?? throw new System.ArgumentException("'queries' must be a JSON array.");
+            var rows = new JArray();
+            foreach (var q in queries)
+            {
+                var qo = q as JObject
+                    ?? throw new System.ArgumentException("Each query must be an object.");
+                var entry = new JObject { ["component_id"] = qo["component_id"] };
+                try
+                {
+                    var single = DataTreeGet(qo);
+                    entry["status"] = "ok";
+                    entry["tree"] = single["summary"]?["tree"];
+                }
+                catch (System.Exception ex)
+                {
+                    entry["status"] = "error";
+                    entry["error"] = ex.Message;
+                }
+                rows.Add(entry);
+            }
+            return new JObject
+            {
+                ["summary"] = new JObject
+                {
+                    ["query_count"] = queries.Count,
+                    ["returned"] = rows.Count,
+                },
+                ["rows"] = rows,
+            };
+        }
+
+        public JObject DataTreeSetBatch(JObject p)
+        {
+            var assignments = p["assignments"] as JArray
+                ?? throw new System.ArgumentException("'assignments' must be a JSON array.");
+            var deferSolve = p["defer_solve"]?.Value<bool>() ?? true;
+            var rows = new JArray();
+            var ok = 0;
+            var failed = 0;
+            var doc = GetDoc();
+            // Suspend the solver across the batch so the document recomputes
+            // exactly once at the end instead of after every assignment.
+            var prevEnabled = doc.Enabled;
+            if (deferSolve)
+            {
+                try { doc.Enabled = false; } catch { /* best-effort */ }
+            }
+            foreach (var a in assignments)
+            {
+                var ao = a as JObject
+                    ?? throw new System.ArgumentException("Each assignment must be an object.");
+                var entry = new JObject
+                {
+                    ["component_id"] = ao["component_id"],
+                };
+                try
+                {
+                    ParameterSet(ao);
+                    entry["status"] = "ok";
+                    ok++;
+                }
+                catch (System.Exception ex)
+                {
+                    entry["status"] = "error";
+                    entry["error"] = ex.Message;
+                    failed++;
+                }
+                rows.Add(entry);
+            }
+            if (deferSolve)
+            {
+                try { doc.Enabled = prevEnabled; } catch { /* best-effort */ }
+                try { doc.NewSolution(false); } catch { /* best-effort */ }
+            }
+            return new JObject
+            {
+                ["summary"] = new JObject
+                {
+                    ["assignment_count"] = assignments.Count,
+                    ["ok"] = ok,
+                    ["failed"] = failed,
+                    ["defer_solve"] = deferSolve,
+                },
+                ["rows"] = rows,
+            };
         }
     }
 }

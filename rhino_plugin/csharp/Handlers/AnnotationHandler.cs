@@ -34,31 +34,31 @@ namespace RhinoMcp.Handlers
 
         public JObject DimLinear(JObject p)
         {
-            RhinoApp.RunScript("_DimLinear", false);
+            SafeRunScript("_DimLinear");
             return StatusOk("DimLinear command invoked");
         }
 
         public JObject DimAligned(JObject p)
         {
-            RhinoApp.RunScript("_DimAligned", false);
+            SafeRunScript("_DimAligned");
             return StatusOk("DimAligned command invoked");
         }
 
         public JObject DimAngular(JObject p)
         {
-            RhinoApp.RunScript("_DimAngle", false);
+            SafeRunScript("_DimAngle");
             return StatusOk("DimAngular command invoked");
         }
 
         public JObject Leader(JObject p)
         {
-            RhinoApp.RunScript("_Leader", false);
+            SafeRunScript("_Leader");
             return StatusOk("Leader command invoked");
         }
 
         public JObject Hatch(JObject p)
         {
-            RhinoApp.RunScript("_Hatch", false);
+            SafeRunScript("_Hatch");
             return StatusOk("Hatch command invoked");
         }
 

@@ -10,7 +10,13 @@ import rhino3dm as r3
 from pydantic import BaseModel, Field
 
 from rhino_mcp.models.geometry_types import ColorRGBA
-from rhino_mcp.tools._helpers import bridge_call, doc, find_material_index, require_bridge_only
+from rhino_mcp.tools._helpers import (
+    MAX_OBJECT_IDS,
+    bridge_call,
+    doc,
+    find_material_index,
+    require_bridge_only,
+)
 from rhino_mcp.tools.context import runtime
 from rhino_mcp.utils.error_handling import (
     not_found_error,
@@ -47,7 +53,7 @@ class _MaterialCreateIn(_DocArg):
 
 class _MaterialAssignIn(_DocArg):
     material_name: str
-    object_ids: list[str] = Field(..., min_length=1)
+    object_ids: list[str] = Field(..., min_length=1, max_length=MAX_OBJECT_IDS)
 
 
 class _RenderIn(_DocArg):

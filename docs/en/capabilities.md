@@ -2,7 +2,8 @@
 
 Which tools run in which mode, and why.
 
-`rhino3dm` ships only the OpenNURBS file format and a small subset of geometry constructors. It cannot perform:
+`rhino3dm` ships only the OpenNURBS file format and a small subset of geometry constructors.
+It cannot perform:
 
 - Boolean operations (union / difference / intersection) on Breps or meshes.
 - Surface lofting, sweeping (1- or 2-rail), network surfaces, patch, blend, fillet, offset.
@@ -10,7 +11,8 @@ Which tools run in which mode, and why.
 - Viewport interaction (named views, display modes, zoom-extents, render).
 - Grasshopper.
 
-For those, the bridge plugin running inside Rhino 8 is required. The capability matrix below summarises this.
+For those, the bridge plugin running inside Rhino 8 is required.
+The capability matrix below summarises this.
 
 | Tool                                | Standalone (rhino3dm) | Bridge (Rhino 8 + RhinoCommon/Grasshopper) |
 |-------------------------------------|:---------------------:|:------------------------------------------:|
@@ -40,7 +42,7 @@ For those, the bridge plugin running inside Rhino 8 is required. The capability 
 | `rhino_bounding_box`, `rhino_distance` | ✓ | ✓ |
 | `rhino_curvature_analysis`, `rhino_draft_angle`, `rhino_zebra`, `rhino_section`, `rhino_contour` | ✗ | ✓ |
 | `rhino_view_set`, `rhino_zoom_extent`, `rhino_named_view_save`, `rhino_display_mode_set`, `rhino_turntable` | ✗ | ✓ |
-| All `gh_*` (22 tools) | ✗ | ✓ |
+| All `gh_*` (26 tools) | ✗ | ✓ |
 | `rhino_execute_python`, `rhino_execute_csharp` (scripting) | ✗ | ✓ |
 | `rhino_search_rhinoscript_functions`, `rhino_get_rhinoscript_docs` + 2 more (RS docs) | ✓ | ✓ |
 | `rhino_undo`, `rhino_redo` (history) | ✗ | ✓ |
@@ -77,5 +79,10 @@ For those, the bridge plugin running inside Rhino 8 is required. The capability 
 | `rhino_environment_set` (HDRI env, v0.3) | ✗ | ✓ |
 | `rhino_camera_set`, `rhino_light_add`, `rhino_render_setup`, `rhino_render_to_file`, `rhino_turntable_render` (render, v0.3) | ✗ | ✓ |
 | `rhino_direct_irradiance`, `rhino_daylight_factor` (precision daylight, v0.3) | ✓ | ✓ |
+| `gh_plugin_list`, `gh_components_search` (GH plugin catalog, v0.5) | ✗ | ✓ |
+| `gh_data_tree_get_batch`, `gh_data_tree_set_batch` (DataTree batch, v0.5) | ✗ | ✓ |
+| `rhino_bim_pset_get`, `rhino_bim_pset_set`, `rhino_bim_pset_delete` (IFC PropertySet, v0.5) | ✓ | ✓ |
+| `rhino_viewport_preview` (selection-filtered capture, v0.5) | ✗ | ✓ |
+| `rhino_render_queue_submit`, `rhino_render_queue_status`, `rhino_render_queue_cancel`, `rhino_render_queue_list` (render queue, v0.5) | ✗ | ✓ |
 
-In numbers: ~126 standalone tools, ~223 with the C# bridge.
+In numbers: ~129 standalone tools, ~235 with the C# bridge.

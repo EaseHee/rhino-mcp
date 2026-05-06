@@ -163,7 +163,7 @@ namespace RhinoMcp.Handlers
 
         private static JObject RunScript(string script, string kind)
         {
-            RhinoApp.RunScript(script, false);
+            SafeRunScript(script);
             return new JObject { ["status"] = "ok", ["kind"] = kind };
         }
     }

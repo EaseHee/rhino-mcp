@@ -8,27 +8,27 @@ namespace RhinoMcp.Handlers
         public JObject ViewSet(JObject p)
         {
             var name = p["name"]!.ToString();
-            RhinoApp.RunScript($"_-SetView _World _{name}", false);
+            SafeRunScript($"_-SetView _World _{name}");
             return StatusOk($"View set to {name}");
         }
 
         public JObject ZoomExtent(JObject p)
         {
-            RhinoApp.RunScript("_Zoom _Extents", false);
+            SafeRunScript("_Zoom _Extents");
             return StatusOk("Zoomed to extents");
         }
 
         public JObject NamedViewSave(JObject p)
         {
             var name = p["name"]!.ToString();
-            RhinoApp.RunScript($"_-NamedView _Save \"{name}\" _Enter", false);
+            SafeRunScript($"_-NamedView _Save \"{name}\" _Enter");
             return StatusOk($"Named view saved: {name}");
         }
 
         public JObject ModeSet(JObject p)
         {
             var mode = p["mode"]!.ToString();
-            RhinoApp.RunScript($"_-SetDisplayMode _Mode={mode}", false);
+            SafeRunScript($"_-SetDisplayMode _Mode={mode}");
             return StatusOk($"Display mode set to {mode}");
         }
 
@@ -36,7 +36,7 @@ namespace RhinoMcp.Handlers
         {
             var outputPath = p["output_path"]!.ToString();
             var frames = p["frames"]?.Value<int>() ?? 60;
-            RhinoApp.RunScript($"_-Turntable _FrameCount={frames} _OutputFile=\"{outputPath}\" _Enter", false);
+            SafeRunScript($"_-Turntable _FrameCount={frames} _OutputFile=\"{outputPath}\" _Enter");
             return new JObject
             {
                 ["status"] = "ok",
@@ -49,9 +49,9 @@ namespace RhinoMcp.Handlers
         {
             var outputPath = p["output_path"]?.ToString();
             if (!string.IsNullOrEmpty(outputPath))
-                RhinoApp.RunScript($"_-Render\n_-SaveRenderWindowAs \"{outputPath}\"\n_-CloseRenderWindow", false);
+                SafeRunScript($"_-Render\n_-SaveRenderWindowAs \"{outputPath}\"\n_-CloseRenderWindow");
             else
-                RhinoApp.RunScript("_-Render", false);
+                SafeRunScript("_-Render");
             return new JObject { ["status"] = "ok", ["output_path"] = outputPath };
         }
     }

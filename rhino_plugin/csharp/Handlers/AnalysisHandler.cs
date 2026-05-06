@@ -80,7 +80,7 @@ namespace RhinoMcp.Handlers
 
         public JObject DraftAngle(JObject p)
         {
-            RhinoApp.RunScript("_DraftAngleAnalysis", false);
+            SafeRunScript("_DraftAngleAnalysis");
             return StatusOk("DraftAngle analysis activated");
         }
 
@@ -112,13 +112,13 @@ namespace RhinoMcp.Handlers
 
         public JObject Contour(JObject p)
         {
-            RhinoApp.RunScript("_Contour", false);
+            SafeRunScript("_Contour");
             return StatusOk("Contour command invoked");
         }
 
         public JObject Zebra(JObject p)
         {
-            RhinoApp.RunScript("_Zebra", false);
+            SafeRunScript("_Zebra");
             return StatusOk("Zebra analysis activated");
         }
     }
