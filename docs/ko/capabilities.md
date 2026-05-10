@@ -84,4 +84,4 @@
 | `rhino_viewport_preview` (선택/레이어 필터 부분 캡처, v0.5) | ✗ | ✓ |
 | `rhino_render_queue_submit`, `rhino_render_queue_status`, `rhino_render_queue_cancel`, `rhino_render_queue_list` (렌더 큐, v0.5) | ✗ | ✓ |
 
-요약: standalone 약 129개, C# 브리지 활성 시 235개.
+요약: standalone 약 234개, C# 브리지 활성 시 235개.

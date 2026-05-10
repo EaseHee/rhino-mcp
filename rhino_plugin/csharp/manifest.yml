@@ -1,6 +1,6 @@
 ---
 name: rhino-mcp
-version: 0.5.0
+version: 0.5.1
 authors:
   - "EaseHee <26100044@snut.ac.kr>"
 description: |
@@ -9,6 +9,15 @@ description: |
   platform-native transport (named pipe on Windows, Unix socket on
   macOS/Linux, optional TCP). The MCP server (separate process) auto-
   detects the bridge on startup.
+
+  After install — connect Claude Desktop:
+    1. Type "_McpInstall" in the Rhino command line (recommended), OR
+    2. Manually edit claude_desktop_config.json — see
+       https://github.com/easehee/rhino-mcp/blob/main/docs/en/installation.md
+  Then restart Claude Desktop to load the rhino-mcp tools.
+
+  If "uvx" or "python" is missing, "_McpInstall" will offer to install
+  uv automatically (with confirmation).
 url: https://github.com/easehee/rhino-mcp
 keywords:
   - mcp

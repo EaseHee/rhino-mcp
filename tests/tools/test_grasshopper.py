@@ -21,6 +21,9 @@ class MockBridgeClient:
         self.calls: list[tuple[str, dict[str, Any]]] = []
         self.default_result = default_result or {"status": "ok"}
 
+    def is_alive(self) -> bool:
+        return True
+
     def call(self, method: str, params: dict[str, Any]) -> dict[str, Any]:
         self.calls.append((method, params))
         return self.default_result

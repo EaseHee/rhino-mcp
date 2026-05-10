@@ -373,7 +373,7 @@ namespace RhinoMcp
         public JObject Dispatch(string method, JObject parameters)
         {
             if (!_handlers.TryGetValue(method, out var handler))
-                throw new KeyNotFoundException($"Unknown method: {method}");
+                throw new RpcException(RpcErrorCodes.MethodNotFound, $"Unknown method: {method}");
 
             return handler(parameters);
         }

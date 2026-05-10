@@ -1,24 +1,25 @@
 #!/usr/bin/env bash
 # check-bridge.sh — Diagnose why rhino-mcp falls back to standalone mode.
 #
-# Checks every layer of the bridge detection stack and prints a clear
-# PASS / FAIL / WARN verdict for each step.
+# Walks the bridge detection stack (TCP reachability → JSON-RPC ping →
+# detect_mode result) and prints a PASS / FAIL / WARN verdict for each
+# step.  The current rhino-mcp bridge is a TCP transport implemented by
+# the C# `.rhp` plug-in loaded inside Rhino 8 — there is no
+# `rhino-mcp.py` script anymore, and the macOS / Linux Unix-socket
+# transport was retired in v0.4.
 #
 # Usage:
 #   ./scripts/check-bridge.sh
-#   ./scripts/check-bridge.sh --tcp      # check TCP transport only
-#   ./scripts/check-bridge.sh --verbose  # show raw output from ping
+#   ./scripts/check-bridge.sh --verbose
 
 set -uo pipefail
 
-TCP_ONLY=false
 VERBOSE=false
 for arg in "$@"; do
   case "$arg" in
-    --tcp)     TCP_ONLY=true ;;
     --verbose) VERBOSE=true ;;
     --help)
-      echo "Usage: $0 [--tcp] [--verbose]"
+      echo "Usage: $0 [--verbose]"
       exit 0
       ;;
     *) echo "Unknown option: $arg" >&2; exit 1 ;;
@@ -44,68 +45,9 @@ RHINO_HOST="${RHINO_HOST:-localhost}"
 RHINO_PORT="${RHINO_PORT:-4242}"
 echo "$INFO  TCP target : $RHINO_HOST:$RHINO_PORT"
 
-# ── Unix socket (macOS / Linux) ────────────────────────────────────────────────
-if [ "$PLATFORM" != "Darwin" ] && [ "$PLATFORM" != "Linux" ]; then
-  TCP_ONLY=true
-fi
-
-TRANSPORT_KIND="${RHINO_MCP_TRANSPORT_KIND:-}"
-if [ "$TRANSPORT_KIND" = "tcp" ]; then
-  TCP_ONLY=true
-fi
-
+# ── TCP reachability ──────────────────────────────────────────────────────────
 echo ""
-echo "1. Unix socket (macOS/Linux primary transport)"
-if [ "$TCP_ONLY" = true ]; then
-  echo "   $WARN  Skipped — TCP-only mode"
-else
-  SOCK_PATH="${RHINO_MCP_SOCKET:-}"
-  if [ -z "$SOCK_PATH" ]; then
-    XDG="${XDG_RUNTIME_DIR:-}"
-    if [ -n "$XDG" ]; then
-      SOCK_PATH="$XDG/rhino_mcp.sock"
-    else
-      SOCK_PATH="/tmp/rhino_mcp.sock"
-    fi
-  fi
-  echo "   $INFO  Expected socket path: $SOCK_PATH"
-  if [ -S "$SOCK_PATH" ]; then
-    echo "   $PASS  Socket file exists"
-    # Try to connect
-    if uv run python -c "
-import socket, sys
-s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-s.settimeout(2)
-try:
-    s.connect('$SOCK_PATH')
-    s.close()
-    sys.exit(0)
-except Exception as e:
-    print('  connect error:', e, file=sys.stderr)
-    sys.exit(1)
-" 2>/dev/null; then
-      echo "   $PASS  Socket is accepting connections"
-    else
-      echo "   $FAIL  Socket file exists but is NOT accepting connections"
-      echo "          → rhino-mcp.py may have crashed or Rhino restarted."
-      echo "          → In Rhino: _-RunPythonScript \"<path>/rhino-mcp.py\""
-    fi
-  else
-    echo "   $FAIL  Socket file not found at $SOCK_PATH"
-    echo "          → rhino-mcp.py is not running inside Rhino 8."
-    echo ""
-    echo "   Fix:"
-    echo "     1. Open Rhino 8"
-    echo "     2. Run in Rhino command line:"
-    BRIDGE_PATH="$(python3 -c "import os; print(os.path.expanduser('~/Library/Application Support/McNeel/Rhinoceros/8.0/scripts/rhino-mcp.py'))" 2>/dev/null || echo "~/Library/Application Support/McNeel/Rhinoceros/8.0/scripts/rhino-mcp.py")"
-    echo "          _-RunPythonScript \"$BRIDGE_PATH\""
-    echo "     3. Look for \"[rhino-mcp] listening on unix://...\" in Rhino output"
-  fi
-fi
-
-# ── TCP ────────────────────────────────────────────────────────────────────────
-echo ""
-echo "2. TCP transport ($RHINO_HOST:$RHINO_PORT)"
+echo "1. TCP transport ($RHINO_HOST:$RHINO_PORT)"
 if uv run python -c "
 import socket, sys
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -114,19 +56,20 @@ try:
     s.connect(('$RHINO_HOST', $RHINO_PORT))
     s.close()
     sys.exit(0)
-except Exception as e:
+except Exception:
     sys.exit(1)
 " 2>/dev/null; then
   echo "   $PASS  TCP port is open"
 else
-  echo "   $WARN  TCP port $RHINO_PORT is not reachable"
-  echo "          → Set RHINO_MCP_TRANSPORT_KIND=tcp in Rhino environment,"
-  echo "            or use the default unix socket transport (macOS/Linux)."
+  echo "   $FAIL  TCP port $RHINO_PORT is not reachable"
+  echo "          → Open Rhino 8 with the rhino-mcp.rhp C# plug-in loaded."
+  echo "          → Install the plug-in via the Rhino package manager,"
+  echo "            or build locally: ./scripts/build-plugin.sh --release"
 fi
 
 # ── Full ping via BridgeClient ─────────────────────────────────────────────────
 echo ""
-echo "3. JSON-RPC ping"
+echo "2. JSON-RPC ping"
 PING_OUTPUT=$(uv run python -c "
 import os, sys
 os.environ.pop('RHINO_MCP_FORCE_MODE', None)
@@ -142,6 +85,7 @@ try:
     print('rhino:', pong.get('rhino'))
     print('grasshopper:', pong.get('grasshopper'))
     print('bridge_version:', pong.get('bridge_version'))
+    print('protocol_version:', pong.get('protocol_version'))
 except Exception as e:
     print('FAIL:', e)
     sys.exit(1)
@@ -159,7 +103,7 @@ fi
 
 # ── Mode detection summary ────────────────────────────────────────────────────
 echo ""
-echo "4. Mode detection result"
+echo "3. Mode detection result"
 MODE=$(uv run python -c "
 import os
 os.environ.pop('RHINO_MCP_FORCE_MODE', None)
@@ -171,10 +115,13 @@ print(mode.value, 'with-client' if client else 'no-client')
 
 if echo "$MODE" | grep -q "^bridge"; then
   echo "   $PASS  $MODE"
-  echo "          → rhino-mcp will start in BRIDGE mode (all tools available)"
+  echo "          → rhino-mcp will start in BRIDGE mode (~235 tools)."
 else
   echo "   $WARN  $MODE"
-  echo "          → rhino-mcp will start in STANDALONE mode (~50 tools)"
+  echo "          → rhino-mcp will start in STANDALONE mode (~234 tools)."
+  echo "          → v0.5.1+: bridge tools auto-promote on first call once"
+  echo "            the rhino-mcp.rhp plug-in becomes reachable; no MCP"
+  echo "            server restart is required."
 fi
 
 # ── Summary ───────────────────────────────────────────────────────────────────
@@ -185,16 +132,13 @@ if echo "$MODE" | grep -q "^bridge"; then
 else
   echo "  Result: Bridge is NOT reachable."
   echo ""
-  echo "  Quick fix (macOS):"
-  echo "    1. Open Rhino 8"
-  echo "    2. Install bridge (once):  python rhino_plugin/install.py"
-  echo "    3. In Rhino command line:"
-  BRIDGE_PATH_2="$(python3 -c "import os; print(os.path.expanduser('~/Library/Application Support/McNeel/Rhinoceros/8.0/scripts/rhino-mcp.py'))" 2>/dev/null || echo "~/Library/Application Support/McNeel/Rhinoceros/8.0/scripts/rhino-mcp.py")"
-  echo "         _-RunPythonScript \"$BRIDGE_PATH_2\""
-  echo "    4. Confirm: \"[rhino-mcp] listening on unix://...\" appears in output"
-  echo "    5. Re-run this script to verify"
-  echo ""
-  echo "  If Rhino is running but bridge still fails, try TCP mode:"
-  echo "    RHINO_MCP_TRANSPORT_KIND=tcp ./scripts/check-bridge.sh --tcp"
+  echo "  Quick fix:"
+  echo "    1. Open Rhino 8."
+  echo "    2. Install the rhino-mcp.rhp plug-in"
+  echo "       — package manager (yak), or build locally:"
+  echo "         ./scripts/build-plugin.sh --release"
+  echo "    3. Inside Rhino, type:  _McpInstall"
+  echo "       (configures Claude Desktop and verifies the launcher.)"
+  echo "    4. Re-run this script."
 fi
 echo "$SEP"

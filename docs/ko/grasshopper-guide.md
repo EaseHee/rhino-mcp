@@ -66,7 +66,7 @@ gh_data_tree_get { "component_id": "<id>", "output": 0 }
 // → {"branches": [{"path": [0,0], "values": [...]}, ...]}
 ```
 
-`gh_data_tree_set`은 같은 구조를 받습니다:
+`gh_data_tree_set`은 같은 구조를 수용:
 
 ```jsonc
 gh_data_tree_set {

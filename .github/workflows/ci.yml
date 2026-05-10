@@ -25,6 +25,11 @@ jobs:
         run: uv sync --extra dev
       - name: ruff
         run: uv run ruff check src/ tests/
+      - name: mypy (informational)
+        # mypy currently has a backlog of pre-existing errors; surface them
+        # in CI but do not fail the build until the backlog is cleared.
+        continue-on-error: true
+        run: uv run mypy src/rhino_mcp
       - name: pytest
         run: uv run pytest tests/ -q
 

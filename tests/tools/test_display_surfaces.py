@@ -14,6 +14,9 @@ class MockBridgeClient:
     def __init__(self) -> None:
         self.calls: list[tuple[str, dict[str, Any]]] = []
 
+    def is_alive(self) -> bool:
+        return True
+
     def call(self, method: str, params: dict[str, Any]) -> dict[str, Any]:
         self.calls.append((method, params))
         return {"status": "ok"}

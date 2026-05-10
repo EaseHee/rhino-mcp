@@ -1,6 +1,6 @@
 [project]
 name = "rhino3dm-mcp"
-version = "0.5.0"
+version = "0.5.1"
 description = "MCP server connecting Claude to McNeel Rhino 8 and Grasshopper via rhino3dm and an in-Rhino bridge plugin."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -33,7 +33,7 @@ dev = [
     "pytest-cov>=5",
     "pytest-asyncio>=0.24",
     "ruff>=0.6",
-    "mypy>=1.10",
+    "mypy>=1.10,<2",
 ]
 
 [project.urls]

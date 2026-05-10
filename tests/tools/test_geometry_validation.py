@@ -69,5 +69,5 @@ def test_mesh_health_open_mesh(server_standalone) -> None:
 
 def test_naked_edges_unsupported_in_standalone(server_standalone) -> None:
     _mcp, tools = server_standalone
-    # Bridge-only tool should not be registered in standalone mode.
-    assert "rhino_check_naked_edges" not in tools
+    # Tool is registered (lazy promotion), but raises at call time in standalone.
+    assert "rhino_check_naked_edges" in tools

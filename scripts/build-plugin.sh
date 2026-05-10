@@ -42,8 +42,11 @@ fi
 cd "$ROOT/rhino_plugin/csharp"
 
 if [ "$CLEAN" = true ]; then
-  echo ">>> Cleaning..."
-  dotnet clean "$PROJECT" -c "$CONFIG" -q
+  # Skip `dotnet clean` — the Korean-locale MSBuild on macOS mislabels its
+  # informational "deleting" lines as errors and exits non-zero, which trips
+  # `set -e`. A direct rm of the output dirs is equivalent and locale-safe.
+  echo ">>> Cleaning previous build (rm bin/$CONFIG + obj/$CONFIG)..."
+  rm -rf "$ROOT/rhino_plugin/csharp/bin/$CONFIG" "$ROOT/rhino_plugin/csharp/obj/$CONFIG"
 fi
 
 echo ">>> Building rhino-mcp ($CONFIG)..."

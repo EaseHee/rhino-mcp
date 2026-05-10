@@ -81,32 +81,30 @@ Error: server startup failed — Cannot reach Rhino bridge.
 
 체크리스트:
 
-1. **Rhino 8이 실행 중인지** 확인
-2. **Bridge가 실행 중인지** 확인 (`_-RunPythonScript` 실행 여부)
-3. **소켓 파일 존재 여부** 확인 (macOS):
-   ```bash
-   ls -la /tmp/rhino_mcp.sock
-   ```
-4. **포트/경로 일치 여부** — `RHINO_HOST` / `RHINO_PORT` / `RHINO_MCP_SOCKET`이 bridge와 서버 양쪽에서 같은지 확인
-5. **진단 스크립트** 실행:
+1. **Rhino 8 실행 중인지** 확인.
+2. **`rhino-mcp.rhp` C# 플러그인 로드 여부** — Rhino 패키지 매니저
+   설치 또는 로컬 빌드(`./scripts/build-plugin.sh --release`).
+   플러그인 OnLoad 시점에 브리지 자동 시작 — 별도 스크립트 실행 불필요.
+3. **TCP 포트 도달 가능** — 기본 `127.0.0.1:4242`.
+   `nc -z 127.0.0.1 4242` 로 확인.
+4. **환경 변수 일치** — `RHINO_HOST` / `RHINO_PORT` 양쪽 동일 (override 시).
+5. **진단 스크립트**:
    ```bash
    ./scripts/check-bridge.sh
    ```
 
-### Bridge가 실행 중이지만 서버가 인식하지 못함
+### Bridge 실행 중이지만 서버가 인식하지 못함
 
-macOS에서 Unix 소켓 파일이 있지만 연결이 안 될 때:
+v0.5.1+: 첫 도구 호출 시 lazy promotion 으로 BRIDGE 모드 자동 전환.
+MCP 서버 재시작 불필요.
+
+Promotion 미발생 시:
 
 ```bash
-# 소켓 상태 확인
-ls -la /tmp/rhino_mcp.sock
-file /tmp/rhino_mcp.sock   # → "socket" 타입이어야 함
-
-# TCP로 전환하여 테스트
-RHINO_MCP_TRANSPORT_KIND=tcp ./scripts/check-bridge.sh --tcp
+# Rhino 명령창에서 _PluginManager 입력 → "rhino-mcp" 항목 "Loaded" 상태 확인
+# 진단 재실행:
+./scripts/check-bridge.sh
 ```
-
-Rhino 재시작 시 브리지도 재실행 필요 (소켓 새로 생성됨).
 
 ### "Tool 'X' requires Rhino bridge mode."
 

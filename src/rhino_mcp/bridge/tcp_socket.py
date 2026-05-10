@@ -21,8 +21,8 @@ def _enable_keepalive(sock: socket.socket) -> None:
     except OSError:
         return
 
-    keepidle = int(os.environ.get("RHINO_MCP_KEEPALIVE_IDLE", "60"))
-    keepintvl = int(os.environ.get("RHINO_MCP_KEEPALIVE_INTERVAL", "30"))
+    keepidle = int(os.environ.get("RHINO_MCP_KEEPALIVE_IDLE", "20"))
+    keepintvl = int(os.environ.get("RHINO_MCP_KEEPALIVE_INTERVAL", "10"))
     keepcnt = int(os.environ.get("RHINO_MCP_KEEPALIVE_COUNT", "5"))
 
     if sys.platform == "darwin":

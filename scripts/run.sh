@@ -43,7 +43,7 @@ Mode:
 Connector (claude.ai remote MCP):
   --connector         Shorthand for --http --stateless --allow-external
                       Binds to 0.0.0.0 so a tunnel (ngrok/cloudflare) can reach it.
-                      Combine with --bridge to expose all 130+ tools.
+                      Combine with --bridge to expose all 235+ tools.
 
 Other:
   --docker            Start via docker compose (HTTP, port 8765)
@@ -58,7 +58,7 @@ claude.ai connector quick-start
   # Standalone (no Rhino required):
   ./scripts/run.sh --connector --standalone
 
-  # Bridge (all 130+ tools, Rhino 8 must be running with rhino-mcp.py):
+  # Bridge (all 235+ tools, Rhino 8 must be running with the rhino-mcp.rhp plugin loaded):
   ./scripts/run.sh --connector --bridge
 
   # Then expose with ngrok (separate terminal):
@@ -69,8 +69,11 @@ claude.ai connector quick-start
 EOF
 }
 
-for arg in "$@"; do
-  case "$arg" in
+# Use indexed iteration so --port / --host can consume the next argument
+# safely (validating it exists) without `for arg in "$@"` losing the
+# positional context.
+while [ $# -gt 0 ]; do
+  case "$1" in
     --http)       TRANSPORT="http" ;;
     --stdio)      TRANSPORT="stdio" ;;
     --bridge)     FORCE_MODE="bridge" ;;
@@ -78,10 +81,17 @@ for arg in "$@"; do
     --connector)  CONNECTOR=true; TRANSPORT="http"; HOST="0.0.0.0" ;;
     --docker)     USE_DOCKER=true ;;
     --help)       _usage; exit 0 ;;
-    --port)       shift; PORT="$1" ;;
-    --host)       shift; HOST="$1" ;;
-    *)            echo "Unknown option: $arg  (run with --help)" >&2; exit 1 ;;
+    --port)
+      [ $# -ge 2 ] || { echo "--port requires a value" >&2; exit 1; }
+      PORT="$2"; shift
+      ;;
+    --host)
+      [ $# -ge 2 ] || { echo "--host requires a value" >&2; exit 1; }
+      HOST="$2"; shift
+      ;;
+    *)            echo "Unknown option: $1  (run with --help)" >&2; exit 1 ;;
   esac
+  shift
 done
 
 cd "$ROOT"

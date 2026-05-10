@@ -6,6 +6,7 @@ using System.Text;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Rhino;
+using RhinoMcp.Bridge;
 
 namespace RhinoMcp
 {
@@ -53,6 +54,42 @@ namespace RhinoMcp
             }
         }
 
+        private static int HeartbeatIntervalSeconds
+        {
+            get
+            {
+                var raw = Environment.GetEnvironmentVariable("RHINO_MCP_HEARTBEAT_INTERVAL");
+                if (!string.IsNullOrEmpty(raw) && int.TryParse(raw, out var v) && v > 0)
+                    return v;
+                return 10;
+            }
+        }
+
+        // Methods that historically tripped client-side keepalive timeouts
+        // because they keep the worker thread busy long enough that no
+        // bytes flow on the socket.  HeartbeatSender wraps these.
+        private static readonly HashSet<string> _longRunningMethods = new()
+        {
+            "rhino.extract.make2d",
+            "rhino.script.execute_python",
+            "rhino.script.execute_csharp",
+            "rhino.render.viewport",
+            "rhino.render.to_file",
+            "rhino.render.turntable",
+            "rhino.render.queue.submit",
+            "rhino.environment.shadow_project",
+            "rhino.environment.solar_exposure_estimate",
+            "rhino.environment.sun_path",
+            "rhino.batch.modify",
+            "rhino.batch.execute",
+            "rhino.bim.export_ifc",
+            "rhino.bim.import_ifc",
+            "rhino.bim.export_gbxml",
+            "rhino.io.import",
+            "rhino.io.export_step",
+            "rhino.io.export_iges",
+        };
+
         public void Start(string host, int port)
         {
             if (IsRunning) return;
@@ -83,9 +120,15 @@ namespace RhinoMcp
         {
             while (!ct.IsCancellationRequested)
             {
+                // Snapshot _listener locally so a concurrent Stop() that
+                // sets it to null cannot turn the dereference into a
+                // NullReferenceException between the check and the call.
+                var listener = _listener;
+                if (listener == null) break;
+
                 try
                 {
-                    var client = _listener!.AcceptTcpClient();
+                    var client = listener.AcceptTcpClient();
                     ConfigureClient(client);
                     var addr = client.Client.RemoteEndPoint;
                     Interlocked.Increment(ref _connectedClientCount);
@@ -99,6 +142,11 @@ namespace RhinoMcp
                 }
                 catch (SocketException) when (ct.IsCancellationRequested)
                 {
+                    break;
+                }
+                catch (ObjectDisposedException)
+                {
+                    // Listener was disposed by Stop() — exit cleanly.
                     break;
                 }
                 catch (Exception ex)
@@ -142,6 +190,9 @@ namespace RhinoMcp
                 using var stream = client.GetStream();
                 using var reader = new StreamReader(stream, Encoding.UTF8);
                 using var writer = new StreamWriter(stream, new UTF8Encoding(false)) { AutoFlush = true };
+                // Serialises heartbeat notifications and the final response so
+                // the two never interleave on the wire.
+                var writeLock = new object();
 
                 while (!ct.IsCancellationRequested)
                 {
@@ -159,10 +210,13 @@ namespace RhinoMcp
                     if (line == null) break;
                     if (string.IsNullOrWhiteSpace(line)) continue;
 
-                    var response = ProcessRequest(line);
+                    var response = ProcessRequest(line, writer, writeLock);
                     try
                     {
-                        writer.WriteLine(response);
+                        lock (writeLock)
+                        {
+                            writer.WriteLine(response);
+                        }
                     }
                     catch (IOException ex)
                     {
@@ -197,7 +251,7 @@ namespace RhinoMcp
             return false;
         }
 
-        private string ProcessRequest(string line)
+        private string ProcessRequest(string line, StreamWriter writer, object writeLock)
         {
             JObject? request;
             try
@@ -218,6 +272,25 @@ namespace RhinoMcp
 
             if (string.IsNullOrEmpty(method))
                 return JsonRpc.Error(id, -32600, "Invalid Request: missing method");
+
+            // Heartbeat wrap for known long-running handlers — keeps bytes
+            // flowing on the socket so the client side keepalive does not
+            // give up while the Rhino UI thread crunches make2d / render.
+            HeartbeatSender? heartbeat = null;
+            if (_longRunningMethods.Contains(method!))
+            {
+                try
+                {
+                    heartbeat = new HeartbeatSender(
+                        writer, writeLock, TimeSpan.FromSeconds(HeartbeatIntervalSeconds));
+                    heartbeat.Start();
+                }
+                catch (Exception ex)
+                {
+                    RhinoApp.WriteLine($"[rhino-mcp] heartbeat start failed: {ex.Message}");
+                    heartbeat = null;
+                }
+            }
 
             try
             {
@@ -275,6 +348,10 @@ namespace RhinoMcp
             catch (Exception ex)
             {
                 return JsonRpc.Error(id, RpcErrorCodes.InternalError, $"Internal error: {ex.Message}");
+            }
+            finally
+            {
+                heartbeat?.Dispose();
             }
         }
 

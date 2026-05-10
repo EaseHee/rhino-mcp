@@ -90,9 +90,28 @@ def bridge_call(method: str, args: dict[str, Any]) -> dict[str, Any]:
     tool emits a uniform ``→ method args=...`` / ``← method result_keys=...``
     pair at DEBUG level. ``RHINO_MCP_LOG_LEVEL=DEBUG`` activates the trace
     without changing tool semantics.
+
+    On a connection-category ToolError the client is discarded and one
+    lazy re-detection attempt is made before re-raising.
     """
+    from rhino_mcp.utils.error_handling import ToolError
+
     _tool_log.debug("→ %s args=%s", method, args)
-    result = runtime().require_bridge().call(method, args)
+    rt = runtime()
+    try:
+        result = rt.require_bridge().call(method, args)
+    except ToolError as exc:
+        if exc.category.value != "connection":
+            raise
+        # Drop the dead client so require_bridge() will re-detect on next call.
+        if rt.bridge is not None:
+            try:
+                rt.bridge.close()
+            except Exception:
+                pass
+            rt.bridge = None
+            rt.mode = Mode.STANDALONE
+        result = rt.require_bridge().call(method, args)
     if isinstance(result, dict):
         _tool_log.debug("← %s result_keys=%s", method, list(result.keys()))
     else:

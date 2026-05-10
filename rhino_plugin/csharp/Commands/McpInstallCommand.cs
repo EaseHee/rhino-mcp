@@ -5,6 +5,7 @@ using System.IO;
 using System.Text;
 using Rhino;
 using Rhino.Commands;
+using RhinoMcp.Setup;
 
 namespace RhinoMcp.Commands
 {
@@ -41,12 +42,25 @@ namespace RhinoMcp.Commands
             if (launcher == null)
             {
                 RhinoApp.WriteLine(
-                    "[rhino-mcp] Could not find uvx, pipx, pip, or python on PATH.");
-                RhinoApp.WriteLine(
-                    "[rhino-mcp] Install uv first: https://docs.astral.sh/uv/getting-started/installation/");
-                RhinoApp.WriteLine(
-                    "[rhino-mcp] Or run from a terminal: pip install rhino3dm-mcp && rhino-mcp install");
-                return Result.Failure;
+                    "[rhino-mcp] Could not find uvx, rhino-mcp, or python on PATH.");
+
+                if (UvAutoInstaller.OfferInstall())
+                {
+                    RhinoApp.WriteLine("[rhino-mcp] Re-checking for uv...");
+                    launcher = LauncherResolver.Resolve();
+                }
+
+                if (launcher == null)
+                {
+                    RhinoApp.WriteLine(
+                        "[rhino-mcp] Still cannot find a launcher. If uv was just installed, "
+                        + "restart Rhino so the updated PATH is picked up, then run _McpInstall again.");
+                    RhinoApp.WriteLine(
+                        "[rhino-mcp] Manual install: https://docs.astral.sh/uv/getting-started/installation/");
+                    RhinoApp.WriteLine(
+                        "[rhino-mcp] Or run from a terminal: pip install rhino3dm-mcp && rhino-mcp install");
+                    return Result.Failure;
+                }
             }
 
             RhinoApp.WriteLine($"[rhino-mcp] Using launcher: {launcher.Description}");
@@ -202,6 +216,22 @@ namespace RhinoMcp.Commands
 
     internal static class ProcessRunner
     {
+        // Wall-clock cap on a single child-process invocation. Configurable
+        // via RHINO_MCP_INSTALL_TIMEOUT_MS so a slow network or a paused
+        // installer cannot freeze the Rhino UI thread indefinitely.
+        private const int DefaultTimeoutMs = 180_000;
+
+        private static int TimeoutMs
+        {
+            get
+            {
+                var raw = Environment.GetEnvironmentVariable("RHINO_MCP_INSTALL_TIMEOUT_MS");
+                if (!string.IsNullOrEmpty(raw) && int.TryParse(raw, out var v) && v > 0)
+                    return v;
+                return DefaultTimeoutMs;
+            }
+        }
+
         public static (int ExitCode, string Stdout, string Stderr) Run(string executable, IList<string> args)
         {
             var psi = new ProcessStartInfo
@@ -223,7 +253,17 @@ namespace RhinoMcp.Commands
             proc.Start();
             proc.BeginOutputReadLine();
             proc.BeginErrorReadLine();
-            proc.WaitForExit();
+            var timeoutMs = TimeoutMs;
+            if (!proc.WaitForExit(timeoutMs))
+            {
+                try { proc.Kill(entireProcessTree: true); }
+                catch { /* best-effort */ }
+                stderrBuf.AppendLine($"[rhino-mcp] process timed out after {timeoutMs} ms; killed.");
+                // Drain remaining async output that might have been buffered
+                // before the kill landed.
+                try { proc.WaitForExit(2_000); } catch { /* best-effort */ }
+                return (-1, stdoutBuf.ToString(), stderrBuf.ToString());
+            }
             return (proc.ExitCode, stdoutBuf.ToString(), stderrBuf.ToString());
         }
     }

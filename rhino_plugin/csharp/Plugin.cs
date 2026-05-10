@@ -20,7 +20,7 @@ namespace RhinoMcp
 
         protected override LoadReturnCode OnLoad(ref string errorMessage)
         {
-            RhinoApp.WriteLine("[rhino-mcp] Plugin loaded");
+            RhinoApp.WriteLine("[rhino-mcp] Plugin loaded. Type \"_McpInstall\" to configure Claude Desktop integration.");
 
             var port = 4242;
             var envPort = Environment.GetEnvironmentVariable("RHINO_PORT");

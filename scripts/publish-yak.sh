@@ -58,9 +58,32 @@ detect_yak_cli() {
     return
   fi
   case "$(uname -s)" in
-    Darwin)  echo "/Applications/Rhino 8.app/Contents/Resources/bin/yak" ;;
+    Darwin)
+      # Pick the highest-versioned Rhino *.app under /Applications. Fall back
+      # to the well-known Rhino 8 path so existing installs keep working.
+      local rhino_app
+      rhino_app="$(/bin/ls -d /Applications/Rhino*.app 2>/dev/null \
+        | sort -V \
+        | tail -n 1)"
+      if [ -n "$rhino_app" ] && [ -x "$rhino_app/Contents/Resources/bin/yak" ]; then
+        echo "$rhino_app/Contents/Resources/bin/yak"
+      else
+        echo "/Applications/Rhino 8.app/Contents/Resources/bin/yak"
+      fi
+      ;;
     Linux)   echo "" ;;
-    MINGW*|MSYS*|CYGWIN*) echo "C:/Program Files/Rhino 8/System/yak.exe" ;;
+    MINGW*|MSYS*|CYGWIN*)
+      # Prefer the highest-versioned Rhino N install under Program Files.
+      local rhino_dir
+      rhino_dir="$(/bin/ls -d '/c/Program Files/Rhino '*/System/yak.exe 2>/dev/null \
+        | sort -V \
+        | tail -n 1)"
+      if [ -n "$rhino_dir" ]; then
+        echo "$rhino_dir"
+      else
+        echo "C:/Program Files/Rhino 8/System/yak.exe"
+      fi
+      ;;
     *)       echo "" ;;
   esac
 }
@@ -154,5 +177,5 @@ echo ">>> Done. Artefacts in $DIST_DIR:"
 ls -lh "$DIST_DIR"/*.yak 2>/dev/null || true
 echo ""
 echo "Next steps (manual):"
-echo "  $YAK_CLI_PATH login"
-echo "  $YAK_CLI_PATH push <file>.yak"
+echo "  '$YAK_CLI_PATH' login"
+echo "  '$YAK_CLI_PATH' push <file>.yak"

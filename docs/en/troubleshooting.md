@@ -79,25 +79,30 @@ export RHINO_MCP_SOCKET=/custom/path/rhino.sock   # both sides
 
 Checklist:
 
-1. **Rhino 8 is running**
-2. **Bridge is running** — `_-RunPythonScript` was executed in Rhino
-3. **Socket file exists** (macOS):
-   ```bash
-   ls -la /tmp/rhino_mcp.sock
-   ```
-4. **Env vars match** — `RHINO_HOST` / `RHINO_PORT` / `RHINO_MCP_SOCKET` are the same on both sides
-5. Run the diagnostic: `./scripts/check-bridge.sh`
+1. **Rhino 8 is running**.
+2. **The `rhino-mcp.rhp` C# plug-in is loaded** — install via the
+   Rhino package manager, or build locally with
+   `./scripts/build-plugin.sh --release`.  The plug-in auto-starts the
+   bridge on `OnLoad`; no script execution is required.
+3. **TCP port is reachable** — default `127.0.0.1:4242`. Check with
+   `nc -z 127.0.0.1 4242`.
+4. **Env vars match** — `RHINO_HOST` / `RHINO_PORT` are the same on
+   both sides if you overrode the defaults.
+5. Run the diagnostic: `./scripts/check-bridge.sh`.
 
 ### Bridge running but server still goes standalone
 
-Socket file exists but connection is refused:
+v0.5.1+: the server lazy-promotes to BRIDGE on the first tool call
+once the plug-in becomes reachable.  No MCP server restart is required.
+
+If promotion does not happen:
 
 ```bash
-file /tmp/rhino_mcp.sock   # must report "socket"
-# If Rhino was restarted, re-run _-RunPythonScript to recreate the socket.
-
-# Switch to TCP for testing:
-RHINO_MCP_TRANSPORT_KIND=tcp ./scripts/check-bridge.sh --tcp
+# Verify the plug-in is loaded inside Rhino — type in Rhino's command line:
+#   _PluginManager           (look for "rhino-mcp", status "Loaded")
+#
+# Re-run the diagnostic; the plug-in should respond to ping:
+./scripts/check-bridge.sh
 ```
 
 ### "Tool 'X' requires Rhino bridge mode."

@@ -85,4 +85,4 @@ The capability matrix below summarises this.
 | `rhino_viewport_preview` (selection-filtered capture, v0.5) | ✗ | ✓ |
 | `rhino_render_queue_submit`, `rhino_render_queue_status`, `rhino_render_queue_cancel`, `rhino_render_queue_list` (render queue, v0.5) | ✗ | ✓ |
 
-In numbers: ~129 standalone tools, ~235 with the C# bridge.
+In numbers: ~234 standalone tools, ~235 with the C# bridge.

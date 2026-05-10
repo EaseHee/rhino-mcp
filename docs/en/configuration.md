@@ -22,15 +22,34 @@ rhino-mcp [--transport {stdio,http}] [--host HOST] [--port PORT] [--version]
 
 ### Bridge connection (Rhino side)
 
-| Variable                     | Default          | Notes |
-|------------------------------|------------------|-------|
-| `RHINO_MCP_FORCE_MODE`       | _(auto)_         | `standalone` skips bridge detection; `bridge` requires the bridge to be reachable and aborts otherwise. |
-| `RHINO_MCP_BRIDGE_TIMEOUT`   | `1`              | Seconds the auto-detector waits for a bridge `ping` response. |
-| `RHINO_MCP_TRANSPORT_KIND`   | _(auto)_         | Forces a specific bridge transport: `pipe`, `unix`, or `tcp`. |
-| `RHINO_HOST`                 | `localhost`      | TCP host of the bridge. |
-| `RHINO_PORT`                 | `4242`           | TCP port of the bridge. |
-| `RHINO_MCP_PIPE`             | `rhino_mcp`      | Named-pipe instance name (Windows). |
-| `RHINO_MCP_SOCKET`           | _(XDG runtime)_  | Unix-socket path. Default is `$XDG_RUNTIME_DIR/rhino_mcp.sock`, or `/tmp/rhino_mcp.sock`. |
+| Variable                       | Default          | Notes |
+|--------------------------------|------------------|-------|
+| `RHINO_MCP_FORCE_MODE`         | _(auto)_         | `standalone` skips bridge detection; `bridge` requires the bridge to be reachable and aborts otherwise. |
+| `RHINO_MCP_BRIDGE_OPTIONAL`    | `0`              | When `1` and `FORCE_MODE=bridge`, an unreachable bridge falls back to standalone instead of aborting. |
+| `RHINO_MCP_BRIDGE_TIMEOUT`     | `5`              | Seconds the auto-detector waits for a bridge `ping` response. |
+| `RHINO_MCP_RECONNECT_RETRIES`  | `3`              | Number of reconnect attempts after a transport failure (with exponential backoff). |
+| `RHINO_MCP_REDETECT_COOLDOWN`  | `5`              | Minimum seconds between back-to-back lazy bridge re-detection attempts. |
+| `RHINO_MCP_TRANSPORT_KIND`     | _(auto)_         | Forces a specific bridge transport: `pipe`, `unix`, or `tcp`. |
+| `RHINO_HOST`                   | `localhost`      | TCP host of the bridge. |
+| `RHINO_PORT`                   | `4242`           | TCP port of the bridge. |
+| `RHINO_MCP_PIPE`               | `rhino_mcp`      | Named-pipe instance name (Windows). |
+| `RHINO_MCP_SOCKET`             | _(XDG runtime)_  | Unix-socket path. Default is `$XDG_RUNTIME_DIR/rhino_mcp.sock`, or `/tmp/rhino_mcp.sock`. |
+| `RHINO_MCP_KEEPALIVE_IDLE`     | `20`             | TCP keepalive idle seconds before the OS probes the peer. |
+| `RHINO_MCP_KEEPALIVE_INTERVAL` | `10`             | TCP keepalive probe interval seconds. |
+
+### Server side (C# bridge plugin)
+
+| Variable                         | Default | Notes |
+|----------------------------------|---------|-------|
+| `RHINO_MCP_HEARTBEAT_INTERVAL`   | `10`    | Seconds between `rhino.heartbeat` notifications written by the bridge during long-running handlers (make2d, render, script execute, etc.). Keeps the socket lively so client-side keepalive does not give up. |
+| `RHINO_MCP_UI_TIMEOUT`           | `30`    | Seconds the bridge waits for a UI-thread dispatch to complete before returning a timeout error. |
+| `RHINO_MCP_SEND_TIMEOUT_MS`      | `30000` | Bridge socket send timeout in milliseconds. |
+
+### Tool safety (Python side)
+
+| Variable                          | Default | Notes |
+|-----------------------------------|---------|-------|
+| `RHINO_MCP_ALLOW_MODAL_COMMAND`   | _(off)_ | When `1`, disables the static check in `rhino_execute_python` that rejects modal `rs.Command(_Move / _Mirror / _Rotate / _Copy / _Scale / _SelLayer / _Layer _Assign)` patterns known to break the bridge. Use only for debugging. |
 
 ## Transport selection logic
 

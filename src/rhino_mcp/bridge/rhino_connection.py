@@ -32,7 +32,7 @@ from rhino_mcp.utils.registry import Mode
 
 log = get_logger("bridge")
 
-_MAX_RECONNECT_RETRIES = int(os.environ.get("RHINO_MCP_RECONNECT_RETRIES", "1"))
+_MAX_RECONNECT_RETRIES = int(os.environ.get("RHINO_MCP_RECONNECT_RETRIES", "3"))
 _RECONNECT_BASE_DELAY = float(os.environ.get("RHINO_MCP_RECONNECT_BASE_DELAY", "0.5"))
 # Jitter ratio (±). 0 disables jitter (useful for deterministic tests).
 _RECONNECT_JITTER = float(os.environ.get("RHINO_MCP_RECONNECT_JITTER", "0.25"))
@@ -257,7 +257,35 @@ class BridgeClient:
         try:
             with self._lock:
                 self._transport.send_line(payload)
-                line = self._transport.recv_line(timeout=effective_timeout)
+                # Server may interleave heartbeat notifications (no `id`) ahead
+                # of the response while a long-running handler runs.  Drain
+                # them until a response with the matching id arrives — but
+                # respect a single deadline derived from `effective_timeout`
+                # so a chatty notification stream cannot stretch the
+                # round-trip past what the caller asked for.
+                deadline = time.monotonic() + effective_timeout
+                while True:
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0:
+                        raise TimeoutError(
+                            f"bridge response did not arrive within {effective_timeout}s "
+                            "(only notification frames received)"
+                        )
+                    line = self._transport.recv_line(timeout=remaining)
+                    try:
+                        candidate = json.loads(line.decode("utf-8"))
+                    except json.JSONDecodeError:
+                        # Defer reporting to the post-lock path below so the
+                        # error message can include the truncated payload.
+                        response = None
+                        break
+                    if "id" not in candidate or candidate.get("id") is None:
+                        # Notification frame (heartbeat) — log once at debug and skip.
+                        if candidate.get("method") != "rhino.heartbeat":
+                            log.debug("ignoring server notification: %s", candidate.get("method"))
+                        continue
+                    response = candidate
+                    break
         except (ConnectionError, OSError, TimeoutError) as exc:
             self._connected = False
             # Drop any partially-buffered bytes before tearing down the
@@ -269,11 +297,9 @@ class BridgeClient:
                 pass
             self._transport.close()
             raise connection_error(f"transport failure on {self._transport.name}: {exc}") from exc
-        try:
-            response = json.loads(line.decode("utf-8"))
-        except json.JSONDecodeError as exc:
+        if response is None:
             truncated = line[:200] if len(line) > 200 else line
-            raise connection_error(f"non-JSON response: {truncated!r}") from exc
+            raise connection_error(f"non-JSON response: {truncated!r}")
         if response.get("id") != request_id:
             raise connection_error(
                 f"request ID mismatch (expected={request_id}, got={response.get('id')})"
@@ -366,7 +392,7 @@ def detect_mode() -> tuple[Mode, BridgeClient | None]:
             )
         return Mode.BRIDGE, client
 
-    client = BridgeClient.auto(timeout=float(os.environ.get("RHINO_MCP_BRIDGE_TIMEOUT", "1")))
+    client = BridgeClient.auto(timeout=float(os.environ.get("RHINO_MCP_BRIDGE_TIMEOUT", "5")))
     if client is not None:
         return Mode.BRIDGE, client
     log.info("No bridge reachable; running in standalone (rhino3dm) mode.")

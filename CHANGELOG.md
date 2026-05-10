@@ -6,6 +6,153 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-05-10
+
+### Changed — bridge promotion and always-register
+
+- **Lazy BRIDGE promotion** (`Runtime.require_bridge()`): dead-client cleanup +
+  `_try_promote_to_bridge()` with double-checked lock and configurable cooldown
+  (`RHINO_MCP_REDETECT_COOLDOWN`, default 5 s). Mode transitions logged at INFO
+  instead of WARNING.
+- **Always-register all tool modules**: `register_tools()` now passes `Mode.BRIDGE`
+  on every boot — all 42 modules (BOTH + BRIDGE) are registered regardless of
+  startup mode. Standalone tool count rises from ~129 to ~234; bridge-only tools
+  become available as soon as promotion succeeds at call time.
+- **`bridge_call()` connection-error reset**: dead client is closed and discarded;
+  `require_bridge()` makes one immediate re-detection attempt before re-raising.
+- **Default tuning**: reconnect retries 1 → 3; bridge timeout 1 s → 5 s;
+  keepalive idle 60 s → 20 s; keepalive interval 30 s → 10 s.
+- New env var: `RHINO_MCP_REDETECT_COOLDOWN` (float, default 5 s).
+
+### Added — install UX
+
+- **`_McpInstall` auto-installs uv on demand** — when no launcher
+  (`uvx` / `rhino-mcp` / `python`) is found on PATH, the command shows a
+  confirmation dialog and runs the official Astral installer
+  (`https://astral.sh/uv/install.sh` on macOS/Linux, `install.ps1` on
+  Windows) before retrying. Decline → manual-install message + Failure.
+- **YAK manifest description** carries post-install steps —
+  `_McpInstall` vs. manual `claude_desktop_config.json` edit + restart.
+- **Plugin `OnLoad` message** points users to `_McpInstall` directly.
+
+### Added — bridge stability under long-running handlers
+
+- **`HeartbeatSender`** wraps make2d / script-execution / render /
+  environment / IO / batch handlers. A background thread writes a
+  `rhino.heartbeat` JSON-RPC notification every
+  `RHINO_MCP_HEARTBEAT_INTERVAL` seconds (default 10) so the socket
+  keeps moving while the Rhino UI thread is busy. Python `BridgeClient`
+  drains notification frames before reading the response.
+- **Modal-command circuit breaker** (`tools/_safety.py`): seven
+  bridge-hostile `rs.Command` patterns (`_Move`, `_Mirror`, `_Rotate`,
+  `_Copy`, `_Scale`, `_SelLayer`, `_Layer _Assign`) are rejected up
+  front with a hint pointing to the `rs.MoveObjects` / `rs.ObjectLayer`
+  equivalents. Bypass with `RHINO_MCP_ALLOW_MODAL_COMMAND=1`.
+
+### Fixed — logic correctness
+
+- **Lazy promotion no longer blocked by `unsupported_in_standalone`** —
+  `rhino_execute_python` / `rhino_execute_csharp` previously short-
+  circuited on `runtime().mode is Mode.STANDALONE` before
+  `require_bridge()` could promote.  Now the safety check runs first
+  and `require_bridge()` handles promotion (or raises a clear
+  `connection_error`) directly.
+- **`ProcessRunner.WaitForExit` timeout** — `_McpInstall` no longer
+  freezes the Rhino UI thread when the uv installer hangs.  Default
+  180 000 ms; override with `RHINO_MCP_INSTALL_TIMEOUT_MS`.  On
+  timeout the child process tree is killed and a clear stderr line
+  is appended.
+- **`BridgeServer.AcceptLoop` null safety** — locally caches
+  `_listener` so a concurrent `Stop()` setting the field to `null`
+  cannot turn the next `AcceptTcpClient()` into a
+  `NullReferenceException`.  `ObjectDisposedException` now also
+  exits the loop cleanly.
+- **`CommandDispatcher.Dispatch` raises `RpcException(MethodNotFound)`**
+  instead of `KeyNotFoundException`, so unknown methods surface as
+  the standard JSON-RPC `-32601` error rather than an internal
+  handler error.
+- **Modal-command safety regex hardened** — patterns now require the
+  modal keyword to appear right after the opening quote of the
+  `rs.Command(...)` argument, eliminating false positives for
+  identifiers like `rs.MoveObjects` and for documentation strings
+  that merely mention `_Move`.
+- **Heartbeat-drain deadline** — `BridgeClient._call_once` now uses a
+  single deadline derived from `effective_timeout` for the entire
+  notification-skip loop, so a chatty heartbeat stream cannot stretch
+  the round-trip beyond what the caller asked for.
+
+### Fixed — repository hygiene
+
+- `RhinoMCPPlugin.csproj` `<Version>` synced to `0.5.1` (previously
+  drifted to `0.5.0`).
+- `scripts/build-plugin.sh --clean` now uses `rm -rf` for the
+  `bin/<config>` and `obj/<config>` directories instead of
+  `dotnet clean`, which mislabels its informational output as errors
+  on the macOS Korean MSBuild locale and trips `set -e`.
+- `scripts/run.sh` argument parsing — `--port` / `--host` now validate
+  the next positional argument exists; tool-count blurb refreshed
+  (`130+` → `235+`) and the legacy `rhino-mcp.py` reference replaced
+  with `rhino-mcp.rhp`.
+- `scripts/check-bridge.sh` rewritten to drop the retired Unix-socket
+  diagnostic stage and the `rhino-mcp.py` instructions; reports the
+  current TCP-only architecture and v0.5.1 lazy-promotion semantics.
+- `scripts/publish-yak.sh` auto-detects the highest-versioned Rhino
+  install under `/Applications` (macOS) and `C:\Program Files`
+  (Windows) instead of hard-coding Rhino 8.
+- `docs/{en,ko}/troubleshooting.md` updated to reflect the C# plug-in
+  (`rhino-mcp.rhp`) instead of the retired `_-RunPythonScript` workflow.
+- `docs/{en,ko}/configuration.md` documents every bridge env var added
+  in this release plus the new `RHINO_MCP_HEARTBEAT_INTERVAL` and
+  `RHINO_MCP_ALLOW_MODAL_COMMAND` knobs.
+- `pyproject.toml` pins `mypy<2` to avoid surprise major-version
+  breakage in dev environments.
+- CI now runs `mypy src/rhino_mcp` as an informational step
+  (`continue-on-error: true`) until the existing backlog is resolved.
+
+### Tests
+
+- Total: **277 tests** (was 254 at v0.5.0; +8 lazy-promotion cases in
+  `tests/tools/test_runtime_promotion.py`, +15 modal-command safety
+  cases in `tests/tools/test_python_safety.py` covering the hardened
+  regex / method-name false-positives / docstring mentions /
+  whitespace-tolerant matching).
+
+### Documentation
+
+- New analysis report — `docs/analysis/v0.5.0-vs-v0.5.1-findings.md`:
+  field comparison, root-cause table, and validated workflow rules
+  derived from a live make2d-extraction session against a 67k-object
+  model.
+
+### 변경/추가 (한글 요약)
+
+- **지연 BRIDGE 프로모션** — `require_bridge()` 내 dead-client 정리 +
+  쿨다운 기반 자동 재연결. 모드 전환 로그 INFO 레벨.
+- **전체 모듈 항시 등록** — 부팅 모드 무관 42개 모듈 전부 등록.
+  standalone 도구 수 ~129 → ~234.
+- **`bridge_call()` 연결 오류 reset** — dead client 즉시 폐기 후 재연결 1회 시도.
+- **`_McpInstall` uv 자동 설치** — 런처 부재 시 사용자 확인 다이얼로그
+  후 공식 Astral 인스톨러 실행, 재시도.
+- **YAK manifest description** 사후 작업 안내 추가
+  (`_McpInstall` / `claude_desktop_config.json` 수동 편집 + 재시작).
+- **`HeartbeatSender`** — make2d / script / render / env / IO / batch
+  핸들러 동안 `rhino.heartbeat` notification 주기적 송신
+  (`RHINO_MCP_HEARTBEAT_INTERVAL`, 기본 10 s).
+- **Modal command 회로차단** — `rs.Command(_Move 등)` 7개 패턴 사전 reject,
+  RhinoCommon API 권장 대안 안내. `RHINO_MCP_ALLOW_MODAL_COMMAND=1` 우회.
+- **로직 교정** — scripting.py mode 즉시 reject 제거(lazy promotion 정상화),
+  ProcessRunner.WaitForExit 타임아웃(`RHINO_MCP_INSTALL_TIMEOUT_MS`),
+  AcceptLoop `_listener` null safety + ObjectDisposedException 처리,
+  CommandDispatcher `RpcException(MethodNotFound)` 사용,
+  modal-command regex 따옴표 prefix 매칭으로 false positive 제거,
+  heartbeat drain deadline 기반 timeout.
+- **저장소 위생** — csproj 버전 0.5.0 → 0.5.1, build-plugin.sh
+  한국어 locale 우회, run.sh / check-bridge.sh stale 정보 갱신,
+  publish-yak.sh Rhino 경로 동적 감지, troubleshooting/configuration
+  문서 동기화, mypy<2 핀, CI에 informational mypy step 추가.
+- **분석 보고서** — `docs/analysis/v0.5.0-vs-v0.5.1-findings.md`.
+- **테스트** — **277개** (v0.5.0 대비 +23).
+
 ## [0.5.0] - 2026-05-06
 
 ### Added — bridge transport features

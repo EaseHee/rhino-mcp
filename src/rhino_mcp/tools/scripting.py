@@ -11,8 +11,8 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from rhino_mcp.tools._safety import check_python_payload
 from rhino_mcp.tools.context import runtime
-from rhino_mcp.utils.error_handling import unsupported_in_standalone
 from rhino_mcp.utils.registry import Mode
 
 # ---------------------------------------------------------------------------
@@ -50,7 +50,7 @@ class _ExecCSharpIn(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-def register(mcp: Any, mode: str) -> None:
+def register(mcp: Any, mode: Mode) -> None:
     @mcp.tool(annotations={"title": "Execute RhinoScript Python Code"})
     def rhino_execute_python(args: _ExecPythonIn) -> dict[str, Any]:
         """Execute RhinoScript Python code in a live Rhino session.
@@ -71,9 +71,12 @@ def register(mcp: Any, mode: str) -> None:
         Returns ``success``, ``output`` (print capture), and ``message``
         (error details on failure).
         """
-        if runtime().mode is Mode.STANDALONE:
-            raise unsupported_in_standalone("rhino_execute_python")
+        # Safety check first — reject bridge-hostile rs.Command patterns
+        # before paying the bridge round-trip cost.
+        check_python_payload(args.code)
 
+        # require_bridge() handles lazy STANDALONE -> BRIDGE promotion and
+        # raises connection_error when no bridge is reachable.
         result = runtime().require_bridge().call(
             "rhino.script.execute_python",
             {"code": args.code},
@@ -109,9 +112,6 @@ def register(mcp: Any, mode: str) -> None:
         Changes are wrapped in an undo record and will be reverted on failure.
         Compilation errors are returned in ``message``.
         """
-        if runtime().mode is Mode.STANDALONE:
-            raise unsupported_in_standalone("rhino_execute_csharp")
-
         result = runtime().require_bridge().call(
             "rhino.script.execute_csharp",
             {"code": args.code},

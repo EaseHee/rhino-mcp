@@ -150,10 +150,13 @@ def build_server(
         ),
     )
 
-    applied = register_tools(mcp, runtime_mode, _tool_specs())
+    # Always register all tool modules so BRIDGE tools remain callable even when
+    # the server starts in STANDALONE mode. Lazy bridge promotion in context.py
+    # handles the mode transition at call time.
+    applied = register_tools(mcp, Mode.BRIDGE, _tool_specs())
     prompts = _register_prompts(mcp)
     log.info(
-        "Registered %d tool modules and %d prompts (mode=%s)",
+        "Registered %d tool modules and %d prompts (startup_mode=%s)",
         applied,
         prompts,
         runtime_mode.value,

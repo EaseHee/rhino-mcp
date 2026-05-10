@@ -129,8 +129,8 @@ def test_register_tools_logs_warning_when_no_match() -> None:
     assert "No tool modules matched" in buf.getvalue()
 
 
-def test_context_set_runtime_duplicate_logs_warning() -> None:
-    """set_runtime() called twice outside test mode should log a warning."""
+def test_context_set_runtime_transition_is_logged() -> None:
+    """set_runtime() called twice outside test mode logs the mode transition."""
     from rhino_mcp.tools import context as ctx
 
     ctx.disable_testing()
@@ -138,7 +138,7 @@ def test_context_set_runtime_duplicate_logs_warning() -> None:
         ctx.set_runtime(Mode.STANDALONE, None)
         with _capture_log("rhino_mcp") as buf:
             ctx.set_runtime(Mode.BRIDGE, None)
-        assert "called twice" in buf.getvalue()
+        assert "standalone" in buf.getvalue() and "bridge" in buf.getvalue()
     finally:
         ctx.enable_testing()
         ctx.set_runtime(Mode.STANDALONE, None)

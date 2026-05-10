@@ -16,8 +16,9 @@ def test_capability_matrix() -> None:
 
 def test_standalone_server_registers_expected_tool_count(server_standalone) -> None:
     _mcp, tools = server_standalone
-    # Tools registered in standalone mode: every module marked Mode.BOTH.
-    assert len(tools) >= 65, f"expected ≥65 standalone tools, got {len(tools)}"
+    # All tools are always registered regardless of startup mode; bridge-only
+    # tools raise unsupported_in_standalone at call time instead of being absent.
+    assert len(tools) >= 120, f"expected ≥120 tools (all modes), got {len(tools)}"
     # Spot-check core tools are present.
     expected_subset = {
         "rhino_point",
@@ -30,12 +31,13 @@ def test_standalone_server_registers_expected_tool_count(server_standalone) -> N
         "rhino_layer_create",
         "rhino_material_create",
         "rhino_move",
-        # New: rhinoscript_docs tools must be in standalone
         "rhino_search_rhinoscript_functions",
         "rhino_get_rhinoscript_docs",
     }
     assert expected_subset.issubset(tools.keys())
-    # Bridge-only tools must NOT appear in standalone.
+    # Bridge-only tools must also be present (lazy promotion enables them).
+    # Note: rhino_get_selected_objects uses runtime().mode at register time so
+    # it is excluded from this check (registered only when bridge is live).
     bridge_only = {
         "gh_open_file",
         "rhino_render_viewport",
@@ -43,9 +45,8 @@ def test_standalone_server_registers_expected_tool_count(server_standalone) -> N
         "rhino_execute_python",
         "rhino_execute_csharp",
         "rhino_undo",
-        "rhino_get_selected_objects",
     }
-    assert bridge_only.isdisjoint(tools.keys())
+    assert bridge_only.issubset(tools.keys())
 
 
 def test_bridge_server_registers_more_tools(server_bridge) -> None:

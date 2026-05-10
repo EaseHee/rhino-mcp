@@ -19,7 +19,7 @@
 `rhino-mcp` is a Model Context Protocol server that lets Claude (or any MCP client) drive Rhino 8 — creating geometry, manipulating layers and materials, baking Grasshopper output, exporting STEP/IGES/STL/OBJ — through plain natural-language tool calls.
 It runs in two modes:
 
-- **Standalone** (default): backed by [`rhino3dm`](https://github.com/mcneel/rhino3dm) for headless `.3dm` file authoring; works without Rhino installed and exposes **~129 tools** (geometry, file-I/O, transform, layer, material, analysis, RhinoScript docs, composition, document hygiene, geometry validation, GH template catalogue, freeform skin / panelisation / curvature / fields, drawing-set sheet + title block, schedule / quantity, block definition, sun-position + shadow projection, BIM metadata tagging, 19 physical material presets, BRE daylight factor + Bird DNI clear-sky model).
+- **Standalone** (default): backed by [`rhino3dm`](https://github.com/mcneel/rhino3dm) for headless `.3dm` file authoring; works without Rhino installed and exposes **~234 tools** (geometry, file-I/O, transform, layer, material, analysis, RhinoScript docs, composition, document hygiene, geometry validation, GH template catalogue, freeform skin / panelisation / curvature / fields, drawing-set sheet + title block, schedule / quantity, block definition, sun-position + shadow projection, BIM metadata tagging, 19 physical material presets, BRE daylight factor + Bird DNI clear-sky model).
 - **Bridge**: when the C# bridge plugin is loaded in a live Rhino 8 session, the server transparently forwards every call (booleans, lofts, sweeps, viewport, render, scripting, deformation, NURBS editing, SubD, paneling, freeform analysis with true Gaussian curvature, drawing-set view placement + section cuts + PDF export, accurate Brep-area schedules, block explode/redefine, ray-cast solar exposure, IFC / gbXML import-export, HDRI environment, camera / light / render / turntable automation, *and* every Grasshopper operation including templates) to RhinoCommon and Grasshopper.Instances, exposing **~235 tools**.
 
 ## Features
@@ -233,7 +233,7 @@ Any MCP-compatible client (mcp-inspector, Continue, Claude Code, etc.) that can 
 
 ### Rhino-side bridge plugin (C# — recommended)
 
-Build and install the C# plugin for full 130+ tool support.
+Build and install the C# plugin for full 235 tool support.
 The included helper script wraps `dotnet build` and verifies the post-build install location:
 
 ```bash
