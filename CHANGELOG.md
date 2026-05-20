@@ -6,6 +6,96 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added — generic bridge call batching
+
+- **`rhino_batch_call`** MCP tool (bridge only) — wraps the existing
+  `rhino.batch.execute` route to dispatch N JSON-RPC steps in one
+  round-trip. Methods are gated to the `rhino.*` / `gh.*` namespaces;
+  `on_error` accepts `stop` (default) or `continue`; per-row results
+  carry `status`, `result` or `error`, and the originating method.
+  Closes the gap left by the `gh_connect_many` / `rhino_batch_modify`
+  precedents — those are typed for one operation, this one is generic.
+
+### Added — long-op progress notifications
+
+- **`IProgressSink`** + `ProgressSink` (C#) — handlers can call
+  `EmitProgress(progress, total, message)` from inside a UI-thread
+  dispatch to push a `rhino.progress` JSON-RPC notification onto the
+  client socket. Writes share the same `_writeLock` as `HeartbeatSender`
+  so notifications never tear an in-progress response line.
+- Wired into `BridgeBatchHandler` (per-step), `BimIoHandler.ExportIfc`
+  / `ImportIfc` (per-object iteration), and `ExtractionHandler.Make2D`
+  (selection phase). `RenderQueueHandler` deferred — its frame loop
+  already runs on a background worker outside the dispatch sink.
+- Python `BridgeClient._call_once` recognises the new `rhino.progress`
+  notification frame and surfaces its payload at DEBUG
+  (`RHINO_MCP_LOG_LEVEL=DEBUG`). Heartbeat frames keep their existing
+  silent-drain behaviour. FastMCP `Context.report_progress` integration
+  is a follow-up.
+
+### Changed
+
+- Tool count: 244 → 245 (+1; bridge only).
+- Test count: 287 → 295 (+8: 5 batch_call + 3 progress drain).
+
+## [0.6.0] - 2026-05-16
+
+### Added — multi-Rhino bridge discovery (Tier 1)
+
+- **`AnnouncementWriter`** (C#) writes a per-process JSON announcement file
+  (`/tmp/rhino-mcp-listeners/{pid}-{port}.json` on POSIX,
+  `%LOCALAPPDATA%/rhino-mcp/listeners` on Windows) on plugin load and
+  refreshes it on every doc open / new / close. Path overridable via
+  `RHINO_MCP_LISTENER_DIR`.
+- **Free-port probing** in `Plugin.cs`: when `RHINO_PORT` is unset, the
+  plugin scans 4242, 4243, … for a free slot so multiple Rhino instances
+  can co-exist without manual configuration.
+- **`bridge/discovery.py`** scans the listener directory, prunes stale
+  entries (dead PID), and exposes `list_rhino_instances()` /
+  `select_endpoint()` / `apply_endpoint()` helpers.
+- **`bridge_admin` tool module** — two new MCP tools:
+  `rhino_bridge_list_instances` (read-only enumeration) and
+  `rhino_bridge_select_instance` (switches the next bridge call to a
+  specific PID / port / document substring / index).
+
+### Added — Grasshopper parity (Tier 2-A)
+
+- **`gh_connect_many`** + `gh.component.connect_many` handler — batch
+  wire creation in a single round-trip with per-row pass/fail reporting
+  and optional `stop_on_error`.
+- **`gh_place_slider`** + `gh.parameter.place_slider` handler — drop a
+  Number Slider with bounds / value / decimal places set atomically.
+- **`ComponentConnect`** key-naming bug fix: handler now accepts both the
+  legacy `source_id` / `target_id` shape *and* the Python-side
+  `from_component` / `to_component` shape; ports resolve by index or name.
+
+### Added — UX boost tools (Tier 2-B)
+
+- **`rhino_layer_set_material`** / `rhino.layer.set_material` — bind a
+  render material to a layer so layer-source objects inherit it.
+- **`rhino_probe_intersection`** / `rhino.analysis.probe_intersection` —
+  ray-cast against Breps / Extrusions; returns hits sorted by distance.
+- **`rhino_zoom_object`** / `rhino_zoom_layer` — fit-to-bounds zoom for
+  a specific id list or layer.
+- **`rhino_viewport_image`** / `rhino.display.capture_viewport` —
+  lightweight PNG dump of the active viewport (no render engine).
+
+### Added — execute_csharp hardening (Tier 2-C)
+
+- **`RHINO_MCP_ALLOW_CSHARP=1` safety gate** on `rhino_execute_csharp`
+  — opt-in environment variable required before Roslyn execution runs.
+- **`references`** and **`timeout_s`** parameters: load extra
+  assemblies (e.g. `Grasshopper`, `System.Xml.Linq`) and cap total
+  execution time. Timeouts return `timed_out: true` cleanly.
+- Audit log line at WARNING on every invocation.
+
+### Changed
+
+- Tool count: 235 → 244 (+9).
+- Test count: 219 → 287 (+68).
+- Pre-existing `gh_connect_components` no longer relies on the unused
+  `source_id`/`target_id` key naming — both shapes are accepted.
+
 ## [0.5.1] - 2026-05-10
 
 ### Changed — bridge promotion and always-register

@@ -117,6 +117,9 @@ namespace RhinoMcp.Handlers
         {
             var code = parameters["code"]?.ToString()
                 ?? throw new ArgumentException("code is required");
+            var timeoutSec = parameters["timeout_s"]?.Value<int>() ?? 30;
+            if (timeoutSec < 1) timeoutSec = 1;
+            var extraRefs = parameters["references"] as JArray;
 
             var output = new StringBuilder();
             uint undoRecord = Doc.BeginUndoRecord("MCP: execute_csharp");
@@ -130,10 +133,46 @@ namespace RhinoMcp.Handlers
                 };
 
                 var options = GetScriptOptions();
+                if (extraRefs != null && extraRefs.Count > 0)
+                {
+                    foreach (var token in extraRefs)
+                    {
+                        var refName = token?.ToString();
+                        if (string.IsNullOrWhiteSpace(refName)) continue;
+                        try
+                        {
+                            var asm = Assembly.Load(refName);
+                            options = options.AddReferences(asm);
+                        }
+                        catch (Exception loadEx)
+                        {
+                            return new JObject
+                            {
+                                ["success"] = false,
+                                ["output"] = output.ToString(),
+                                ["message"] = $"Failed to load reference '{refName}': {loadEx.Message}",
+                            };
+                        }
+                    }
+                }
 
+                using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(timeoutSec));
                 var task = Microsoft.CodeAnalysis.CSharp.Scripting.CSharpScript
-                    .EvaluateAsync(code, options, globals, typeof(CSharpScriptGlobals));
-                task.Wait();
+                    .EvaluateAsync(code, options, globals, typeof(CSharpScriptGlobals), cts.Token);
+                try
+                {
+                    task.Wait(cts.Token);
+                }
+                catch (OperationCanceledException)
+                {
+                    return new JObject
+                    {
+                        ["success"] = false,
+                        ["timed_out"] = true,
+                        ["output"] = output.ToString(),
+                        ["message"] = $"Script exceeded timeout_s={timeoutSec}",
+                    };
+                }
 
                 return new JObject
                 {

@@ -100,6 +100,7 @@ namespace RhinoMcp
             Register("rhino.layer.create", lay.Create);
             Register("rhino.layer.delete", lay.Delete);
             Register("rhino.layer.set_color", lay.SetColor);
+            Register("rhino.layer.set_material", lay.SetMaterial);
 
             // Materials
             var mat = new Handlers.MaterialHandler();
@@ -126,6 +127,9 @@ namespace RhinoMcp
             Register("rhino.display.named_view_save", dsp.NamedViewSave);
             Register("rhino.display.mode_set", dsp.ModeSet);
             Register("rhino.display.turntable", dsp.Turntable);
+            Register("rhino.display.zoom_object", dsp.ZoomObject);
+            Register("rhino.display.zoom_layer", dsp.ZoomLayer);
+            Register("rhino.display.capture_viewport", dsp.CaptureViewport);
             Register("rhino.render.viewport", dsp.RenderViewport);
 
             // Analysis
@@ -139,6 +143,7 @@ namespace RhinoMcp
             Register("rhino.analysis.section", anl.Section);
             Register("rhino.analysis.contour", anl.Contour);
             Register("rhino.analysis.zebra", anl.Zebra);
+            Register("rhino.analysis.probe_intersection", anl.ProbeIntersection);
 
             // IO
             var io = new Handlers.IOHandler();
@@ -253,12 +258,14 @@ namespace RhinoMcp
             Register("gh.component.add", gh.ComponentAdd);
             Register("gh.component.delete", gh.ComponentDelete);
             Register("gh.component.connect", gh.ComponentConnect);
+            Register("gh.component.connect_many", gh.ComponentConnectMany);
             Register("gh.component.list", gh.ComponentList);
             Register("gh.cluster.create", gh.ClusterCreate);
             Register("gh.cluster.expand", gh.ClusterExpand);
             Register("gh.parameter.get", gh.ParameterGet);
             Register("gh.parameter.set", gh.ParameterSet);
             Register("gh.parameter.set_slider", gh.ParameterSetSlider);
+            Register("gh.parameter.place_slider", gh.ParameterPlaceSlider);
             Register("gh.parameter.set_toggle", gh.ParameterSetToggle);
             Register("gh.parameter.set_panel", gh.ParameterSetPanel);
             Register("gh.data_tree.get", gh.DataTreeGet);

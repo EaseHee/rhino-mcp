@@ -35,6 +35,7 @@ rhino-mcp [--transport {stdio,http}] [--host HOST] [--port PORT] [--version]
 | `RHINO_MCP_SOCKET`              | _(XDG runtime)_   | Unix socket 경로. 기본 `$XDG_RUNTIME_DIR/rhino_mcp.sock`, 없으면 `/tmp/rhino_mcp.sock`. |
 | `RHINO_MCP_KEEPALIVE_IDLE`      | `20`              | TCP keepalive idle 초 — OS가 peer probe 시작까지 대기. |
 | `RHINO_MCP_KEEPALIVE_INTERVAL`  | `10`              | TCP keepalive probe 간격(초). |
+| `RHINO_MCP_LISTENER_DIR`        | _(자동)_          | C# 플러그인이 process 단위 announcement JSON을 기록하는 디렉토리(`rhino_bridge_list_instances` 소비처). 자동값: POSIX `${TMPDIR:-/tmp}/rhino-mcp-listeners`, Windows `%LOCALAPPDATA%/rhino-mcp/listeners`. |
 
 ### 서버 측(C# 브리지 플러그인)
 
@@ -49,6 +50,16 @@ rhino-mcp [--transport {stdio,http}] [--host HOST] [--port PORT] [--version]
 | 변수                                | 기본값   | 비고 |
 |-------------------------------------|----------|------|
 | `RHINO_MCP_ALLOW_MODAL_COMMAND`     | _(off)_  | `1` 설정 시 `rhino_execute_python`의 modal `rs.Command` 패턴 사전 reject 비활성화 (`_Move`/`_Mirror`/`_Rotate`/`_Copy`/`_Scale`/`_SelLayer`/`_Layer _Assign` — bridge 단절 주된 원인). 디버깅 전용. |
+| `RHINO_MCP_ALLOW_CSHARP`            | _(off)_  | `rhino_execute_csharp` 게이트. `1`이어야 호출 진행 — 아니면 bridge 왕복 전에 parameter error로 차단. Roslyn 스크립트가 RhinoCommon 전체 접근 권한을 가지므로 신뢰 세션에서만 활성화. |
+
+### 다중 Rhino 인스턴스 자동 발견(v0.6)
+
+C# 플러그인 로드 시 process 단위 announcement 파일(`{pid}-{port}.json`)을
+`RHINO_MCP_LISTENER_DIR`에 기록, 도큐먼트 open/new/close 마다 refresh.
+`RHINO_PORT` 미설정 시 4242부터 위로 free port 자동 탐색, 같은 호스트의
+2개 이상 Rhino 인스턴스가 수동 설정 없이 공존 가능. Python 측은
+`rhino_bridge_list_instances`로 발견, `rhino_bridge_select_instance`로
+활성 엔드포인트 전환.
 
 ## 전송 결정 로직
 

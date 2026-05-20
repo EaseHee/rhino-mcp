@@ -280,9 +280,24 @@ class BridgeClient:
                         response = None
                         break
                     if "id" not in candidate or candidate.get("id") is None:
-                        # Notification frame (heartbeat) — log once at debug and skip.
-                        if candidate.get("method") != "rhino.heartbeat":
-                            log.debug("ignoring server notification: %s", candidate.get("method"))
+                        # Notification frame. Two recognised methods:
+                        #  * rhino.heartbeat — empty keepalive, drop on the floor.
+                        #  * rhino.progress  — long-op progress emitted by the handler;
+                        #    surface at DEBUG so RHINO_MCP_LOG_LEVEL=DEBUG yields
+                        #    a real-time trace until FastMCP ctx.report_progress
+                        #    integration lands (follow-up).
+                        notification_method = candidate.get("method")
+                        if notification_method == "rhino.progress":
+                            params_obj = candidate.get("params") or {}
+                            log.debug(
+                                "bridge progress: req=%s progress=%s/%s msg=%s",
+                                params_obj.get("request_id"),
+                                params_obj.get("progress"),
+                                params_obj.get("total"),
+                                params_obj.get("message"),
+                            )
+                        elif notification_method != "rhino.heartbeat":
+                            log.debug("ignoring server notification: %s", notification_method)
                         continue
                     response = candidate
                     break

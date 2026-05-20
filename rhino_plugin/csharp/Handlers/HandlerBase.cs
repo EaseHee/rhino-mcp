@@ -177,5 +177,15 @@ namespace RhinoMcp.Handlers
                 throw;
             }
         }
+
+        /// <summary>
+        /// Emit a JSON-RPC progress notification on the dispatch socket
+        /// for the in-flight request. No-op when no sink is bound (e.g.
+        /// the handler runs outside a UI-thread dispatch).
+        /// </summary>
+        protected static void EmitProgress(double? progress, double? total = null, string? message = null)
+        {
+            BridgeContext.CurrentProgressSink?.Report(progress, total, message);
+        }
     }
 }

@@ -7,13 +7,18 @@ code when the built-in primitive tools are insufficient.
 
 from __future__ import annotations
 
+import os
 from typing import Any
 
 from pydantic import BaseModel, Field
 
 from rhino_mcp.tools._safety import check_python_payload
 from rhino_mcp.tools.context import runtime
+from rhino_mcp.utils.error_handling import parameter_error
+from rhino_mcp.utils.logging import get_logger
 from rhino_mcp.utils.registry import Mode
+
+log = get_logger("scripting")
 
 # ---------------------------------------------------------------------------
 # Pydantic input models
@@ -42,6 +47,21 @@ class _ExecCSharpIn(BaseModel):
         min_length=1,
         max_length=50_000,
         description="RhinoCommon C# code to execute in Rhino.",
+    )
+    references: list[str] | None = Field(
+        None,
+        max_length=32,
+        description=(
+            "Additional assembly names (e.g. ``Grasshopper`` or "
+            "``System.Xml.Linq``) to load before compilation. Each is "
+            "resolved with ``Assembly.Load(name)``."
+        ),
+    )
+    timeout_s: int = Field(
+        30,
+        ge=1,
+        le=600,
+        description="Maximum seconds to wait for the script to complete.",
     )
 
 
@@ -89,18 +109,23 @@ def register(mcp: Any, mode: Mode) -> None:
             "text": result.get("result", "Script executed."),
         }
 
-    @mcp.tool(annotations={"title": "Execute RhinoCommon C# Code"})
+    @mcp.tool(annotations={"title": "Execute RhinoCommon C# Code", "destructiveHint": True})
     def rhino_execute_csharp(args: _ExecCSharpIn) -> dict[str, Any]:
         """Execute RhinoCommon C# code in a live Rhino session using Roslyn.
 
-        The code runs with these globals pre-injected:
-        - ``doc``: The active ``RhinoDoc`` (Rhino.RhinoDoc)
-        - ``output``: A ``StringBuilder`` — call ``output.AppendLine("...")``
-          to return results.
+        SAFETY: This tool runs arbitrary code with full RhinoCommon access.
+        It is gated behind ``RHINO_MCP_ALLOW_CSHARP=1`` so it cannot fire
+        accidentally. Set the env var only in trusted sessions.
 
-        Common namespaces are pre-imported:
-        System, System.Collections.Generic, System.Linq,
-        Rhino, Rhino.Geometry, Rhino.DocObjects, Rhino.Commands.
+        Globals available to the script:
+        - ``doc``: the active ``RhinoDoc``
+        - ``output``: a ``StringBuilder`` — call ``output.AppendLine("...")``
+          to return text to the caller.
+
+        Pre-imported namespaces: System, System.Collections.Generic,
+        System.Linq, System.Text, Rhino, Rhino.Geometry, Rhino.DocObjects,
+        Rhino.Commands. Pass ``references`` to load extra assemblies (e.g.
+        ``Grasshopper``).
 
         Example — create a sphere::
 
@@ -109,17 +134,39 @@ def register(mcp: Any, mode: Mode) -> None:
             doc.Views.Redraw();
             output.AppendLine("Created sphere");
 
-        Changes are wrapped in an undo record and will be reverted on failure.
-        Compilation errors are returned in ``message``.
+        Changes are wrapped in an undo record. ``timeout_s`` caps total
+        execution time (default 30s); on timeout the call returns
+        ``success: false`` and the script is best-effort cancelled.
         """
+        if os.environ.get("RHINO_MCP_ALLOW_CSHARP", "0") != "1":
+            raise parameter_error(
+                "RHINO_MCP_ALLOW_CSHARP",
+                "C# execution is disabled. Set RHINO_MCP_ALLOW_CSHARP=1 in the "
+                "Rhino process environment to enable this tool. Audit the "
+                "request first — Roslyn scripts have full RhinoCommon access.",
+            )
+        # Audit trail: the request id propagates from the MCP transport; the
+        # bridge writes its own RhinoApp.WriteLine. Echo a one-liner so the
+        # server-side log captures the intent too.
+        log.warning(
+            "rhino_execute_csharp invoked (code_len=%d, refs=%d, timeout=%ds)",
+            len(args.code),
+            len(args.references or []),
+            args.timeout_s,
+        )
         result = runtime().require_bridge().call(
             "rhino.script.execute_csharp",
-            {"code": args.code},
+            {
+                "code": args.code,
+                "references": args.references or [],
+                "timeout_s": args.timeout_s,
+            },
         )
         return {
             "summary": {
                 "success": result.get("success", True),
                 "output": result.get("output", ""),
+                "timed_out": result.get("timed_out", False),
             },
             "text": result.get("result", result.get("message", "Script executed.")),
         }

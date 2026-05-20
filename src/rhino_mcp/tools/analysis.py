@@ -48,6 +48,21 @@ class _ContourIn(_DocArg):
     interval: float = Field(..., gt=0)
 
 
+class _ProbeIntersectionIn(_DocArg):
+    ray_origin: Point3dModel
+    ray_direction: Point3dModel = Field(
+        ..., description="Direction vector; need not be unit (handler normalises)."
+    )
+    object_ids: list[str] | None = Field(
+        None,
+        max_length=MAX_OBJECT_IDS,
+        description="Restrict probing to these objects; default scans every Brep/Extrusion.",
+    )
+    max_hits: int = Field(
+        16, ge=1, le=256, description="Cap on returned hit points across all targets."
+    )
+
+
 def _measure_area(geom) -> float | None:
     if isinstance(geom, r3.Brep):
         # rhino3dm Brep.GetArea is not exposed; approximate via face NurbsSurface sample.
@@ -190,3 +205,16 @@ def register(mcp, mode: Mode) -> None:  # type: ignore[no-untyped-def]
         if runtime().mode is Mode.STANDALONE:
             raise unsupported_in_standalone("rhino_contour")
         return runtime().require_bridge().call("rhino.analysis.contour", args.model_dump())
+
+    @mcp.tool(annotations={"title": "Probe Ray Intersection", "readOnlyHint": True, "idempotentHint": True})
+    def rhino_probe_intersection(args: _ProbeIntersectionIn) -> dict[str, Any]:
+        """Cast a ray and report intersection points against Breps/Extrusions.
+
+        Returns ``hits`` sorted by distance from the ray origin. Bridge-only —
+        rhino3dm has no ray-shoot primitive.
+        """
+        if runtime().mode is Mode.STANDALONE:
+            raise unsupported_in_standalone("rhino_probe_intersection")
+        return runtime().require_bridge().call(
+            "rhino.analysis.probe_intersection", args.model_dump()
+        )

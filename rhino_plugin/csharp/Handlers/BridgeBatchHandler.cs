@@ -48,6 +48,8 @@ namespace RhinoMcp.Handlers
                 if (string.IsNullOrEmpty(method))
                     throw new System.ArgumentException($"steps[{i}].method is required.");
 
+                EmitProgress(i, stepsTok.Count, $"step {i + 1}/{stepsTok.Count}: {method}");
+
                 JObject entry;
                 try
                 {

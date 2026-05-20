@@ -40,6 +40,28 @@ class _TurntableIn(_DocArg):
     height: Annotated[int, Field(ge=64, le=8192)] = 720
 
 
+class _ZoomObjectIn(_DocArg):
+    object_ids: list[str] = Field(..., min_length=1, max_length=500)
+
+
+class _ZoomLayerIn(_DocArg):
+    layer: str = Field(..., min_length=1, description="Full layer path.")
+
+
+class _CaptureViewportIn(_DocArg):
+    view_name: str | None = Field(
+        None,
+        description="Viewport to capture; defaults to the active viewport.",
+    )
+    width: Annotated[int, Field(ge=0, le=8192)] = 0
+    height: Annotated[int, Field(ge=0, le=8192)] = 0
+    transparent_bg: bool = False
+    output_path: str | None = Field(
+        None,
+        description="PNG path; when omitted the bridge writes to a temp file and returns its path.",
+    )
+
+
 def register(mcp, mode: Mode) -> None:  # type: ignore[no-untyped-def]
     @mcp.tool(annotations={"title": "Activate Named View", "readOnlyHint": False})
     def rhino_view_set(args: _ViewSetIn) -> dict[str, Any]:
@@ -65,3 +87,23 @@ def register(mcp, mode: Mode) -> None:  # type: ignore[no-untyped-def]
     def rhino_turntable(args: _TurntableIn) -> dict[str, Any]:
         """Render a turntable animation to ``output_path`` (PNG sequence or GIF)."""
         return runtime().require_bridge().call("rhino.display.turntable", args.model_dump())
+
+    @mcp.tool(annotations={"title": "Zoom to Objects", "readOnlyHint": False})
+    def rhino_zoom_object(args: _ZoomObjectIn) -> dict[str, Any]:
+        """Zoom the active viewport to fit the given object ids exactly."""
+        return runtime().require_bridge().call("rhino.display.zoom_object", args.model_dump())
+
+    @mcp.tool(annotations={"title": "Zoom to Layer", "readOnlyHint": False})
+    def rhino_zoom_layer(args: _ZoomLayerIn) -> dict[str, Any]:
+        """Zoom the active viewport to fit every object on ``layer``."""
+        return runtime().require_bridge().call("rhino.display.zoom_layer", args.model_dump())
+
+    @mcp.tool(annotations={"title": "Capture Viewport to PNG", "readOnlyHint": False, "idempotentHint": False})
+    def rhino_viewport_image(args: _CaptureViewportIn) -> dict[str, Any]:
+        """Save the current viewport pixels to a PNG file.
+
+        Lightweight alternative to ``rhino_render_to_file`` — no render engine
+        is invoked, just a viewport bitmap dump. Use 0 for ``width``/``height``
+        to inherit the on-screen viewport size.
+        """
+        return runtime().require_bridge().call("rhino.display.capture_viewport", args.model_dump())

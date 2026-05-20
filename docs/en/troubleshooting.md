@@ -137,6 +137,54 @@ Run with `RHINO_MCP_LOG_LEVEL=DEBUG` to confirm.
 - Check component output with `gh_get_parameter`
 - Some components emit data, not geometry
 
+### Multiple Rhino instances — wrong document responding (v0.6)
+
+Symptoms: tools edit the *other* open Rhino document, or
+`rhino_bridge_list_instances` shows 0 or 1 instance when 2+ are running.
+
+Checks:
+
+1. List discovered listeners — they live in `RHINO_MCP_LISTENER_DIR`
+   (`${TMPDIR:-/tmp}/rhino-mcp-listeners` by default; `%LOCALAPPDATA%/rhino-mcp/listeners` on Windows):
+
+   ```bash
+   ls /tmp/rhino-mcp-listeners/   # or %LOCALAPPDATA%\rhino-mcp\listeners\
+   ```
+
+   One JSON per `{pid}-{port}` is expected.
+
+2. If only one file exists despite two Rhinos running, the second
+   Rhino loaded an older plugin build (pre-v0.6, no announcement
+   writer). Rebuild and reload:
+
+   ```bash
+   dotnet build rhino_plugin/csharp -c Release
+   ```
+
+3. Switch which Rhino receives calls:
+
+   ```text
+   rhino_bridge_list_instances()
+   rhino_bridge_select_instance(doc_path_contains="site.3dm")
+   ```
+
+4. Stale entries (Rhino crashed without cleaning up): the next
+   `rhino_bridge_list_instances` call with `stale_cleanup=true`
+   (default) deletes JSON files whose PID is gone.
+
+### `rhino_execute_csharp` rejected before running
+
+Error message includes
+`C# execution is disabled. Set RHINO_MCP_ALLOW_CSHARP=1`. The tool is
+gated behind an opt-in env var. Set it on the **Rhino process side**
+(or wherever the bridge plugin lives), then restart:
+
+```bash
+RHINO_MCP_ALLOW_CSHARP=1 /Applications/Rhino\ 8.app/Contents/MacOS/Rhinoceros
+```
+
+The gate is intentional — Roslyn scripts have full RhinoCommon access.
+
 ---
 
 ## Error categories

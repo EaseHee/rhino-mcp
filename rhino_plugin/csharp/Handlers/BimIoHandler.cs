@@ -26,18 +26,23 @@ namespace RhinoMcp.Handlers
             if (entityMap != null)
             {
                 var idsTok = p["object_ids"] as JArray;
-                IEnumerable<RhinoObject> targets =
-                    idsTok != null
-                        ? idsTok.Select(t => Doc.Objects.FindId(FindId(t.ToString()))).Where(o => o != null)!
-                        : Doc.Objects.Cast<RhinoObject>();
-                foreach (var obj in targets)
+                var targetList =
+                    (idsTok != null
+                        ? idsTok.Select(t => Doc.Objects.FindId(FindId(t.ToString()))).Where(o => o != null)
+                        : Doc.Objects.Cast<RhinoObject>()).ToList();
+                EmitProgress(0, targetList.Count, $"IFC export: tagging {targetList.Count} object(s)");
+                int tagged = 0;
+                foreach (var obj in targetList)
                 {
+                    tagged++;
                     var fn = obj.Attributes.GetUserString("function") ?? "";
                     if (string.IsNullOrEmpty(fn)) continue;
                     var entity = entityMap[fn]?.ToString();
                     if (string.IsNullOrEmpty(entity)) continue;
                     obj.Attributes.SetUserString("ifc_entity", entity);
                     Doc.Objects.ModifyAttributes(obj, obj.Attributes, true);
+                    if (tagged % 25 == 0 || tagged == targetList.Count)
+                        EmitProgress(tagged, targetList.Count, $"IFC export: tagged {tagged}/{targetList.Count}");
                 }
             }
 
@@ -69,14 +74,18 @@ namespace RhinoMcp.Handlers
             int before = Doc.Objects.Count;
             SafeRunScript($"_-Import \"{path}\" _Enter");
             int after = Doc.Objects.Count;
+            int incoming = System.Math.Max(0, after - before);
+            EmitProgress(0, incoming, $"IFC import: bucketing {incoming} object(s)");
 
             // Bucket newly imported objects under <root>::<IfcType>.
             var filterArr = p["filter_by_type"] as JArray;
             var allow = filterArr?.Select(t => t.ToString()).ToHashSet();
             int kept = 0;
             int filtered = 0;
+            int processed = 0;
             foreach (var obj in Doc.Objects.Cast<RhinoObject>().Skip(before))
             {
+                processed++;
                 var entity = obj.Attributes.GetUserString("ifc_entity") ?? "IfcBuildingElement";
                 if (allow != null && !allow.Contains(entity))
                 {
@@ -95,6 +104,8 @@ namespace RhinoMcp.Handlers
                 attrs.LayerIndex = leafIdx;
                 Doc.Objects.ModifyAttributes(obj, attrs, true);
                 kept++;
+                if (processed % 25 == 0 || processed == incoming)
+                    EmitProgress(processed, incoming, $"IFC import: bucketed {processed}/{incoming}");
             }
             Doc.Views.Redraw();
             return new JObject

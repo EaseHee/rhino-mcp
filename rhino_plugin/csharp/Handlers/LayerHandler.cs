@@ -18,9 +18,11 @@ namespace RhinoMcp.Handlers
 
             var layer = new Layer { Name = name };
 
-            if (p["color"] != null)
+            // ``color`` is optional. Guard against JSON ``null`` (which arrives
+            // as JValue.Null and would explode on the c["r"] indexer below) by
+            // requiring a real JObject.
+            if (p["color"] is JObject c)
             {
-                var c = p["color"]!;
                 layer.Color = System.Drawing.Color.FromArgb(
                     c["r"]!.Value<int>(), c["g"]!.Value<int>(), c["b"]!.Value<int>());
             }
@@ -54,11 +56,39 @@ namespace RhinoMcp.Handlers
             var idx = Doc.Layers.FindByFullPath(name, -1);
             if (idx < 0) throw new KeyNotFoundException($"Layer not found: {name}");
             var layer = Doc.Layers[idx];
-            var c = p["color"]!;
+            if (p["color"] is not JObject c)
+                throw new System.ArgumentException("'color' must be an object {r, g, b}.");
             layer.Color = System.Drawing.Color.FromArgb(
                 c["r"]!.Value<int>(), c["g"]!.Value<int>(), c["b"]!.Value<int>());
             Doc.Layers.Modify(layer, idx, true);
             return StatusOk($"Layer color set: {name}");
+        }
+
+        public JObject SetMaterial(JObject p)
+        {
+            var name = p["name"]!.ToString();
+            var idx = Doc.Layers.FindByFullPath(name, -1);
+            if (idx < 0) throw new KeyNotFoundException($"Layer not found: {name}");
+            var matName = p["material_name"]?.ToString();
+            var matIdx = p["material_index"]?.Value<int>() ?? -1;
+            if (matIdx < 0 && !string.IsNullOrEmpty(matName))
+                matIdx = Doc.Materials.Find(matName, true);
+            if (matIdx < 0)
+                throw new KeyNotFoundException($"Material not found: {matName ?? "<unset>"}");
+            var layer = Doc.Layers[idx];
+            layer.RenderMaterialIndex = matIdx;
+            Doc.Layers.Modify(layer, idx, true);
+            return new JObject
+            {
+                ["summary"] = new JObject
+                {
+                    ["layer"] = name,
+                    ["layer_index"] = idx,
+                    ["material_index"] = matIdx,
+                    ["material_name"] = matName ?? Doc.Materials[matIdx]?.Name,
+                },
+                ["text"] = $"Material '{matName ?? matIdx.ToString()}' bound to layer {name}",
+            };
         }
     }
 
@@ -76,9 +106,8 @@ namespace RhinoMcp.Handlers
                 };
 
             var mat = new Rhino.DocObjects.Material { Name = name };
-            if (p["color"] != null)
+            if (p["color"] is JObject c)
             {
-                var c = p["color"]!;
                 mat.DiffuseColor = System.Drawing.Color.FromArgb(
                     c["r"]!.Value<int>(), c["g"]!.Value<int>(), c["b"]!.Value<int>());
             }

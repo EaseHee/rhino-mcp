@@ -32,8 +32,10 @@ def _tool_specs() -> list[tuple[Mode, object]]:
         analysis,
         annotation,
         batch,
+        batch_call,
         bim_io,
         blocks,
+        bridge_admin,
         composition,
         control_points,
         curves,
@@ -101,12 +103,15 @@ def _tool_specs() -> list[tuple[Mode, object]]:
         (Mode.BOTH, ff_fields.register),
         # Documentation (standalone + bridge)
         (Mode.BOTH, rhinoscript_docs.register),
+        # Bridge administration: multi-Rhino discovery and endpoint switch
+        (Mode.BOTH, bridge_admin.register),
         # Script execution (bridge only)
         (Mode.BRIDGE, scripting.register),
         # History (bridge only)
         (Mode.BRIDGE, history.register),
         # Batch operations (bridge only)
         (Mode.BRIDGE, batch.register),
+        (Mode.BRIDGE, batch_call.register),
         # Advanced modeling (bridge only)
         (Mode.BRIDGE, deformation.register),
         (Mode.BRIDGE, nurbs.register),

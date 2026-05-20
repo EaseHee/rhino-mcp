@@ -36,6 +36,7 @@ rhino-mcp [--transport {stdio,http}] [--host HOST] [--port PORT] [--version]
 | `RHINO_MCP_SOCKET`             | _(XDG runtime)_  | Unix-socket path. Default is `$XDG_RUNTIME_DIR/rhino_mcp.sock`, or `/tmp/rhino_mcp.sock`. |
 | `RHINO_MCP_KEEPALIVE_IDLE`     | `20`             | TCP keepalive idle seconds before the OS probes the peer. |
 | `RHINO_MCP_KEEPALIVE_INTERVAL` | `10`             | TCP keepalive probe interval seconds. |
+| `RHINO_MCP_LISTENER_DIR`       | _(auto)_         | Directory the C# plugin writes per-process announcement JSON files to (consumed by `rhino_bridge_list_instances`). Auto: `${TMPDIR:-/tmp}/rhino-mcp-listeners` on POSIX, `%LOCALAPPDATA%/rhino-mcp/listeners` on Windows. |
 
 ### Server side (C# bridge plugin)
 
@@ -50,6 +51,17 @@ rhino-mcp [--transport {stdio,http}] [--host HOST] [--port PORT] [--version]
 | Variable                          | Default | Notes |
 |-----------------------------------|---------|-------|
 | `RHINO_MCP_ALLOW_MODAL_COMMAND`   | _(off)_ | When `1`, disables the static check in `rhino_execute_python` that rejects modal `rs.Command(_Move / _Mirror / _Rotate / _Copy / _Scale / _SelLayer / _Layer _Assign)` patterns known to break the bridge. Use only for debugging. |
+| `RHINO_MCP_ALLOW_CSHARP`          | _(off)_ | Gate for `rhino_execute_csharp`. Must be `1` for the tool to proceed; otherwise the call fails with a parameter error before any bridge round-trip. Set this only in trusted sessions — Roslyn scripts have full RhinoCommon access. |
+
+### Multi-Rhino discovery (v0.6)
+
+The C# plugin writes a per-process announcement file
+(`{pid}-{port}.json`) into `RHINO_MCP_LISTENER_DIR` on load and refreshes
+it on every document open / new / close. When `RHINO_PORT` is unset, the
+plugin probes 4242, 4243, … upward and binds the first free port so two
+or more Rhino instances on the same host coexist without manual config.
+The Python side enumerates listeners via `rhino_bridge_list_instances`
+and switches active endpoint with `rhino_bridge_select_instance`.
 
 ## Transport selection logic
 

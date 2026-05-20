@@ -39,6 +39,15 @@ class _LayerColorIn(_LayerNameIn):
     color: ColorRGBA
 
 
+class _LayerMaterialIn(_LayerNameIn):
+    material_name: str | None = Field(
+        None, description="Existing render-material name; mutually exclusive with material_index."
+    )
+    material_index: int | None = Field(
+        None, ge=0, description="Existing render-material index; mutually exclusive with material_name."
+    )
+
+
 class _MoveToLayerIn(_DocArg):
     object_ids: list[str] = Field(..., min_length=1, max_length=MAX_OBJECT_IDS)
     layer: str
@@ -232,6 +241,26 @@ def register(mcp, mode: Mode) -> None:  # type: ignore[no-untyped-def]
         idx = _find_layer(h, args.name)
         h.file3dm.Layers[idx].Color = (args.color.r, args.color.g, args.color.b, args.color.a)
         return {"summary": {"name": args.name, "color": args.color.model_dump()}, "text": f"Set colour for layer '{args.name}'"}
+
+    @mcp.tool(annotations={"title": "Set Layer Material", "readOnlyHint": False})
+    def rhino_layer_set_material(args: _LayerMaterialIn) -> dict[str, Any]:
+        """Bind a render material to a layer so layer-source objects inherit it.
+
+        Bridge-only: rhino3dm exposes ``material_index`` on the layer but the
+        in-document material table is read-only. Use ``rhino_material_create``
+        first to define the material.
+        """
+        if runtime().mode is not Mode.BRIDGE:
+            from rhino_mcp.utils.error_handling import unsupported_in_standalone
+            raise unsupported_in_standalone("rhino_layer_set_material")
+        if args.material_name is None and args.material_index is None:
+            from rhino_mcp.utils.error_handling import parameter_error
+            raise parameter_error(
+                "material", "Provide material_name or material_index."
+            )
+        return runtime().require_bridge().call(
+            "rhino.layer.set_material", args.model_dump()
+        )
 
     @mcp.tool(annotations={"title": "Move Objects to Layer", "readOnlyHint": False})
     def rhino_object_move_to_layer(args: _MoveToLayerIn) -> dict[str, Any]:

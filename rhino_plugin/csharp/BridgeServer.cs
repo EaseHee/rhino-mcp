@@ -299,10 +299,13 @@ namespace RhinoMcp
                 var done = new ManualResetEventSlim(false);
 
                 var requestIdStr = id?.ToString() ?? "";
+                var progressSink = new RhinoMcp.Bridge.ProgressSink(writer, writeLock, requestIdStr);
                 RhinoApp.InvokeOnUiThread(new Action(() =>
                 {
                     var prevContext = BridgeContext.CurrentRequestId;
+                    var prevSink = BridgeContext.CurrentProgressSink;
                     BridgeContext.CurrentRequestId = requestIdStr;
+                    BridgeContext.CurrentProgressSink = progressSink;
                     try
                     {
                         result = _dispatcher.Dispatch(method!, parameters);
@@ -314,6 +317,7 @@ namespace RhinoMcp
                     finally
                     {
                         BridgeContext.CurrentRequestId = prevContext;
+                        BridgeContext.CurrentProgressSink = prevSink;
                         done.Set();
                     }
                 }));

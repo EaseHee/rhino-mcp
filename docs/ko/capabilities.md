@@ -83,5 +83,9 @@
 | `rhino_bim_pset_get`, `rhino_bim_pset_set`, `rhino_bim_pset_delete` (IFC PropertySet 단위 읽기/쓰기/삭제, v0.5) | ✓ | ✓ |
 | `rhino_viewport_preview` (선택/레이어 필터 부분 캡처, v0.5) | ✗ | ✓ |
 | `rhino_render_queue_submit`, `rhino_render_queue_status`, `rhino_render_queue_cancel`, `rhino_render_queue_list` (렌더 큐, v0.5) | ✗ | ✓ |
+| `rhino_bridge_list_instances`, `rhino_bridge_select_instance` (다중 Rhino 발견, v0.6) | ✓ | ✓ |
+| `gh_connect_many`, `gh_place_slider` (GH 보강, v0.6) | ✗ | ✓ |
+| `rhino_layer_set_material`, `rhino_probe_intersection`, `rhino_zoom_object`, `rhino_zoom_layer`, `rhino_viewport_image` (UX 보강, v0.6) | ✗ | ✓ |
+| `rhino_batch_call` (한 라운드트립으로 N개 bridge method 디스패치, v0.6.1) | ✗ | ✓ |
 
-요약: standalone 약 234개, C# 브리지 활성 시 235개.
+요약: standalone 약 242개, C# 브리지 활성 시 245개.

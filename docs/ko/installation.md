@@ -36,6 +36,8 @@ Windows에서 named pipe 전송 사용 시 옵션 패키지 설치 필요:
 pip install 'rhino3dm-mcp[windows]'
 ```
 
+`rhino_bridge_list_instances`(다중 Rhino 발견)는 extra 불필요.
+
 ## Rhino 측 브리지 플러그인 설치
 
 브리지: Rhino 8 내부에서 실행되며 RhinoCommon + Grasshopper를 JSON-RPC 소켓으로 노출하는 C# Rhino 플러그인(`rhino_plugin/csharp/`).

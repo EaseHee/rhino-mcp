@@ -141,15 +141,21 @@ namespace RhinoMcp.Handlers
             try
             {
                 // Select the objects first
+                EmitProgress(0, ids.Count, $"Make2D: selecting {ids.Count} object(s)");
+                int selected = 0;
                 foreach (var id in ids)
                 {
+                    selected++;
                     var obj = FindObject(id.ToString());
                     if (obj != null) obj.Select(true);
+                    if (selected % 50 == 0 || selected == ids.Count)
+                        EmitProgress(selected, ids.Count, $"Make2D: selected {selected}/{ids.Count}");
                 }
 
                 bool showHidden = p["show_hidden"]?.Value<bool>() ?? false;
                 string hiddenOpt = showHidden ? "_Yes" : "_No";
                 string cmd = $"_-Make2D _ShowHiddenLines={hiddenOpt} _Enter";
+                EmitProgress(null, null, "Make2D: running command (no intermediate progress)");
                 SafeRunScript(cmd);
 
                 Doc.Objects.UnselectAll();

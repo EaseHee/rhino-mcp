@@ -84,5 +84,9 @@ The capability matrix below summarises this.
 | `rhino_bim_pset_get`, `rhino_bim_pset_set`, `rhino_bim_pset_delete` (IFC PropertySet, v0.5) | ✓ | ✓ |
 | `rhino_viewport_preview` (selection-filtered capture, v0.5) | ✗ | ✓ |
 | `rhino_render_queue_submit`, `rhino_render_queue_status`, `rhino_render_queue_cancel`, `rhino_render_queue_list` (render queue, v0.5) | ✗ | ✓ |
+| `rhino_bridge_list_instances`, `rhino_bridge_select_instance` (multi-Rhino discovery, v0.6) | ✓ | ✓ |
+| `gh_connect_many`, `gh_place_slider` (GH parity, v0.6) | ✗ | ✓ |
+| `rhino_layer_set_material`, `rhino_probe_intersection`, `rhino_zoom_object`, `rhino_zoom_layer`, `rhino_viewport_image` (UX boost, v0.6) | ✗ | ✓ |
+| `rhino_batch_call` (generic N-method bridge dispatch in one round-trip, v0.6.1) | ✗ | ✓ |
 
-In numbers: ~234 standalone tools, ~235 with the C# bridge.
+In numbers: ~242 standalone tools, ~245 with the C# bridge.

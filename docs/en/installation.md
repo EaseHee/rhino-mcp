@@ -36,6 +36,8 @@ On Windows, install the optional extra for the named-pipe transport:
 pip install 'rhino3dm-mcp[windows]'
 ```
 
+`rhino_bridge_list_instances` (multi-Rhino discovery) needs no extra.
+
 ## Install the Rhino bridge plugin
 
 The bridge is a C# Rhino plugin (`rhino_plugin/csharp/`) that runs inside Rhino 8 and exposes RhinoCommon + Grasshopper to the MCP server over a JSON-RPC socket.

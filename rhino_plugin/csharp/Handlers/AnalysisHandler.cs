@@ -121,5 +121,84 @@ namespace RhinoMcp.Handlers
             SafeRunScript("_Zebra");
             return StatusOk("Zebra analysis activated");
         }
+
+        public JObject ProbeIntersection(JObject p)
+        {
+            var origin = ToPoint(p["ray_origin"]!);
+            var dir = ToVector(p["ray_direction"]!);
+            if (dir.IsZero)
+                throw new ArgumentException("ray_direction must be non-zero");
+            dir.Unitize();
+            var ray = new Rhino.Geometry.Ray3d(origin, dir);
+
+            var maxHits = p["max_hits"]?.Value<int>() ?? 16;
+            if (maxHits < 1) maxHits = 1;
+
+            // Collect target Breps. When 'object_ids' is provided we restrict
+            // to those; otherwise scan every Brep / Extrusion in the document.
+            var targets = new List<(Guid id, Brep brep)>();
+            if (p["object_ids"] is JArray ids && ids.Count > 0)
+            {
+                foreach (var t in ids)
+                {
+                    var gid = FindId(t.ToString());
+                    var brep = FindBrep(gid.ToString());
+                    if (brep != null) targets.Add((gid, brep));
+                }
+            }
+            else
+            {
+                foreach (var obj in Doc.Objects)
+                {
+                    var brep = obj.Geometry switch
+                    {
+                        Brep b => b,
+                        Extrusion e => e.ToBrep(),
+                        _ => null,
+                    };
+                    if (brep != null) targets.Add((obj.Id, brep));
+                    if (targets.Count >= 2000) break; // safety ceiling
+                }
+            }
+
+            var hitsOut = new JArray();
+            foreach (var (gid, brep) in targets)
+            {
+                var pts = Rhino.Geometry.Intersect.Intersection.RayShoot(
+                    ray, new[] { brep }, maxHits);
+                if (pts == null || pts.Length == 0) continue;
+                foreach (var pt in pts)
+                {
+                    hitsOut.Add(new JObject
+                    {
+                        ["object_id"] = gid.ToString(),
+                        ["point"] = new JObject { ["x"] = pt.X, ["y"] = pt.Y, ["z"] = pt.Z },
+                        ["distance"] = origin.DistanceTo(pt),
+                    });
+                    if (hitsOut.Count >= maxHits) break;
+                }
+                if (hitsOut.Count >= maxHits) break;
+            }
+
+            // Sort by distance ascending for caller convenience.
+            var sorted = hitsOut
+                .OfType<JObject>()
+                .OrderBy(h => h["distance"]!.Value<double>())
+                .ToList();
+            var sortedArr = new JArray();
+            foreach (var h in sorted) sortedArr.Add(h);
+
+            return new JObject
+            {
+                ["summary"] = new JObject
+                {
+                    ["hit_count"] = sortedArr.Count,
+                    ["target_count"] = targets.Count,
+                    ["first"] = sortedArr.Count > 0 ? sortedArr[0] : null,
+                },
+                ["hits"] = sortedArr,
+                ["text"] = $"Probed {targets.Count} brep(s); {sortedArr.Count} hit(s)",
+            };
+        }
     }
 }

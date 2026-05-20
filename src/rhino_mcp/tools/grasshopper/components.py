@@ -23,6 +23,22 @@ class _ConnectIn(BaseModel):
     to_input: str | int = Field(..., description="Input name or zero-based index.")
 
 
+class _ConnectManyIn(BaseModel):
+    connections: list[_ConnectIn] = Field(
+        ...,
+        min_length=1,
+        max_length=200,
+        description="Batch of wire definitions to add in one round-trip.",
+    )
+    stop_on_error: bool = Field(
+        False,
+        description=(
+            "When False (default) the bridge attempts every wire and reports per-row "
+            "status; when True the first failure aborts the batch."
+        ),
+    )
+
+
 class _DeleteIn(BaseModel):
     component_id: str
 
@@ -78,6 +94,21 @@ def register(mcp, mode: Mode) -> None:  # type: ignore[no-untyped-def]
     def gh_connect_components(args: _ConnectIn) -> dict[str, Any]:
         """Create a wire from one component output to another component input."""
         return runtime().require_bridge().call("gh.component.connect", args.model_dump())
+
+    @mcp.tool(annotations={"title": "GH: Connect Many", "readOnlyHint": False})
+    def gh_connect_many(args: _ConnectManyIn) -> dict[str, Any]:
+        """Add multiple wires in a single round-trip.
+
+        Returns a per-row ``results`` array so partial failures are visible
+        (each row carries ``status`` and, on error, ``error``).
+        """
+        return runtime().require_bridge().call(
+            "gh.component.connect_many",
+            {
+                "connections": [c.model_dump() for c in args.connections],
+                "stop_on_error": args.stop_on_error,
+            },
+        )
 
     @mcp.tool(annotations={"title": "GH: Delete Component", "readOnlyHint": False, "destructiveHint": True})
     def gh_delete_component(args: _DeleteIn) -> dict[str, Any]:

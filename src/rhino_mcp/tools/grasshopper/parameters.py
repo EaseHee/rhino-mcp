@@ -37,6 +37,24 @@ class _ToggleIn(BaseModel):
     value: bool
 
 
+class _PlaceSliderIn(BaseModel):
+    x: float = Field(..., description="Canvas X coordinate.")
+    y: float = Field(..., description="Canvas Y coordinate.")
+    min: float = Field(0.0, description="Slider lower bound.")
+    max: float = Field(1.0, description="Slider upper bound.")
+    value: float = Field(0.5, description="Initial slider value (clamped to [min, max]).")
+    name: str | None = Field(
+        None,
+        description="Optional component nickname; falls back to the value if omitted.",
+    )
+    decimals: int = Field(
+        2,
+        ge=0,
+        le=8,
+        description="Decimal places shown on the slider readout.",
+    )
+
+
 def register(mcp, mode: Mode) -> None:  # type: ignore[no-untyped-def]
     @mcp.tool(annotations={"title": "GH: Get Parameter", "readOnlyHint": True})
     def gh_get_parameter(args: _GetIn) -> dict[str, Any]:
@@ -62,3 +80,14 @@ def register(mcp, mode: Mode) -> None:  # type: ignore[no-untyped-def]
     def gh_set_toggle(args: _ToggleIn) -> dict[str, Any]:
         """Set a Boolean Toggle component to true or false."""
         return runtime().require_bridge().call("gh.parameter.set_toggle", args.model_dump())
+
+    @mcp.tool(annotations={"title": "GH: Place Slider", "readOnlyHint": False})
+    def gh_place_slider(args: _PlaceSliderIn) -> dict[str, Any]:
+        """Create a Number Slider on the canvas with bounds and initial value.
+
+        Returns the new ``component_id`` so subsequent ``gh_connect_components``
+        or ``gh_set_slider`` calls can target it.
+        """
+        return runtime().require_bridge().call(
+            "gh.parameter.place_slider", args.model_dump()
+        )

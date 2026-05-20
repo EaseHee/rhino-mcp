@@ -161,23 +161,103 @@ namespace RhinoMcp.Handlers
 
         public JObject ComponentConnect(JObject p)
         {
+            ConnectOne(GetDoc(), p);
+            GetDoc().NewSolution(false);
+            return StatusOk("Connected");
+        }
+
+        public JObject ComponentConnectMany(JObject p)
+        {
             var doc = GetDoc();
-            var srcId = new Guid(p["source_id"]!.ToString());
-            var srcIdx = p["source_output"]?.Value<int>() ?? 0;
-            var tgtId = new Guid(p["target_id"]!.ToString());
-            var tgtIdx = p["target_input"]?.Value<int>() ?? 0;
+            var connections = (JArray)p["connections"]!;
+            var stopOnError = p["stop_on_error"]?.Value<bool>() ?? false;
+
+            var results = new JArray();
+            var okCount = 0;
+            var errCount = 0;
+            foreach (var entry in connections.OfType<JObject>())
+            {
+                try
+                {
+                    ConnectOne(doc, entry);
+                    results.Add(new JObject { ["status"] = "ok" });
+                    okCount++;
+                }
+                catch (Exception ex)
+                {
+                    results.Add(new JObject
+                    {
+                        ["status"] = "error",
+                        ["error"] = ex.Message,
+                    });
+                    errCount++;
+                    if (stopOnError) break;
+                }
+            }
+            doc.NewSolution(false);
+            return new JObject
+            {
+                ["summary"] = new JObject
+                {
+                    ["total"] = connections.Count,
+                    ["ok"] = okCount,
+                    ["error"] = errCount,
+                },
+                ["results"] = results,
+                ["text"] = $"Connected {okCount}/{connections.Count} wire(s)",
+            };
+        }
+
+        // Resolve source/target keys from either naming convention:
+        // legacy (source_id / source_output / target_id / target_input) and the
+        // Python-side ergonomic form (from_component / from_output / to_component / to_input).
+        private static void ConnectOne(Grasshopper.Kernel.GH_Document doc, JObject p)
+        {
+            var srcKey = p["source_id"] ?? p["from_component"]
+                ?? throw new ArgumentException("Missing source GUID (source_id or from_component)");
+            var tgtKey = p["target_id"] ?? p["to_component"]
+                ?? throw new ArgumentException("Missing target GUID (target_id or to_component)");
+            var srcIdxTok = p["source_output"] ?? p["from_output"];
+            var tgtIdxTok = p["target_input"] ?? p["to_input"];
+
+            var srcId = new Guid(srcKey.ToString());
+            var tgtId = new Guid(tgtKey.ToString());
 
             var src = doc.FindObject(srcId, true) as Grasshopper.Kernel.IGH_Component
-                ?? throw new KeyNotFoundException("Source component not found");
+                ?? throw new KeyNotFoundException($"Source component not found: {srcId}");
             var tgt = doc.FindObject(tgtId, true) as Grasshopper.Kernel.IGH_Component
-                ?? throw new KeyNotFoundException("Target component not found");
+                ?? throw new KeyNotFoundException($"Target component not found: {tgtId}");
 
-            var output = src.Params.Output[srcIdx];
-            var input = tgt.Params.Input[tgtIdx];
+            var output = ResolveParam(src.Params.Output, srcIdxTok);
+            var input = ResolveParam(tgt.Params.Input, tgtIdxTok);
             input.AddSource(output);
-            doc.NewSolution(false);
+        }
 
-            return StatusOk("Connected");
+        private static Grasshopper.Kernel.IGH_Param ResolveParam(
+            System.Collections.Generic.IList<Grasshopper.Kernel.IGH_Param> ports,
+            JToken? key)
+        {
+            if (key == null) return ports[0];
+            if (key.Type == JTokenType.Integer)
+            {
+                var idx = key.Value<int>();
+                if (idx < 0 || idx >= ports.Count)
+                    throw new ArgumentOutOfRangeException(nameof(key), $"Port index {idx} out of range (0..{ports.Count - 1})");
+                return ports[idx];
+            }
+            var name = key.ToString();
+            if (int.TryParse(name, out var parsed))
+            {
+                if (parsed < 0 || parsed >= ports.Count)
+                    throw new ArgumentOutOfRangeException(nameof(key), $"Port index {parsed} out of range (0..{ports.Count - 1})");
+                return ports[parsed];
+            }
+            var match = ports.FirstOrDefault(pr =>
+                string.Equals(pr.NickName, name, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(pr.Name, name, StringComparison.OrdinalIgnoreCase));
+            if (match == null)
+                throw new KeyNotFoundException($"Port not found by name: {name}");
+            return match;
         }
 
         public JObject ComponentList(JObject p)
@@ -370,6 +450,49 @@ namespace RhinoMcp.Handlers
             {
                 ["summary"] = new JObject { ["component_id"] = id.ToString(), ["value"] = value },
                 ["text"] = $"Slider set to {value}"
+            };
+        }
+
+        public JObject ParameterPlaceSlider(JObject p)
+        {
+            var doc = GetDoc();
+            var x = p["x"]?.Value<float>() ?? 0;
+            var y = p["y"]?.Value<float>() ?? 0;
+            var min = p["min"]?.Value<decimal>() ?? 0m;
+            var max = p["max"]?.Value<decimal>() ?? 1m;
+            var value = p["value"]?.Value<decimal>() ?? 0.5m;
+            var decimals = p["decimals"]?.Value<int>() ?? 2;
+            var name = p["name"]?.ToString();
+
+            if (max < min)
+            {
+                (min, max) = (max, min);
+            }
+            value = Math.Max(min, Math.Min(max, value));
+
+            var slider = new Grasshopper.Kernel.Special.GH_NumberSlider();
+            slider.CreateAttributes();
+            slider.Attributes.Pivot = new System.Drawing.PointF(x, y);
+            slider.Slider.Minimum = min;
+            slider.Slider.Maximum = max;
+            slider.Slider.DecimalPlaces = decimals;
+            slider.SetSliderValue(value);
+            if (!string.IsNullOrEmpty(name)) slider.NickName = name;
+
+            doc.AddObject(slider, false);
+            doc.NewSolution(false);
+
+            return new JObject
+            {
+                ["summary"] = new JObject
+                {
+                    ["component_id"] = slider.InstanceGuid.ToString(),
+                    ["min"] = min,
+                    ["max"] = max,
+                    ["value"] = value,
+                    ["name"] = slider.NickName,
+                },
+                ["text"] = $"Placed slider {slider.NickName} at ({x:0.#}, {y:0.#}) range [{min}, {max}] value={value}",
             };
         }
 
