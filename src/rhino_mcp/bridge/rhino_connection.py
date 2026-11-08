@@ -20,6 +20,7 @@ import sys
 import threading
 import time
 import uuid
+from collections.abc import Callable
 from typing import Any
 
 from rhino_mcp.bridge.named_pipe import NamedPipeTransport
@@ -43,6 +44,18 @@ _RECONNECT_JITTER = float(os.environ.get("RHINO_MCP_RECONNECT_JITTER", "0.25"))
 # without aborting so existing deployments keep working.
 _REQUIRED_PROTOCOL_VERSION = "1.0"
 
+ProgressCallback = Callable[[float | None, float | None, str | None], None]
+"""Per-call ``on_progress(progress, total, message)`` hook for ``rhino.progress`` frames."""
+
+
+def _as_float(value: Any) -> float | None:
+    if value is None:
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
 # Honour ``RHINO_MCP_GZIP=0`` to disable opt-in response compression. The
 # bridge falls back to plain JSON when the flag is empty / 0 / "off".
 def _gzip_enabled() -> bool:
@@ -63,6 +76,21 @@ def _check_protocol(pong: dict[str, Any], transport_name: str) -> None:
             "Bridge on %s advertises protocol_version=%s (client expects >=%s). "
             "Some stability fixes from v0.4.2 require the matching plugin build.",
             transport_name, advertised, _REQUIRED_PROTOCOL_VERSION,
+        )
+    _check_rhino_major(pong, transport_name)
+
+
+def _check_rhino_major(pong: dict[str, Any], transport_name: str) -> None:
+    """Warn when the plug-in was compiled for a different Rhino major than it runs in."""
+    running = pong.get("rhino_major")
+    built_for = pong.get("plugin_built_for")
+    if not isinstance(running, int) or not isinstance(built_for, int):
+        return
+    if running != built_for:
+        log.warning(
+            "Bridge on %s runs in Rhino %d but the plug-in was built for Rhino %d. "
+            "Install the rh%d package from the Rhino Package Manager.",
+            transport_name, running, built_for, running,
         )
 
 
@@ -209,15 +237,23 @@ class BridgeClient:
             return False
         return self._transport.is_alive()
 
-    def call(self, method: str, params: dict[str, Any]) -> dict[str, Any]:
+    def call(
+        self,
+        method: str,
+        params: dict[str, Any],
+        on_progress: ProgressCallback | None = None,
+    ) -> dict[str, Any]:
         """Send a JSON-RPC request and return its result, raising ToolError on RPC error.
 
         On transport failure the client retries up to ``_max_retries`` times
         with exponential backoff plus optional symmetric jitter (controlled
         by ``RHINO_MCP_RECONNECT_JITTER``).
+
+        ``on_progress`` is invoked on the calling thread for every
+        ``rhino.progress`` notification tied to this request.
         """
         try:
-            return self._call_once(method, params)
+            return self._call_once(method, params, on_progress=on_progress)
         except ToolError as exc:
             if exc.category.value != "connection":
                 raise
@@ -232,14 +268,25 @@ class BridgeClient:
                 )
                 time.sleep(delay)
                 if self.reconnect():
-                    return self._call_once(method, params)
+                    return self._call_once(method, params, on_progress=on_progress)
             raise
 
-    async def async_call(self, method: str, params: dict[str, Any]) -> dict[str, Any]:
+    async def async_call(
+        self,
+        method: str,
+        params: dict[str, Any],
+        on_progress: ProgressCallback | None = None,
+    ) -> dict[str, Any]:
         """Async variant of :meth:`call`; offloads the blocking I/O to a thread."""
-        return await asyncio.to_thread(self.call, method, params)
+        return await asyncio.to_thread(self.call, method, params, on_progress)
 
-    def _call_once(self, method: str, params: dict[str, Any], timeout: float | None = None) -> dict[str, Any]:
+    def _call_once(
+        self,
+        method: str,
+        params: dict[str, Any],
+        timeout: float | None = None,
+        on_progress: ProgressCallback | None = None,
+    ) -> dict[str, Any]:
         """Single JSON-RPC round-trip without retry/reconnect."""
         if not self._connected:
             raise connection_error(f"transport {self._transport.name} not connected")
@@ -283,9 +330,8 @@ class BridgeClient:
                         # Notification frame. Two recognised methods:
                         #  * rhino.heartbeat — empty keepalive, drop on the floor.
                         #  * rhino.progress  — long-op progress emitted by the handler;
-                        #    surface at DEBUG so RHINO_MCP_LOG_LEVEL=DEBUG yields
-                        #    a real-time trace until FastMCP ctx.report_progress
-                        #    integration lands (follow-up).
+                        #    logged at DEBUG and forwarded to the per-call
+                        #    ``on_progress`` hook (FastMCP ctx.report_progress).
                         notification_method = candidate.get("method")
                         if notification_method == "rhino.progress":
                             params_obj = candidate.get("params") or {}
@@ -296,6 +342,7 @@ class BridgeClient:
                                 params_obj.get("total"),
                                 params_obj.get("message"),
                             )
+                            self._dispatch_progress(params_obj, request_id, on_progress)
                         elif notification_method != "rhino.heartbeat":
                             log.debug("ignoring server notification: %s", notification_method)
                         continue
@@ -328,12 +375,35 @@ class BridgeClient:
                 err.get("data", {}).get("hint", "Check Rhino's command-line for stack traces."),
                 details=err,
             )
-        result = response.get("result", {})
+        result: dict[str, Any] = response.get("result", {})
         if isinstance(result, dict) and result.get("__chunked__") is True:
             result = self._reassemble_chunked(result, effective_timeout)
         if isinstance(result, dict) and result.get("__compressed__") is True:
             result = _decompress_payload(result)
         return result
+
+    @staticmethod
+    def _dispatch_progress(
+        params_obj: dict[str, Any],
+        request_id: str,
+        on_progress: ProgressCallback | None,
+    ) -> None:
+        """Forward one ``rhino.progress`` frame to ``on_progress``; never raises."""
+        if on_progress is None:
+            return
+        frame_req = params_obj.get("request_id")
+        # Frames tagged with another request id belong to a different call.
+        if frame_req not in (None, "") and str(frame_req) != request_id:
+            return
+        message = params_obj.get("message")
+        try:
+            on_progress(
+                _as_float(params_obj.get("progress")),
+                _as_float(params_obj.get("total")),
+                None if message is None else str(message),
+            )
+        except Exception as exc:
+            log.debug("progress callback failed: %s", exc)
 
     def _reassemble_chunked(self, meta: dict[str, Any], timeout: float) -> dict[str, Any]:
         """Pull all chunk slices, concatenate, and parse as the original result."""
@@ -370,7 +440,8 @@ class BridgeClient:
         if encoding != "json":
             raise connection_error(f"unsupported chunk encoding: {encoding}")
         try:
-            return json.loads(blob.decode("utf-8"))
+            decoded: dict[str, Any] = json.loads(blob.decode("utf-8"))
+            return decoded
         except json.JSONDecodeError as exc:
             truncated = blob[:200]
             raise connection_error(f"chunked payload not valid JSON: {truncated!r}") from exc
@@ -399,7 +470,7 @@ def detect_mode() -> tuple[Mode, BridgeClient | None]:
                 log.warning(
                     "Bridge unreachable (RHINO_MCP_BRIDGE_OPTIONAL=1); "
                     "falling back to standalone mode. "
-                    "Start Rhino 8 with the rhino-mcp.rhp C# plugin loaded, then restart to enable bridge tools."
+                    "Start Rhino 8 or 9 with the rhino-mcp.rhp C# plugin loaded, then restart to enable bridge tools."
                 )
                 return Mode.STANDALONE, None
             raise connection_error(

@@ -50,8 +50,8 @@ The capability column says when each tool is registered:
 | `rhino_box`                  | both       | `corner`, `size_x`, `size_y`, `size_z` |
 | `rhino_sphere`               | both       | `center`, `radius` |
 | `rhino_cylinder`             | both       | `base_center`, `radius`, `height`, `axis` (Z only in standalone), `capped` |
-| `rhino_cone`                 | both       | `base_center`, `radius`, `height` (mesh in standalone) |
-| `rhino_torus`                | both       | `center`, `major_radius`, `minor_radius` (mesh in standalone) |
+| `rhino_cone`                 | both       | `base_center`, `radius`, `height` (exact revolved Brep) |
+| `rhino_torus`                | both       | `center`, `major_radius`, `minor_radius` (exact revolved Brep) |
 | `rhino_boolean_union`        | bridge     | `a_ids`, `b_ids` |
 | `rhino_boolean_difference`   | bridge     | `a_ids`, `b_ids` |
 | `rhino_boolean_intersection` | bridge     | `a_ids`, `b_ids` |
@@ -134,11 +134,13 @@ The capability column says when each tool is registered:
 | `rhino_save`                  | both       |
 | `rhino_export_obj`            | both       |
 | `rhino_export_stl`            | both       |
+| `rhino_export_draco`          | standalone |
 | `rhino_import`                | both (`.3dm` only in standalone) |
 | `rhino_export_step`           | bridge     |
 | `rhino_export_iges`           | bridge     |
 | `rhino_export_dxf`            | bridge     |
-| `rhino_screenshot`            | bridge     |
+| `rhino_screenshot`            | bridge (returns MCP image content; `max_width`, `format`, `jpeg_quality`, `include_image`) |
+| `rhino_subd_inspect`          | both       |
 
 ## Analysis
 

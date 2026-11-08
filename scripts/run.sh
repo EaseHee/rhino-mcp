@@ -5,7 +5,8 @@
 #   ./scripts/run.sh                          # stdio mode (Claude Desktop default)
 #   ./scripts/run.sh --http                   # HTTP mode, port 8765
 #   ./scripts/run.sh --http --port 9000       # custom port
-#   ./scripts/run.sh --bridge                 # force bridge mode (requires Rhino 8)
+#   ./scripts/run.sh --bridge                 # force bridge mode (requires Rhino 8 / 9)
+#   ./scripts/run.sh --toolsets core,gh       # register only some tool groups
 #   ./scripts/run.sh --standalone             # force standalone (rhino3dm only)
 #   ./scripts/run.sh --connector              # HTTP + stateless + allow-external (claude.ai)
 #   ./scripts/run.sh --connector --bridge     # bridge mode via claude.ai connector
@@ -37,13 +38,17 @@ Network (HTTP mode):
   --host HOST         Listen host              [default: 127.0.0.1]
 
 Mode:
-  --bridge            Force bridge mode (requires Rhino 8 + rhino-mcp.py)
+  --bridge            Force bridge mode (requires Rhino 8 / 9 + rhino-mcp.rhp plug-in)
   --standalone        Force standalone mode (rhino3dm only, no Rhino needed)
 
 Connector (claude.ai remote MCP):
   --connector         Shorthand for --http --stateless --allow-external
                       Binds to 0.0.0.0 so a tunnel (ngrok/cloudflare) can reach it.
-                      Combine with --bridge to expose all 235+ tools.
+                      Combine with --bridge to expose all ~247 tools.
+
+Tool surface:
+  --toolsets LIST     Comma-separated groups: core,bim,freeform,gh,render,scripting,docs
+                      (admin is always on; default all). Sets RHINO_MCP_TOOLSETS.
 
 Other:
   --docker            Start via docker compose (HTTP, port 8765)
@@ -52,13 +57,14 @@ Environment variables:
   RHINO_HOST              Rhino bridge TCP host  [default: localhost]
   RHINO_PORT              Rhino bridge TCP port  [default: 4242]
   RHINO_MCP_LOG_LEVEL     Log level              [default: INFO]
+  RHINO_MCP_TOOLSETS      Tool groups            [default: all]
 
 claude.ai connector quick-start
 ────────────────────────────────
   # Standalone (no Rhino required):
   ./scripts/run.sh --connector --standalone
 
-  # Bridge (all 235+ tools, Rhino 8 must be running with the rhino-mcp.rhp plugin loaded):
+  # Bridge (~247 tools, Rhino 8 or 9 must be running with the rhino-mcp.rhp plugin loaded):
   ./scripts/run.sh --connector --bridge
 
   # Then expose with ngrok (separate terminal):
@@ -85,6 +91,10 @@ while [ $# -gt 0 ]; do
       [ $# -ge 2 ] || { echo "--port requires a value" >&2; exit 1; }
       PORT="$2"; shift
       ;;
+    --toolsets)
+      [ $# -ge 2 ] || { echo "--toolsets requires a value" >&2; exit 1; }
+      export RHINO_MCP_TOOLSETS="$2"; shift
+      ;;
     --host)
       [ $# -ge 2 ] || { echo "--host requires a value" >&2; exit 1; }
       HOST="$2"; shift
@@ -110,7 +120,7 @@ export RHINO_MCP_LOG_LEVEL="$LOG_LEVEL"
 
 if [ "$CONNECTOR" = true ]; then
   # In connector mode, a failed bridge connection falls back to standalone
-  # so the server keeps running even when Rhino 8 is not yet started.
+  # so the server keeps running even when Rhino is not yet started.
   export RHINO_MCP_BRIDGE_OPTIONAL=1
 
   echo ""
@@ -120,9 +130,9 @@ if [ "$CONNECTOR" = true ]; then
   echo "│  Mode      : ${FORCE_MODE:-auto-detect} (bridge optional)                    │"
   echo "│  Endpoint  : http://localhost:$PORT/mcp                             │"
   echo "│                                                                  │"
-  echo "│  Bridge fallback: if Rhino 8 is not running, server starts in   │"
-  echo "│  standalone mode. Restart after launching rhino-mcp to     │"
-  echo "│  enable all bridge tools.                                        │"
+  echo "│  Bridge fallback: if Rhino is not running, the server starts in  │"
+  echo "│  standalone mode and promotes to bridge on the first call once   │"
+  echo "│  the plug-in is reachable (no restart needed).                   │"
   echo "│                                                                  │"
   echo "│  To expose publicly:                                             │"
   echo "│    ngrok http $PORT                                                 │"
@@ -142,6 +152,6 @@ elif [ "$TRANSPORT" = "http" ]; then
   echo ">>> Starting rhino-mcp [HTTP] on $HOST:$PORT  (mode: ${FORCE_MODE:-auto})"
   uv run rhino-mcp --transport http --host "$HOST" --port "$PORT"
 else
-  echo ">>> Starting rhino-mcp [stdio]  (mode: ${FORCE_MODE:-auto})"
+  echo ">>> Starting rhino-mcp [stdio]  (mode: ${FORCE_MODE:-auto}, toolsets: ${RHINO_MCP_TOOLSETS:-all})"
   uv run rhino-mcp
 fi

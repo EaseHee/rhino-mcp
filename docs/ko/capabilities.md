@@ -10,15 +10,15 @@
 - 뷰포트(viewport) 상호작용(named view, display mode, zoom-extent, render).
 - Grasshopper.
 
-위 기능은 Rhino 8 내부 브리지 플러그인 필요.
+위 기능은 Rhino 8 / Rhino 9 내부 브리지 플러그인 필요.
 정리표는 아래.
 
-| 도구                                | Standalone(rhino3dm) | Bridge(Rhino 8 + RhinoCommon/Grasshopper) |
+| 도구                                | Standalone(rhino3dm) | Bridge(Rhino 8 / 9 + RhinoCommon/Grasshopper) |
 |-------------------------------------|:-------------------:|:-----------------------------------------:|
 | `rhino_point` … `rhino_rebuild_curve` | ✓ | ✓ |
 | `rhino_curve_length/point_at/split` | ✓ | ✓ |
 | `rhino_box`, `rhino_sphere`, `rhino_cylinder`(Z축) | ✓ | ✓ |
-| `rhino_cone`, `rhino_torus` | ✓(mesh) | ✓(Brep) |
+| `rhino_cone`, `rhino_torus` (정확한 회전 Brep, v0.7) | ✓(Brep) | ✓(Brep) |
 | `rhino_boolean_union/difference/intersection` | ✗ | ✓ |
 | `rhino_shell`, `rhino_cap_holes` | ✗ | ✓ |
 | `rhino_plane_surface` … `rhino_offset_surface`(서피스 11개) | ✗ | ✓ |
@@ -49,6 +49,7 @@
 | `rhino_bend`, `rhino_twist`, `rhino_taper`, `rhino_flow_along_curve` (변형) | ✗ | ✓ |
 | `rhino_rebuild_surface`, `rhino_unroll`, `rhino_surface_from_points` 등 5개 (NURBS) | ✗ | ✓ |
 | `rhino_create_subd`, `rhino_subd_to_nurbs` (SubD) | ✗ | ✓ |
+| `rhino_subd_inspect` (SubD 검사, v0.7) | ✓ | ✓ |
 | `rhino_match_surface`, `rhino_blend_surface_edges`, `rhino_merge_surfaces` (서피스 매칭) | ✗ | ✓ |
 | `rhino_dup_edge`, `rhino_dup_border`, `rhino_isocurve`, `rhino_make2d` (추출) | ✗ | ✓ |
 | `rhino_get_control_points`, `rhino_set_control_points` (컨트롤 포인트) | ✗ | ✓ |
@@ -56,7 +57,7 @@
 | `rhino_place_grid`, `rhino_stack_floors`, `rhino_scatter`, `rhino_replicate_along_curve` (구성, v0.2) | ✓ | ✓ |
 | `rhino_document_units_get/set`, `rhino_tolerance_get/set`, `rhino_origin_set`, `rhino_document_settings` (도큐먼트 위생, v0.2) | ✓ | ✓ |
 | `rhino_validate_brep`, `rhino_report_mesh_health`, `rhino_curve_continuity` (검증, v0.2) | ✓ | ✓ |
-| `rhino_check_naked_edges` (naked edge 열거, v0.2) | ✗ | ✓ |
+| `rhino_check_naked_edges` (naked edge 열거, v0.2; standalone 지원 + `non_manifold_edge_indices`, v0.7) | ✓ | ✓ |
 | `gh_template_list` (템플릿 카탈로그, v0.2) | ✓ | ✓ |
 | `gh_load_template`, `gh_bind_template_parameter`, `gh_run_template` (v0.2) | ✗ | ✓ |
 | `rhino_skin_from_sections`, `rhino_section_at_axis(u/v)` (비정형 skin, v0.2) | ✓ | ✓ |
@@ -71,7 +72,7 @@
 | `rhino_sun_position`, `rhino_sun_path`, `rhino_shadow_project` (환경 분석, v0.3) | ✓ | ✓ |
 | `rhino_solar_exposure_estimate` (ray-cast 일조 노출, v0.3) | ✗ | ✓ |
 | `rhino_annotation_north_arrow/scale_bar/revision_cloud/callout` (주석, v0.3) | ✓ | ✓ |
-| `rhino_annotation_dimension_style` (DimStyle 테이블, v0.3) | ✗ | ✓ |
+| `rhino_annotation_dimension_style` (DimStyle 테이블, v0.3; `doc_id` 지정 standalone 지원, v0.7) | ✓ | ✓ |
 | `rhino_bim_metadata_set` (IFC entity + Pset 태깅, v0.3) | ✓ | ✓ |
 | `rhino_export_ifc`, `rhino_import_ifc`, `rhino_export_gbxml` (BIM I/O, v0.3) | ✗ | ✓ |
 | `rhino_material_preset_list`, `rhino_material_preset_create` (물리 프리셋, v0.3) | ✓ | ✓ |
@@ -87,5 +88,10 @@
 | `gh_connect_many`, `gh_place_slider` (GH 보강, v0.6) | ✗ | ✓ |
 | `rhino_layer_set_material`, `rhino_probe_intersection`, `rhino_zoom_object`, `rhino_zoom_layer`, `rhino_viewport_image` (UX 보강, v0.6) | ✗ | ✓ |
 | `rhino_batch_call` (한 라운드트립으로 N개 bridge method 디스패치, v0.6.1) | ✗ | ✓ |
+| `rhino_export_draco` (Draco 압축 내보내기, v0.7) | ✓ | ✗ |
+| `rhino_list_objects`, `rhino_object_info`, `rhino_bounding_box`, `rhino_object_quantity` 의 `tight` 옵션 (v0.7) | ✓ | ✓ |
+| `rhino_screenshot`, `rhino_viewport_preview`, `rhino_viewport_image` MCP 이미지 콘텐츠 반환 (`max_width`, `format`, `jpeg_quality`, `include_image`; v0.7) | ✗ | ✓ |
+| MCP 리소스 `rhino://scene/summary`, `rhino://layers`, `rhino://selection`(브리지 전용), `rhinoscript://{function}` (v0.7) | ✓ | ✓ |
+| `RHINO_MCP_TOOLSETS` 그룹 필터 (core / bim / freeform / gh / render / scripting / docs; v0.7) | ✓ | ✓ |
 
-요약: standalone 약 242개, C# 브리지 활성 시 245개.
+요약: standalone 기동 시 246개 등록, C# 브리지 활성 시 247개 (v0.7.0).

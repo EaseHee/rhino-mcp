@@ -1,39 +1,68 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <!--
+    Rhino major version to build against. One source tree, two Yak
+    distributions:
+      dotnet build -c Release -p:RhinoMajor=9   (default, rh9)
+      dotnet build -c Release -p:RhinoMajor=8   (rh8)
+    Both target net8.0: Rhino 8 hosts .NET 8 and Rhino 9 (.NET 10) loads
+    net8.0 plug-ins through runtime roll-forward.
+  -->
+  <PropertyGroup>
+    <RhinoMajor Condition="'$(RhinoMajor)' == ''">9</RhinoMajor>
+    <RhinoCommonVersion Condition="'$(RhinoMajor)' == '9'">9.0.26300.9401</RhinoCommonVersion>
+    <RhinoCommonVersion Condition="'$(RhinoMajor)' == '8'">8.36.26296.17001</RhinoCommonVersion>
+    <!-- Set -p:SkipPluginCopy=true to build without copying into a local Rhino install. -->
+    <SkipPluginCopy Condition="'$(SkipPluginCopy)' == ''">false</SkipPluginCopy>
+  </PropertyGroup>
+
   <PropertyGroup>
     <TargetFrameworks>net8.0</TargetFrameworks>
     <EnableDynamicLoading>true</EnableDynamicLoading>
     <TargetExt>.rhp</TargetExt>
     <NoWarn>NU1701</NoWarn>
     <Title>rhino-mcp</Title>
-    <Description>rhino-mcp plugin for Rhino 8 — JSON-RPC 2.0 over a platform-native transport.</Description>
-    <Version>0.5.1</Version>
+    <Description>rhino-mcp plugin for Rhino 8 and Rhino 9 — JSON-RPC 2.0 over a platform-native transport.</Description>
+    <Version>0.7.0</Version>
     <Authors>GeonHee Lee (EaseHee) &lt;easehee.0@gmail.com&gt;</Authors>
     <Copyright>Copyright (c) 2026 EaseHee &lt;easehee.0@gmail.com&gt;</Copyright>
     <AssemblyName>rhino-mcp</AssemblyName>
     <RootNamespace>RhinoMcp</RootNamespace>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <DefineConstants Condition="'$(RhinoMajor)' == '9'">$(DefineConstants);RHINO9</DefineConstants>
+    <!-- Keep per-major outputs apart so rh8 and rh9 builds never overwrite each other. -->
+    <BaseOutputPath>bin/rh$(RhinoMajor)/</BaseOutputPath>
   </PropertyGroup>
 
+  <Target Name="ValidateRhinoMajor" BeforeTargets="Restore;CollectPackageReferences">
+    <Error Condition="'$(RhinoCommonVersion)' == ''" Text="Unsupported RhinoMajor '$(RhinoMajor)'; expected 8 or 9." />
+  </Target>
+
   <ItemGroup>
-    <PackageReference Include="RhinoCommon" Version="8.17.25066.7001" ExcludeAssets="runtime" />
-    <PackageReference Include="Grasshopper" Version="8.17.25066.7001" ExcludeAssets="runtime" />
+    <PackageReference Include="RhinoCommon" Version="$(RhinoCommonVersion)" ExcludeAssets="runtime" />
+    <PackageReference Include="Grasshopper" Version="$(RhinoCommonVersion)" ExcludeAssets="runtime" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="System.Drawing.Common" Version="8.0.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.12.0" />
   </ItemGroup>
 
-  <!-- macOS: copy to Rhino.app/Contents/PlugIns/ -->
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="$([MSBuild]::IsOSPlatform('OSX'))">
-    <Exec Command="cp '$(TargetDir)rhino-mcp.rhp' '/Applications/Rhino 8.app/Contents/PlugIns/'" />
-    <Exec Command="cp '$(TargetDir)Newtonsoft.Json.dll' '/Applications/Rhino 8.app/Contents/PlugIns/'" Condition="Exists('$(TargetDir)Newtonsoft.Json.dll')" />
+  <!-- macOS: copy into the matching Rhino.app bundle when it is installed. -->
+  <PropertyGroup>
+    <MacPluginDir>/Applications/Rhino $(RhinoMajor).app/Contents/PlugIns/</MacPluginDir>
+    <WinPluginDir>$(APPDATA)/McNeel/Rhinoceros/$(RhinoMajor).0/Plug-ins/rhino-mcp/</WinPluginDir>
+  </PropertyGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="$([MSBuild]::IsOSPlatform('OSX')) And '$(SkipPluginCopy)' != 'true'">
+    <Message Importance="high" Text="Rhino $(RhinoMajor).app not found; skipping plug-in copy." Condition="!Exists('$(MacPluginDir)')" />
+    <Exec Command="cp '$(TargetDir)rhino-mcp.rhp' '$(MacPluginDir)'" Condition="Exists('$(MacPluginDir)')" />
+    <Exec Command="cp '$(TargetDir)Newtonsoft.Json.dll' '$(MacPluginDir)'" Condition="Exists('$(MacPluginDir)') And Exists('$(TargetDir)Newtonsoft.Json.dll')" />
   </Target>
 
-  <!-- Windows: copy to Plug-ins folder -->
-  <Target Name="PostBuildWin" AfterTargets="PostBuildEvent" Condition="$([MSBuild]::IsOSPlatform('Windows'))">
-    <Copy SourceFiles="$(TargetDir)rhino-mcp.rhp" DestinationFolder="$(APPDATA)/McNeel/Rhinoceros/8.0/Plug-ins/rhino-mcp/" />
-    <Copy SourceFiles="$(TargetDir)Newtonsoft.Json.dll" DestinationFolder="$(APPDATA)/McNeel/Rhinoceros/8.0/Plug-ins/rhino-mcp/" Condition="Exists('$(TargetDir)Newtonsoft.Json.dll')" />
+  <!-- Windows: copy to the per-major Plug-ins folder. -->
+  <Target Name="PostBuildWin" AfterTargets="PostBuildEvent" Condition="$([MSBuild]::IsOSPlatform('Windows')) And '$(SkipPluginCopy)' != 'true'">
+    <Copy SourceFiles="$(TargetDir)rhino-mcp.rhp" DestinationFolder="$(WinPluginDir)" />
+    <Copy SourceFiles="$(TargetDir)Newtonsoft.Json.dll" DestinationFolder="$(WinPluginDir)" Condition="Exists('$(TargetDir)Newtonsoft.Json.dll')" />
   </Target>
 
 </Project>

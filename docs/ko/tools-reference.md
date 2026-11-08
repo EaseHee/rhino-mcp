@@ -50,8 +50,8 @@
 | `rhino_box`                   | both       | `corner`, `size_x/y/z` |
 | `rhino_sphere`                | both       | `center`, `radius` |
 | `rhino_cylinder`              | both       | `base_center`, `radius`, `height`, `axis`(standalone은 Z만), `capped` |
-| `rhino_cone`                  | both       | `base_center`, `radius`, `height`(standalone은 mesh) |
-| `rhino_torus`                 | both       | `center`, `major_radius`, `minor_radius`(standalone은 mesh) |
+| `rhino_cone`                  | both       | `base_center`, `radius`, `height`(정확한 회전 Brep) |
+| `rhino_torus`                 | both       | `center`, `major_radius`, `minor_radius`(정확한 회전 Brep) |
 | `rhino_boolean_union`         | bridge     | `a_ids`, `b_ids` |
 | `rhino_boolean_difference`    | bridge     | `a_ids`, `b_ids` |
 | `rhino_boolean_intersection`  | bridge     | `a_ids`, `b_ids` |
@@ -134,6 +134,7 @@
 | `rhino_save`                  | both       |
 | `rhino_export_obj`            | both       |
 | `rhino_export_stl`            | both       |
+| `rhino_export_draco`          | standalone |
 | `rhino_import`                | both(standalone은 `.3dm` 전용) |
 | `rhino_export_step`           | bridge     |
 | `rhino_export_iges`           | bridge     |

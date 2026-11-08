@@ -38,7 +38,7 @@ class UnixSocketTransport(Transport):
         if not self.path.exists():
             raise ConnectionError(
                 f"Unix socket {self.path} does not exist. "
-                "Load the rhino-mcp.rhp C# plugin in Rhino 8 first."
+                "Load the rhino-mcp.rhp C# plugin in Rhino 8 or 9 first."
             )
         s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         s.settimeout(timeout)

@@ -45,7 +45,7 @@ def main() -> None:
                 r3.Point3d(i * 20 + 105 + i, j * 20 + 5 + j, 5),
             )
             box = r3.Box(bbox)
-            brep = box.ToBrep()
+            brep = r3.Brep.CreateFromBox(box)
             attrs = r3.ObjectAttributes()
             attrs.LayerIndex = 1
             attrs.Name = f"box_{i}_{j}"
@@ -53,7 +53,7 @@ def main() -> None:
 
     output = "/tmp/batch_geometry.3dm"
     file3dm.Write(output, version=8)
-    print(f"Saved {file3dm.Objects.Count} objects to {output}")
+    print(f"Saved {len(file3dm.Objects)} objects to {output}")
 
 
 if __name__ == "__main__":

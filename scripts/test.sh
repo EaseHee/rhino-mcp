@@ -4,7 +4,7 @@
 # Usage:
 #   ./scripts/test.sh               # all tests with coverage
 #   ./scripts/test.sh --fast        # skip coverage, fail fast
-#   ./scripts/test.sh --live        # include tests that require a running Rhino 8
+#   ./scripts/test.sh --live        # include tests that require a running Rhino 8 / 9
 #   ./scripts/test.sh --unit        # tools + utils tests only (no bridge)
 #   ./scripts/test.sh --bridge      # bridge tests only
 #   ./scripts/test.sh --help
@@ -28,7 +28,7 @@ for arg in "$@"; do
       echo "Usage: $0 [--fast] [--live] [--unit] [--bridge]"
       echo ""
       echo "  --fast    Skip coverage, stop on first failure (-x)"
-      echo "  --live    Include @pytest.mark.live tests (requires RHINO_LIVE=1 + Rhino 8)"
+      echo "  --live    Include @pytest.mark.live tests (requires RHINO_LIVE=1 + Rhino 8 / 9)"
       echo "  --unit    Run tools + server smoke tests only"
       echo "  --bridge  Run bridge tests only"
       exit 0

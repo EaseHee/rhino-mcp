@@ -93,6 +93,41 @@ def _function_details(function_name: str) -> dict[str, Any] | None:
     return None
 
 
+def function_details(function_name: str) -> dict[str, Any] | None:
+    """Public lookup of a single rhinoscriptsyntax function (case-insensitive)."""
+    return _function_details(function_name)
+
+
+def search_functions(query: str, limit: int = 10) -> list[dict[str, Any]]:
+    """Public keyword search over the bundled rhinoscriptsyntax reference."""
+    return _search(query, limit)
+
+
+def function_markdown(details: dict[str, Any]) -> str:
+    """Render a ``function_details`` entry as a Markdown reference page."""
+    lines = [
+        f"# rs.{details['name']}",
+        "",
+        f"Module: `{details['module']}`",
+        "",
+        "```python",
+        details.get("signature") or f"{details['name']}()",
+        "```",
+        "",
+    ]
+    if details.get("description"):
+        lines += [str(details["description"]).strip(), ""]
+    if details.get("parameters"):
+        lines += ["## Parameters", "", str(details["parameters"]).strip(), ""]
+    if details.get("returns"):
+        lines += ["## Returns", "", str(details["returns"]).strip(), ""]
+    example = details.get("example")
+    if example:
+        body = "\n".join(example) if isinstance(example, list) else str(example)
+        lines += ["## Example", "", "```python", body.rstrip(), "```", ""]
+    return "\n".join(lines)
+
+
 # ---------------------------------------------------------------------------
 # Pydantic input models
 # ---------------------------------------------------------------------------

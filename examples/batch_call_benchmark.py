@@ -1,6 +1,6 @@
 """Bench rhino_batch_call vs direct sequential calls against a live bridge.
 
-Requires a running Rhino 8 with the rhino-mcp bridge plugin loaded.
+Requires a running Rhino 8 or 9 with the rhino-mcp bridge plugin loaded.
 Connect to it through ``BridgeClient.auto()`` and time:
 
   1. N direct ``rhino.layer.create`` calls (one round-trip each).
@@ -35,7 +35,7 @@ def main() -> None:
 
     client = BridgeClient.auto(timeout=5.0)
     if client is None:
-        raise SystemExit("No bridge reachable — start Rhino 8 with the plugin loaded.")
+        raise SystemExit("No bridge reachable — start Rhino 8 or 9 with the plugin loaded.")
 
     direct_names = [f"{args.prefix}_D_{i:03d}" for i in range(args.n)]
     batch_names = [f"{args.prefix}_B_{i:03d}" for i in range(args.n)]

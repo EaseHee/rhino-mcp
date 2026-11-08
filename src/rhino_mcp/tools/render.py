@@ -25,7 +25,12 @@ from typing import Annotated, Any
 from pydantic import BaseModel, Field
 
 from rhino_mcp.models.geometry_types import Point3dModel
-from rhino_mcp.tools._helpers import bridge_call, require_bridge_only
+from rhino_mcp.tools._helpers import (
+    ToolContext,
+    bridge_call,
+    bridge_call_with_progress,
+    require_bridge_only,
+)
 from rhino_mcp.utils.error_handling import parameter_error
 from rhino_mcp.utils.registry import Mode
 
@@ -143,19 +148,25 @@ def register(mcp, mode: Mode) -> None:  # type: ignore[no-untyped-def]
         return bridge_call("rhino.render.setup", args.model_dump())
 
     @mcp.tool(annotations={"title": "Render To File", "readOnlyHint": False})
-    def rhino_render_to_file(args: _RenderToFileIn) -> dict[str, Any]:
+    async def rhino_render_to_file(
+        args: _RenderToFileIn, ctx: ToolContext | None = None
+    ) -> dict[str, Any]:
         """Execute the configured render and write the result to ``output_path``."""
         require_bridge_only("rhino_render_to_file")
-        return bridge_call("rhino.render.to_file", args.model_dump())
+        return await bridge_call_with_progress("rhino.render.to_file", args.model_dump(), ctx)
 
     @mcp.tool(annotations={"title": "Turntable Render", "readOnlyHint": False})
-    def rhino_turntable_render(args: _TurntableRenderIn) -> dict[str, Any]:
+    async def rhino_turntable_render(
+        args: _TurntableRenderIn, ctx: ToolContext | None = None
+    ) -> dict[str, Any]:
         """Render a turntable sequence (camera orbits around ``target``) to ``output_dir``."""
         require_bridge_only("rhino_turntable_render")
-        return bridge_call("rhino.render.turntable", args.model_dump())
+        return await bridge_call_with_progress("rhino.render.turntable", args.model_dump(), ctx)
 
     @mcp.tool(annotations={"title": "Render Queue: Submit", "readOnlyHint": False})
-    def rhino_render_queue_submit(args: _RenderQueueSubmitIn) -> dict[str, Any]:
+    async def rhino_render_queue_submit(
+        args: _RenderQueueSubmitIn, ctx: ToolContext | None = None
+    ) -> dict[str, Any]:
         """Submit a frame sequence to the bridge render queue (bridge only).
 
         Returns a ``job_id`` immediately while frames are captured on a
@@ -165,7 +176,9 @@ def register(mcp, mode: Mode) -> None:  # type: ignore[no-untyped-def]
         photo-realistic engine integration is on the roadmap.
         """
         require_bridge_only("rhino_render_queue_submit")
-        return bridge_call("rhino.render.queue.submit", args.model_dump())
+        return await bridge_call_with_progress(
+            "rhino.render.queue.submit", args.model_dump(), ctx
+        )
 
     @mcp.tool(annotations={"title": "Render Queue: Status", "readOnlyHint": True, "idempotentHint": True})
     def rhino_render_queue_status(args: _RenderQueueJobIdIn) -> dict[str, Any]:

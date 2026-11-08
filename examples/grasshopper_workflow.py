@@ -1,6 +1,6 @@
 """Grasshopper workflow — bridge-only end-to-end demo.
 
-Requires: Rhino 8 running with Grasshopper open and the
+Requires: Rhino 8 or 9 running with Grasshopper open and the
 ``rhino-mcp.rhp`` C# plugin loaded (see docs/en/installation.md).
 
 Steps:

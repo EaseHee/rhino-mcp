@@ -221,6 +221,7 @@ namespace RhinoMcp
             var sub = new Handlers.SubDHandler();
             Register("rhino.subd.create", sub.Create);
             Register("rhino.subd.to_nurbs", sub.ToNurbs);
+            Register("rhino.subd.inspect", sub.Inspect);
 
             // Surface matching
             var smatch = new Handlers.SurfaceMatchHandler();
@@ -398,8 +399,10 @@ namespace RhinoMcp
             return new JObject
             {
                 ["rhino"] = rhinoVersion,
+                ["rhino_major"] = RhinoApp.ExeVersion,
+                ["plugin_built_for"] = Plugin.BuiltForRhinoMajor,
                 ["grasshopper"] = ghVersion,
-                ["bridge_version"] = "0.1.0",
+                ["bridge_version"] = typeof(Plugin).Assembly.GetName().Version?.ToString(3) ?? "",
                 ["bridge_type"] = "csharp",
                 ["protocol_version"] = BridgeServer.ProtocolVersion,
                 ["connected_clients"] = BridgeServer.Instance.ConnectedClientCount

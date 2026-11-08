@@ -44,11 +44,12 @@ def test_rhinoscript_workflow_emphasises_doc_lookup() -> None:
     assert "rhino_execute_python" in text
 
 
-def test_viewport_workflow_calls_out_base64() -> None:
+def test_viewport_workflow_calls_out_inline_image() -> None:
     text = strategy.viewport_workflow()
     assert "rhino_zoom_extent" in text
     assert "rhino_screenshot" in text
-    assert "as_base64" in text
+    assert "max_width" in text
+    assert "image_base64" not in text
 
 
 def test_prompts_registered_on_server(server_standalone) -> None:

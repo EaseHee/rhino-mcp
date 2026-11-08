@@ -4,12 +4,12 @@ Demonstrates the v0.2.0 GH templates flow: list → load → bind sliders →
 run → bake → screenshot, repeated across a small sweep of values so the
 user can compare variants side by side.
 
-BRIDGE-ONLY: requires a live Rhino 8 with the rhino-mcp plugin
+BRIDGE-ONLY: requires a live Rhino 8 or 9 with the rhino-mcp plugin
 loaded. The first call (gh_template_list) reads the manifest and works
 in any mode, but loading and running the templates requires the bridge.
 
 Usage:
-    # In a separate terminal, start Rhino 8 + bridge plugin first.
+    # In a separate terminal, start Rhino 8 or 9 + bridge plugin first.
     uv run python examples/iterative_design_exploration.py
 """
 
@@ -77,7 +77,7 @@ async def run() -> None:
                 "path": str(out_dir / f"v{variant_idx:02d}_w{panel_w:.2f}m.png"),
                 "width": 1280,
                 "height": 720,
-                "as_base64": False,
+                "include_image": False,
             },
         )
         print(f"v{variant_idx:02d} panel_w={panel_w}m → {snap['summary'].get('path')}")

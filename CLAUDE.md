@@ -1,18 +1,18 @@
 # rhino-mcp
 
-MCP server connecting Claude to McNeel Rhino 8 and Grasshopper.
+MCP server connecting Claude to McNeel Rhino 8 / 9 and Grasshopper.
 
 ## Architecture
 
-- **Standalone**: `rhino3dm` (headless Python lib) for `.3dm` I/O. ~234 tools.
-- **Bridge**: C# plugin `rhino_plugin/csharp/rhino-mcp.rhp` over JSON-RPC 2.0. ~235 tools.
+- **Standalone**: `rhino3dm` (headless Python lib) for `.3dm` I/O. ~246 tools.
+- **Bridge**: C# plugin `rhino_plugin/csharp/rhino-mcp.rhp` over JSON-RPC 2.0. ~247 tools.
 - Mode auto-detected at startup (`detect_mode()`); override via `RHINO_MCP_FORCE_MODE`.
 
 ## Project layout (top level)
 
 - `src/rhino_mcp/` — Python package (server, tools, bridge transports, prompts, models, utils, data).
 - `rhino_plugin/csharp/` — C# bridge plugin (`Plugin.cs`, `BridgeServer.cs`, `CommandDispatcher.cs`, `Handlers/*.cs`, `manifest.yml`).
-- `tests/` — pytest (~262 tests).
+- `tests/` — pytest (~430 tests).
 - `examples/` — runnable demo scripts (architectural massing, schedule, sun study, etc.).
 - `docs/{en,ko}/` — capabilities / configuration / installation / troubleshooting / tools-reference / grasshopper-guide.
 - `.github/workflows/` — CI + release pipelines.
@@ -26,7 +26,7 @@ uv pip install -e '.[dev]'
 uv run pytest tests/ -v                    # all tests
 uv run ruff check src/ tests/              # lint
 uv run mypy src/rhino_mcp                  # type check
-dotnet build rhino_plugin/csharp -c Release
+dotnet build rhino_plugin/csharp -c Release -p:RhinoMajor=9   # or 8; add -p:SkipPluginCopy=true to skip install
 ```
 
 ## Conventions
@@ -36,6 +36,11 @@ dotnet build rhino_plugin/csharp -c Release
 - Shared logic lives in `tools/_helpers.py`.
 - `Mode` enum: `STANDALONE` / `BRIDGE` / `BOTH`.
 - **Commit messages: English title + English body**, Conventional Commits, no Co-Authored-By.
+- **Commit layout follows v0.5.0 (c0cf192)** and overrides `commit-draft`'s default format:
+  - Title: release commits are `<type>: vX.Y.Z — <summary>` (em dash, no scope parentheses); other commits may use `<type>(<scope>): …`.
+  - Body: a 2–4 line summary, then major sections between 64-char `=` rulers, subsections underlined with `-`, `*` bullets, one sentence per line.
+  - The body ends with a `Verification` subsection listing the commands run and their results (pytest count, ruff, `dotnet build` for both `RhinoMajor` 8 and 9 when C# changed).
+- **Rhino-side language**: Python is the default for Rhino / Grasshopper scripts and helper methods; use C# or RhinoScript where the RhinoCommon or Grasshopper API requires it, and note the reason in a comment.
 - **Code comments: English only.**
 - **Korean prose** (chat replies, `*.ko.md`, `docs/ko/**`, CHANGELOG entries) uses **noun-form endings, no honorifics** (`-함`, `-임`, or noun direct termination; never `입니다 / 합니다 / 하세요`).
 
@@ -44,6 +49,7 @@ dotnet build rhino_plugin/csharp -c Release
 - Adding a new tool — `.claude/rules/adding-tool.md`.
 - C# handler authoring + RhinoCommon trap list — `.claude/rules/csharp-handler.md`.
 - Korean writing style — `.claude/rules/korean-style.md`.
+- Checking behavioural claims in docs / README / CHANGELOG against the code — `.claude/rules/doc-claims.md`.
 
 ## Subagents (`.claude/agents/`)
 
@@ -73,6 +79,7 @@ dotnet build rhino_plugin/csharp -c Release
 | `RHINO_MCP_ALLOW_MODAL_COMMAND` | _(off)_ | `1` disables `rs.Command(_Move/...)` circuit breaker — debugging only |
 | `RHINO_HOST` | `localhost` | Bridge TCP host |
 | `RHINO_PORT` | `4242` | Bridge TCP port |
+| `RHINO_MCP_TOOLSETS` | _(all)_ | Comma-separated tool groups: `core,bim,freeform,gh,render,scripting,docs` (`admin` always on) |
 | `RHINO_MCP_LOG_LEVEL` | `INFO` | Logging level |
 
 Full reference — `docs/en/configuration.md` (or `docs/ko/configuration.md`).

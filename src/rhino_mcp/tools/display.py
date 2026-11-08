@@ -6,6 +6,12 @@ from typing import Annotated, Any
 
 from pydantic import BaseModel, Field
 
+from rhino_mcp.tools._helpers import (
+    CaptureImageArgs,
+    CaptureResult,
+    capture_content,
+    capture_params,
+)
 from rhino_mcp.tools.context import runtime
 from rhino_mcp.utils.registry import Mode
 
@@ -48,7 +54,7 @@ class _ZoomLayerIn(_DocArg):
     layer: str = Field(..., min_length=1, description="Full layer path.")
 
 
-class _CaptureViewportIn(_DocArg):
+class _CaptureViewportIn(CaptureImageArgs, _DocArg):
     view_name: str | None = Field(
         None,
         description="Viewport to capture; defaults to the active viewport.",
@@ -58,7 +64,10 @@ class _CaptureViewportIn(_DocArg):
     transparent_bg: bool = False
     output_path: str | None = Field(
         None,
-        description="PNG path; when omitted the bridge writes to a temp file and returns its path.",
+        description=(
+            "Full-size PNG path; when omitted no file is written unless "
+            "``include_image`` is False (then a temp file path is returned)."
+        ),
     )
 
 
@@ -98,12 +107,32 @@ def register(mcp, mode: Mode) -> None:  # type: ignore[no-untyped-def]
         """Zoom the active viewport to fit every object on ``layer``."""
         return runtime().require_bridge().call("rhino.display.zoom_layer", args.model_dump())
 
-    @mcp.tool(annotations={"title": "Capture Viewport to PNG", "readOnlyHint": False, "idempotentHint": False})
-    def rhino_viewport_image(args: _CaptureViewportIn) -> dict[str, Any]:
-        """Save the current viewport pixels to a PNG file.
+    @mcp.tool(
+        annotations={"title": "Capture Viewport Image", "readOnlyHint": False, "idempotentHint": False},
+        structured_output=False,
+    )
+    def rhino_viewport_image(args: _CaptureViewportIn) -> CaptureResult:
+        """Capture the viewport pixels and return them as MCP image content.
 
         Lightweight alternative to ``rhino_render_to_file`` — no render engine
         is invoked, just a viewport bitmap dump. Use 0 for ``width``/``height``
-        to inherit the on-screen viewport size.
+        to inherit the on-screen viewport size; the inline image is then
+        downscaled to ``max_width`` (default 1024, JPEG). Pass ``output_path``
+        to also keep the full-size PNG.
         """
-        return runtime().require_bridge().call("rhino.display.capture_viewport", args.model_dump())
+        warnings: list[str] = []
+        if args.transparent_bg and args.format == "jpeg":
+            if "format" in args.model_fields_set:
+                warnings.append(
+                    "format='jpeg' has no alpha channel; the transparent background "
+                    "is flattened onto white in the inline image (use format='png')."
+                )
+            else:
+                # Keep transparency when the caller did not pick a format.
+                args = args.model_copy(update={"format": "png"})
+        include = args.include_image
+        params = capture_params(args, include)
+        result = runtime().require_bridge().call("rhino.display.capture_viewport", params)
+        if warnings and isinstance(result, dict):
+            result.setdefault("warnings", []).extend(warnings)
+        return capture_content(result, include)

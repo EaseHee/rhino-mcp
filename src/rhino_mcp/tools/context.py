@@ -60,19 +60,34 @@ class Runtime:
             raise connection_error("bridge required for this tool")
         return self.bridge
 
-    def _try_promote_to_bridge(self) -> None:
-        """Attempt a non-blocking bridge re-detection; update mode on success."""
+    def promote_for_bridge_only_operation(self) -> bool:
+        """Re-detect the bridge after a standalone path refused an operation.
+
+        Returns True when the runtime switched from STANDALONE to BRIDGE, so
+        the caller can retry the operation on the bridge path. Honours
+        ``RHINO_MCP_FORCE_MODE=standalone`` and the re-detection cooldown.
+        """
+        if self.mode is not Mode.STANDALONE:
+            return False
+        if os.environ.get("RHINO_MCP_FORCE_MODE", "").strip().lower() == "standalone":
+            return False
+        return self._try_promote_to_bridge()
+
+    def _try_promote_to_bridge(self) -> bool:
+        """Attempt a non-blocking bridge re-detection; update mode and return True on success."""
         with self._promote_lock:
             # Double-check: another thread may have just promoted.
             if time.monotonic() - self._last_redetect_at <= _REDETECT_COOLDOWN:
-                return
+                return False
             self._last_redetect_at = time.monotonic()
 
         client = BridgeClient.auto(timeout=2.0)
-        if client is not None:
-            log.info("Promoted runtime to BRIDGE on demand")
-            self.bridge = client
-            self.mode = Mode.BRIDGE
+        if client is None:
+            return False
+        log.info("Promoted runtime to BRIDGE on demand")
+        self.bridge = client
+        self.mode = Mode.BRIDGE
+        return True
 
 
 _RUNTIME: Runtime | None = None

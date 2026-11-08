@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using Rhino;
 using Rhino.UI;
 using RhinoMcp.Commands;
@@ -96,10 +95,7 @@ namespace RhinoMcp.Setup
                 return false;
             }
 
-            foreach (var line in SplitLines(stdout))
-                RhinoApp.WriteLine($"[rhino-mcp] {line}");
-            foreach (var line in SplitLines(stderr))
-                RhinoApp.WriteLine($"[rhino-mcp] {line}");
+            ProcessRunner.WriteOutput(stdout, stderr);
 
             if (exitCode == 0)
             {
@@ -109,19 +105,6 @@ namespace RhinoMcp.Setup
 
             RhinoApp.WriteLine($"[rhino-mcp] uv installer exited with code {exitCode}.");
             return false;
-        }
-
-        private static IEnumerable<string> SplitLines(string? text)
-        {
-            if (string.IsNullOrEmpty(text))
-                yield break;
-            using var reader = new StringReader(text);
-            string? line;
-            while ((line = reader.ReadLine()) != null)
-            {
-                if (line.Length > 0)
-                    yield return line;
-            }
         }
     }
 }

@@ -28,6 +28,13 @@ class _ObjectIn(_DocArg):
 
 class _ObjectsIn(_DocArg):
     object_ids: list[str] = Field(..., min_length=1, max_length=MAX_OBJECT_IDS)
+    tight: bool = Field(
+        True,
+        description=(
+            "Exact bounding box (default; bridge mode always returns the exact box). "
+            "False uses the faster but looser control-hull box in standalone mode."
+        ),
+    )
 
 
 class _DistancePointsIn(_DocArg):
@@ -144,7 +151,8 @@ def register(mcp, mode: Mode) -> None:  # type: ignore[no-untyped-def]
         if runtime().mode is Mode.BRIDGE:
             return runtime().require_bridge().call("rhino.analysis.bounding_box", args.model_dump())
         h = doc(args.doc_id)
-        bboxes = [h.find_object(g).Geometry.GetBoundingBox() for g in args.object_ids]
+        geoms: list[Any] = [h.find_object(g).Geometry for g in args.object_ids]
+        bboxes = [g.GetTightBoundingBox() if args.tight else g.GetBoundingBox() for g in geoms]
         union = bboxes[0]
         for b in bboxes[1:]:
             union = r3.BoundingBox(

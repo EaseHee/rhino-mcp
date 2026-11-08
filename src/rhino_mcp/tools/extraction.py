@@ -10,7 +10,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from rhino_mcp.tools._helpers import MAX_OBJECT_IDS
+from rhino_mcp.tools._helpers import MAX_OBJECT_IDS, ToolContext, bridge_call_with_progress
 from rhino_mcp.tools.context import runtime
 from rhino_mcp.utils.error_handling import unsupported_in_standalone
 from rhino_mcp.utils.registry import Mode
@@ -70,8 +70,8 @@ def register(mcp: Any, mode: str) -> None:
         return runtime().require_bridge().call("rhino.extract.isocurve", args.model_dump())
 
     @mcp.tool(annotations={"title": "Make 2D Drawing"})
-    def rhino_make2d(args: _Make2DIn) -> dict[str, Any]:
+    async def rhino_make2d(args: _Make2DIn, ctx: ToolContext | None = None) -> dict[str, Any]:
         """Generate a 2D drawing projection of 3D objects."""
         if runtime().mode is Mode.STANDALONE:
             raise unsupported_in_standalone("rhino_make2d")
-        return runtime().require_bridge().call("rhino.extract.make2d", args.model_dump())
+        return await bridge_call_with_progress("rhino.extract.make2d", args.model_dump(), ctx)

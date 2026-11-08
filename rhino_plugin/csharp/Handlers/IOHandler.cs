@@ -59,9 +59,16 @@ namespace RhinoMcp.Handlers
             // Accept both ``path`` (Python tool side) and ``output_path``
             // (legacy contract) so the handler stays robust to either caller.
             var path = p["path"]?.ToString() ?? p["output_path"]?.ToString();
-            if (string.IsNullOrWhiteSpace(path))
-                throw new System.ArgumentException("Screenshot requires 'path' (or 'output_path').");
-            if (path.Contains('"'))
+            var asBase64 = p["as_base64"]?.Value<bool>() ?? false;
+            var options = CaptureEncoder.ReadOptions(p);
+            // Without a caller path the capture goes to a temp file that is removed after encoding.
+            var tempPath = string.IsNullOrWhiteSpace(path) ? NewTempCapturePath() : null;
+            if (tempPath != null)
+            {
+                path = tempPath;
+                asBase64 = true;
+            }
+            if (path!.Contains('"'))
                 throw new System.ArgumentException("path must not contain double-quote characters.");
 
             var width = p["width"]?.Value<int>() ?? 1920;
@@ -75,41 +82,89 @@ namespace RhinoMcp.Handlers
                 throw new System.ArgumentException(
                     $"width/height must be <= 16384 (got width={width}, height={height}).");
 
-            var asBase64 = p["as_base64"]?.Value<bool>() ?? false;
-
-            SafeRunScript(
-                $"_-ViewCaptureToFile \"{path}\" _Width={width} _Height={height} _Enter",
-                nameof(Screenshot));
-
-            var summary = new JObject
+            try
             {
-                ["path"] = path,
-                ["width"] = width,
-                ["height"] = height,
-            };
-            var response = new JObject
-            {
-                ["status"] = "ok",
-                ["summary"] = summary,
-                ["text"] = $"Captured viewport to {path} ({width}x{height})",
-            };
+                CaptureToFile(path, width, height, nameof(Screenshot));
 
-            if (asBase64 && File.Exists(path))
-            {
-                try
+                var summary = new JObject
                 {
-                    var bytes = File.ReadAllBytes(path);
-                    response["image_base64"] = System.Convert.ToBase64String(bytes);
-                    response["mime"] = "image/png";
-                }
-                catch (System.Exception ex)
+                    ["path"] = tempPath == null ? path : null,
+                    ["width"] = width,
+                    ["height"] = height,
+                };
+                var response = new JObject
                 {
-                    // Don't fail the whole call if base64 encoding hits an IO snag;
-                    // surface the file path so the LLM can fall back to a manual read.
-                    response["base64_error"] = ex.Message;
-                }
+                    ["status"] = "ok",
+                    ["summary"] = summary,
+                    ["text"] = tempPath == null
+                        ? $"Captured viewport to {path} ({width}x{height})"
+                        : $"Captured viewport ({width}x{height})",
+                };
+
+                // An encoding failure is reported in base64_error instead of failing the call.
+                if (asBase64)
+                    CaptureEncoder.AttachFile(response, summary, path, options);
+                return response;
             }
-            return response;
+            finally
+            {
+                DeleteQuietly(tempPath);
+            }
+        }
+
+        // SafeRunScript discards RunScript's result, so success is judged by the written file.
+        // The capture lands in a fresh staging file next to the target (same extension, which
+        // selects the image format); only a verified capture replaces the target, so a failed
+        // capture never destroys an existing file.
+        private void CaptureToFile(string target, int width, int height, string opName)
+        {
+            var dir = Path.GetDirectoryName(Path.GetFullPath(target)) ?? Path.GetTempPath();
+            // ViewCaptureToFile picks the format from the extension; an extension-less
+            // target is captured as PNG and then moved to the caller's exact name.
+            var ext = Path.GetExtension(target);
+            if (string.IsNullOrEmpty(ext)) ext = ".png";
+            var staging = Path.Combine(dir, $".rhino-mcp-capture-{System.Guid.NewGuid():N}{ext}");
+            try
+            {
+                SafeRunScript(
+                    $"_-ViewCaptureToFile \"{staging}\" _Width={width} _Height={height} _Enter",
+                    opName);
+                RequireCapture(staging, opName);
+                File.Move(staging, target, overwrite: true);
+            }
+            finally
+            {
+                DeleteQuietly(staging);
+            }
+        }
+
+        private static void RequireCapture(string path, string opName)
+        {
+            var info = new FileInfo(path);
+            if (!info.Exists || info.Length == 0)
+                throw new System.InvalidOperationException(
+                    $"{opName}: _-ViewCaptureToFile did not write {path}; "
+                    + "check that a viewport is visible and the directory is writable.");
+        }
+
+        private static string NewTempCapturePath() =>
+            Path.Combine(Path.GetTempPath(), $"rhino-mcp-shot-{System.Guid.NewGuid():N}.png");
+
+        private static void DeleteQuietly(string? path)
+        {
+            if (path == null) return;
+            try
+            {
+                if (File.Exists(path)) File.Delete(path);
+            }
+            catch (IOException)
+            {
+                // Temp files are swept by the OS; a locked file is not worth failing the call.
+            }
+            catch (System.UnauthorizedAccessException)
+            {
+                // Same as above.
+            }
         }
 
         private static JObject Export(JObject p, string cmd, string format, string opName)
@@ -122,9 +177,15 @@ namespace RhinoMcp.Handlers
         public JObject ViewportPreview(JObject p)
         {
             var path = p["path"]?.ToString();
-            if (string.IsNullOrWhiteSpace(path))
-                throw new System.ArgumentException("path is required.");
-            if (path.Contains('"'))
+            var asBase64 = p["as_base64"]?.Value<bool>() ?? false;
+            var options = CaptureEncoder.ReadOptions(p);
+            var tempPath = string.IsNullOrWhiteSpace(path) ? NewTempCapturePath() : null;
+            if (tempPath != null)
+            {
+                path = tempPath;
+                asBase64 = true;
+            }
+            if (path!.Contains('"'))
                 throw new System.ArgumentException("path must not contain double-quote characters.");
             var width = p["width"]?.Value<int>() ?? 1920;
             var height = p["height"]?.Value<int>() ?? 1080;
@@ -153,66 +214,78 @@ namespace RhinoMcp.Handlers
             var prevSelected = Doc.Objects.GetSelectedObjects(false, false)
                 .Select(o => o.Id).ToList();
 
+            // One outer try so the temp file is removed even when the capture block throws.
             try
             {
-                Doc.Objects.UnselectAll();
-                bool isTargeted = selectionIds.Count > 0 || allowedLayerIdx.Count > 0;
-                foreach (var obj in Doc.Objects.GetObjectList(ObjectType.AnyObject))
+                try
                 {
-                    var inSelection = selectionIds.Contains(obj.Id);
-                    var onLayer = allowedLayerIdx.Contains(obj.Attributes.LayerIndex);
-                    var isTarget = inSelection || onLayer;
-
-                    if (!isTargeted) continue;
-                    if (isTarget)
+                    Doc.Objects.UnselectAll();
+                    bool isTargeted = selectionIds.Count > 0 || allowedLayerIdx.Count > 0;
+                    foreach (var obj in Doc.Objects.GetObjectList(ObjectType.AnyObject))
                     {
-                        Doc.Objects.Select(obj.Id, true);
+                        var inSelection = selectionIds.Contains(obj.Id);
+                        var onLayer = allowedLayerIdx.Contains(obj.Attributes.LayerIndex);
+                        var isTarget = inSelection || onLayer;
+
+                        if (!isTargeted) continue;
+                        if (isTarget)
+                        {
+                            Doc.Objects.Select(obj.Id, true);
+                        }
+                        else if (!ghostOthers)
+                        {
+                            if (obj.IsHidden) continue;
+                            if (Doc.Objects.Hide(obj.Id, true))
+                                prevHidden.Add(obj.Id);
+                        }
                     }
-                    else if (!ghostOthers)
+
+                    if (isTargeted && zoomToSelection)
                     {
-                        if (obj.IsHidden) continue;
-                        if (Doc.Objects.Hide(obj.Id, true))
-                            prevHidden.Add(obj.Id);
+                        SafeRunScript("_Zoom _Selected", "ViewportPreview");
                     }
+
+                    CaptureToFile(path, width, height, "ViewportPreview");
+                }
+                finally
+                {
+                    foreach (var id in prevHidden)
+                    {
+                        Doc.Objects.Show(id, true);
+                    }
+                    Doc.Objects.UnselectAll();
+                    foreach (var id in prevSelected)
+                    {
+                        Doc.Objects.Select(id, true);
+                    }
+                    Doc.Views.Redraw();
                 }
 
-                if (isTargeted && zoomToSelection)
+                var summary = new JObject
                 {
-                    SafeRunScript("_Zoom _Selected", "ViewportPreview");
-                }
-
-                SafeRunScript(
-                    $"_-ViewCaptureToFile \"{path}\" _Width={width} _Height={height} _Enter",
-                    "ViewportPreview");
-            }
-            finally
-            {
-                foreach (var id in prevHidden)
-                {
-                    Doc.Objects.Show(id, true);
-                }
-                Doc.Objects.UnselectAll();
-                foreach (var id in prevSelected)
-                {
-                    Doc.Objects.Select(id, true);
-                }
-                Doc.Views.Redraw();
-            }
-
-            return new JObject
-            {
-                ["summary"] = new JObject
-                {
-                    ["path"] = path,
+                    ["path"] = tempPath == null ? path : null,
                     ["width"] = width,
                     ["height"] = height,
                     ["selection_count"] = selectionIds.Count,
                     ["layer_count"] = layerNames.Count,
                     ["ghost_others"] = ghostOthers,
                     ["zoom_to_selection"] = zoomToSelection,
-                },
-                ["text"] = $"Viewport preview captured to {path}.",
-            };
+                };
+                var response = new JObject
+                {
+                    ["summary"] = summary,
+                    ["text"] = tempPath == null
+                        ? $"Viewport preview captured to {path}."
+                        : "Viewport preview captured.",
+                };
+                if (asBase64)
+                    CaptureEncoder.AttachFile(response, summary, path, options);
+                return response;
+            }
+            finally
+            {
+                DeleteQuietly(tempPath);
+            }
         }
     }
 

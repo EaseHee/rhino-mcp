@@ -4,9 +4,9 @@
 
 # rhino-mcp
 
-**McNeel Rhino 8 + Grasshopper를 Model Context Protocol(MCP) 경유로 Claude에서 제어.**
+**McNeel Rhino 8 / Rhino 9 + Grasshopper를 Model Context Protocol(MCP) 경유로 Claude에서 제어.**
 
-![PyPI](https://img.shields.io/pypi/v/rhino3dm-mcp) ![Python](https://img.shields.io/badge/python-3.11%2B-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![Rhino](https://img.shields.io/badge/Rhino-8-red) ![MCP](https://img.shields.io/badge/MCP-compatible-purple) ![Platform](https://img.shields.io/badge/platform-windows%20%7C%20macos%20%7C%20linux-lightgrey)
+![PyPI](https://img.shields.io/pypi/v/rhino3dm-mcp) ![Python](https://img.shields.io/badge/python-3.11%2B-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![Rhino](https://img.shields.io/badge/Rhino-8%20%7C%209-red) ![MCP](https://img.shields.io/badge/MCP-compatible-purple) ![Platform](https://img.shields.io/badge/platform-windows%20%7C%20macos%20%7C%20linux-lightgrey)
 
 [English](./README.md) · [한국어](./README.ko.md)
 
@@ -16,12 +16,16 @@
 
 ## 개요(Overview)
 
-`rhino-mcp`는 Claude(또는 임의의 MCP 클라이언트)가 자연어 도구 호출만으로 Rhino 8을 조작 가능하도록 하는 Model Context Protocol 서버.
+`rhino-mcp`는 Claude(또는 임의의 MCP 클라이언트)가 자연어 도구 호출만으로 Rhino 8 / Rhino 9를 조작 가능하도록 하는 Model Context Protocol 서버.
 형상 생성, 레이어·머티리얼·블록 관리, Grasshopper 베이크, STEP/IGES/STL/OBJ 내보내기 등 전부 지원.
 두 가지 실행 모드 제공.
 
-- **Standalone(독립 실행)**: [`rhino3dm`](https://github.com/mcneel/rhino3dm) 라이브러리로 헤드리스 `.3dm` 파일 직접 작성. Rhino 미설치 환경에서도 동작, **약 242개 도구** 노출(구성 단축, 도큐먼트 위생, 지오메트리 검증, GH 템플릿 카탈로그, 비정형 skin / 패널 합리화 / 곡률 / 필드, **도면 시트 + 표제란, 면적 / 자재 산출, 블록 정의, 일조 위치 + 그림자 투영, IFC 메타 태깅, 19종 물리 머티리얼 프리셋, BRE 주광율 + Bird DNI 청천공 모델, 다중 Rhino announcement-file discovery** 포함).
-- **Bridge(브리지)**: Rhino 8 안에서 C# 브리지 플러그인 로드 시 모든 호출(부울 연산, 로프트, 스윕, 뷰포트 캡처 + Zoom-to-Object/Layer, 렌더, 스크립트 실행(Python + 게이트형 Roslyn C# — timeout / 추가 references 지원), 변형, NURBS 편집, SubD, 패널링, 정확한 가우스 곡률을 포함한 비정형 분석, **다중 뷰 도면 배치 / 단면 / PDF 내보내기, AreaMassProperties 기반 Brep 면적 산출, 블록 폭파·재정의, ray-cast 일조 노출 + Brep ray probe, IFC / gbXML 입출력, HDRI 환경, 카메라 / 라이트 / 렌더 / 턴테이블 자동화, 레이어-머티리얼 바인딩**, 모든 Grasshopper 명령 + 템플릿 + 배치 `connect_many` 와이어링 / 슬라이더 배치)을 라이브 Rhino로 투명 전달. **약 245개 도구** 활성.
+- **Standalone(독립 실행)**: [`rhino3dm`](https://github.com/mcneel/rhino3dm) 라이브러리로 헤드리스 `.3dm` 파일 직접 작성. Rhino 미설치 환경에서도 동작, **약 246개 도구** 노출(구성 단축, 도큐먼트 위생, 지오메트리 검증, GH 템플릿 카탈로그, 비정형 skin / 패널 합리화 / 곡률 / 필드, **도면 시트 + 표제란, 면적 / 자재 산출, 블록 정의, 일조 위치 + 그림자 투영, IFC 메타 태깅, 19종 물리 머티리얼 프리셋, BRE 주광율 + Bird DNI 청천공 모델, 다중 Rhino announcement-file discovery, Draco 내보내기, SubD 검사** 포함).
+- **Bridge(브리지)**: Rhino 8 / Rhino 9 안에서 C# 브리지 플러그인 로드 시 모든 호출(부울 연산, 로프트, 스윕, 뷰포트 캡처 + Zoom-to-Object/Layer, 렌더, 스크립트 실행(Python + 게이트형 Roslyn C# — timeout / 추가 references 지원), 변형, NURBS 편집, SubD, 패널링, 정확한 가우스 곡률을 포함한 비정형 분석, **다중 뷰 도면 배치 / 단면 / PDF 내보내기, AreaMassProperties 기반 Brep 면적 산출, 블록 폭파·재정의, ray-cast 일조 노출 + Brep ray probe, IFC 입출력·gbXML 내보내기, HDRI 환경, 카메라 / 라이트 / 렌더 / 턴테이블 자동화, 레이어-머티리얼 바인딩**, 모든 Grasshopper 명령 + 템플릿 + 배치 `connect_many` 와이어링 / 슬라이더 배치)을 라이브 Rhino로 투명 전달. **약 247개 도구** 활성.
+
+캡처 도구(`rhino_screenshot`, `rhino_viewport_preview`, `rhino_viewport_image`)는 MCP 이미지 콘텐츠 반환. MCP 리소스(`rhino://scene/summary`, `rhino://layers`, `rhino://selection`, `rhinoscript://{function}`) 노출. 장시간 브리지 작업은 MCP 진행률 알림 전달.
+
+**McNeel RhinoMCP 공존**: Rhino 9 는 자체 RhinoMCP(`MCPStart` / `MCPConnect`, HTTP 포트 10500) 내장. rhino-mcp 는 TCP 4242 이상 포트 사용 → 동시 실행 가능. rhino-mcp 의 차별점은 Rhino 없이 동작하는 standalone 헤드리스 `rhino3dm` 모드, BIM / 렌더 / 비정형 / Grasshopper 도메인 도구, 배치 호출 + 진행률 보고.
 
 ## 기능(Features)
 
@@ -40,7 +44,8 @@
 - **실행 취소(undo/redo) / 일괄 작업(batch)** — 모든 브리지 작업에 undo 레코드 적용. 일괄 수정으로 다수 객체를 단일 호출로 변경.
 - **레이어(layer)·머티리얼(material)·블록(block)·그룹(group)** — 도큐먼트 속성을 완전 제어.
 - **파일 입출력(File I/O)** — `.3dm` 열기/저장, OBJ/STL은 standalone에서, STEP/IGES/DXF·스크린샷은 브리지에서.
-- **인라인 base64 스크린샷** — `rhino_screenshot(as_base64=True)`가 PNG 데이터를 응답에 직접 포함해 LLM이 즉시 시각 검증 가능.
+- **인라인 이미지 캡처** — `rhino_screenshot` / `rhino_viewport_preview` / `rhino_viewport_image`가 MCP 이미지 콘텐츠 반환(`as_base64`는 폐기 예정 별칭), LLM이 즉시 시각 검증 가능.
+- **도구 그룹 필터 + 리소스** — `RHINO_MCP_TOOLSETS`로 등록 도구 그룹 제한, `rhino://scene/summary` / `rhino://layers` / `rhino://selection` / `rhinoscript://{function}` MCP 리소스 노출.
 - **풍부한 객체 선택 필터** — `rhino_object_select`가 이름 glob 패턴, 레이어, RGB 색상, 객체 타입, user-text 키/값 조합으로 필터.
 - **대량 조회 페이지네이션** — `rhino_list_objects` 응답에 `pagination: {total, offset, limit, returned, has_more}` 블록 포함, 큰 도면에서도 컨텍스트 폭발 없음.
 - **장면 구성 단축 도구**(v0.2) — `rhino_place_grid`, `rhino_stack_floors`, `rhino_scatter`, `rhino_replicate_along_curve`로 "loop + transform" 패턴을 단일 호출로 압축.
@@ -48,7 +53,7 @@
 - **지오메트리 검증**(v0.2) — `rhino_validate_brep`, `rhino_report_mesh_health`, `rhino_curve_continuity`, 그리고 브리지 전용 `rhino_check_naked_edges`로 부울/내보내기 전 토폴로지 진단.
 - **Grasshopper 템플릿 로더**(v0.2) — `gh_template_list`로 사전 와이어링된 템플릿 카탈로그 조회. `gh_load_template`/`gh_bind_template_parameter`/`gh_run_template`(브리지)로 로드·파라미터 바인딩·베이크.
 - **비정형 건축 설계 툴킷** — `rhino_skin_from_sections`, `rhino_uv_grid_panels`, `rhino_panel_planarity`, `rhino_panel_curvature_classify`, `rhino_surface_developable_score`, `rhino_attractor_displace_points`, `rhino_smooth_polyline`. 브리지 모드에서는 정확한 가우스/평균/주곡률, 월드 축 슬라이싱, waffle ribs까지 추가.
-- **LLM 전략 가이드 프롬프트** — `general_strategy`, `rhinoscript_workflow`, `viewport_workflow`, `parametric_workflow`, `bim_authoring_workflow`, `design_dialogue_workflow`, `freeform_workflow` 7개 `@mcp.prompt()`로 도구 선택 가이드, hallucination 방지, 사용자-인-더-루프 디자인 결정.
+- **LLM 전략 가이드 프롬프트** — `general_strategy`, `rhinoscript_workflow`, `viewport_workflow`, `parametric_workflow`, `bim_authoring_workflow`, `design_dialogue_workflow`, `freeform_workflow`, `drawing_documentation`, `quantity_takeoff` 9개 `@mcp.prompt()`로 도구 선택 가이드, hallucination 방지, 사용자-인-더-루프 디자인 결정.
 - **비동기 도구** — read-only 쿼리 도구가 `async def`로 노출되어 동시 브리지 호출이 MCP 전송을 막지 않음.
 - **견고한 연결 계층** — named pipe / Unix socket / TCP 위 JSON-RPC. `MSG_PEEK` liveness probe와 jitter 적용 지수 백오프 재연결.
 - **Grasshopper 자동화** — `.gh` 열기, 컴포넌트(component) 추가·연결·삭제, 슬라이더(slider)/패널(panel)/토글(toggle) 설정, 솔루션 실행, 베이크(bake), DataTree 읽기.
@@ -68,7 +73,7 @@
                                             │
                                   ┌──────────▼──────────┐
                                   │  rhino-mcp.rhp │
-                                  │  (Rhino 8 C# 플러그인) │
+                                  │  (Rhino C# 플러그인)   │
                                   │  ─────────────────  │
                                   │  RhinoCommon        │
                                   │  Grasshopper        │
@@ -80,8 +85,8 @@
 ## 요구 사항(Requirements)
 
 - Python 3.11 이상
-- `rhino3dm >= 8.9`, `mcp[cli] >= 1.2`, `pydantic >= 2.6` (자동 설치)
-- 선택: McNeel Rhino 8 — 브리지 모드에서만 필요
+- `rhino3dm >= 8.35` (macOS 휠은 macOS 14 이상 필요), `mcp[cli] >= 1.2`, `pydantic >= 2.6` (자동 설치)
+- 선택: McNeel Rhino 8 또는 Rhino 9 — 브리지 모드에서만 필요
 - 선택: Windows에서 named pipe 사용 시 `pywin32`
 
 ## 설치(Installation)
@@ -101,27 +106,40 @@ pip install rhino3dm-mcp
 rhino-mcp --version
 ```
 
-### Claude Desktop 자동 등록
+### MCP 클라이언트 자동 등록
 
-패키지 설치 후 `claude_desktop_config.json` 수동 편집 대신 단일 명령으로 등록 가능.
+패키지 설치 후 설정 파일 수동 편집 대신 단일 명령으로 등록 가능.
 
 ```bash
-rhino-mcp install                         # 런처 자동 감지(uvx / rhino-mcp / python)
+rhino-mcp install                         # Claude Desktop(기본), 런처 자동 감지
+rhino-mcp install --client claude-code    # Claude Code (user scope)
+rhino-mcp install --client codex --client antigravity   # --client 반복 지정 가능
+rhino-mcp install --client detected       # 이 머신에서 감지된 모든 클라이언트
+rhino-mcp install --client all            # 지원 클라이언트 전체
+rhino-mcp install --list-clients --json   # 감지 / 설치 상태 조회
 rhino-mcp install --mode bridge           # env 블록에 bridge 강제 모드 기록
 rhino-mcp install --force                 # 동일 이름 항목 덮어쓰기
-rhino-mcp install --dry-run               # 파일 변경 없이 JSON 미리보기
+rhino-mcp install --dry-run               # 파일 변경 없이 결과 미리보기
+rhino-mcp uninstall --client all          # rhino-mcp 항목만 제거
 ```
 
-기존 설정 파일은 타임스탬프 `.bak.*` 백업 후 저장.
+| 클라이언트 | 대상 |
+|-----------|------|
+| `claude-desktop` | `claude_desktop_config.json` (변경 없음) |
+| `claude-code` | CLI 존재 시 `claude mcp add-json --scope user`, 없으면 `~/.claude.json` 의 `mcpServers` (`CLAUDE_CONFIG_DIR` 존중) |
+| `codex` | `$CODEX_HOME/config.toml` 또는 `~/.codex/config.toml` 의 `[mcp_servers.rhino-mcp]` 테이블 (주석 + 다른 테이블 보존) |
+| `antigravity` | `~/.gemini/antigravity/mcp_config.json` |
+
+저장 전 타임스탬프 `.bak.<timestamp>` 백업 생성.
 동일 플래그 재실행 시 no-op (idempotent).
-변경 적용 위해 Claude Desktop 재시작 필요.
-
-
+변경 적용 위해 해당 클라이언트 재시작 필요.
 
 #### Rhino 안에서 — `_McpInstall`
 
 브리지 플러그인 로드 상태에서 Rhino 명령창에 `_McpInstall` 입력 → 동일 설치 파이프라인 자동 실행.
-비대화형(non-interactive).
+ClaudeDesktop / ClaudeCode / Codex / Antigravity 토글 + All / Uninstall 제공, 초기 상태는 클라이언트 감지 결과.
+런처를 찾아 `--launcher` 로 전달 → 설정에 절대 경로 런처 기록.
+이후 비대화형(non-interactive).
 `PATH` 의 `uvx` / `rhino-mcp` / `python` 탐색 (macOS GUI 앱 `PATH` 가 빈약한 점 보완 위해 `~/.local/bin`, `~/.cargo/bin`, `/opt/homebrew/bin`, `/usr/local/bin` 추가 검색), 결과는 Rhino 명령창으로 스트리밍.
 — Claude Desktop 실행 시점에 Rhino 가 떠 있으면 브리지 자동 연결, 꺼져 있으면 standalone(rhino3dm) 자동 폴백.
 
@@ -233,26 +251,36 @@ mcp-inspector, Continue, Claude Code 등 서브프로세스 spawn 가능한 모�
 
 ### Rhino 측 C# 브리지 플러그인 (권장)
 
-245개 이상의 도구를 모두 사용하려면 C# 플러그인 빌드 후 설치 필요.
+247개 도구를 모두 사용하려면 C# 플러그인 빌드 후 설치 필요.
+대상 Rhino 는 MSBuild 속성 `RhinoMajor` 로 선택(기본 `9`, Rhino 8 은 `8`). 출력은 `bin/rh9`, `bin/rh8`.
 헬퍼 스크립트가 `dotnet build`를 wrap하고 설치 위치 검증:
 
 ```bash
-./scripts/build-plugin.sh             # debug 빌드 + 설치
-./scripts/build-plugin.sh --release   # release 빌드
-./scripts/build-plugin.sh --clean     # 클린 후 재빌드
+./scripts/build-plugin.sh                       # Rhino 9 debug 빌드 + 설치
+./scripts/build-plugin.sh --release             # release 빌드
+./scripts/build-plugin.sh --release --rhino=8   # Rhino 8 (또는 --rhino=both)
+./scripts/build-plugin.sh --no-install          # 빌드만, 복사 생략
+./scripts/build-plugin.sh --clean               # 클린 후 재빌드
 
 # 또는 직접:
-dotnet build rhino_plugin/csharp/RhinoMCPPlugin.csproj -c Release
+dotnet build rhino_plugin/csharp/RhinoMCPPlugin.csproj -c Release -p:RhinoMajor=9
+dotnet build rhino_plugin/csharp/RhinoMCPPlugin.csproj -c Release -p:RhinoMajor=8
+
+# Rhino 설치 경로로 복사 생략:
+dotnet build rhino_plugin/csharp/RhinoMCPPlugin.csproj -c Release -p:SkipPluginCopy=true
+
+# Rhino 8 + 9 용 Yak 패키지(rh8 + rh9):
+./scripts/publish-yak.sh --rhino=both
 ```
 
-PostBuild 단계에서 `.rhp`가 자동 복사되는 위치:
+PostBuild 단계에서 `.rhp`가 자동 복사되는 위치(해당 Rhino 설치 존재 시에만, `N` 은 8 또는 9):
 
 | OS      | 경로                                                                                  |
 |---------|--------------------------------------------------------------------------------------|
-| macOS   | `/Applications/Rhino 8.app/Contents/PlugIns/rhino-mcp.rhp`                       |
-| Windows | `%APPDATA%/McNeel/Rhinoceros/8.0/Plug-ins/rhino-mcp/rhino-mcp.rhp`           |
+| macOS   | `/Applications/Rhino N.app/Contents/PlugIns/rhino-mcp.rhp`                       |
+| Windows | `%APPDATA%/McNeel/Rhinoceros/N.0/Plug-ins/rhino-mcp/rhino-mcp.rhp`           |
 
-Rhino 8 재시작 시 브리지 자동 시작 (기본 TCP `:4242`). `rhino-mcp` 재시작 또는 `RHINO_MCP_FORCE_MODE=bridge` 설정 시 브리지 전용 도구 활성화.
+Rhino 재시작 시 브리지 자동 시작 (기본 TCP `:4242`). `rhino-mcp` 재시작 또는 `RHINO_MCP_FORCE_MODE=bridge` 설정 시 브리지 전용 도구 활성화.
 
 
 ## 빠른 시작(Quick Start)
@@ -271,17 +299,17 @@ Rhino 8 재시작 시 브리지 자동 시작 (기본 TCP `:4242`). `rhino-mcp` 
 |-------------------------|-----------------------------------------------------------------------------------------------------|
 | `general_strategy`      | 도큐먼트 파악 → 도구 선택 의사결정 트리 → 베스트 프랙티스(이름 부여, 배치, 레이어, undo, 검증).      |
 | `rhinoscript_workflow`  | `rhino_execute_python` 호출 **전** 반드시 따라야 할 워크플로(API hallucination 방지).                |
-| `viewport_workflow`     | `rhino_zoom_extent` + `rhino_screenshot(as_base64=True)`로 시각 검증하는 패턴.                       |
+| `viewport_workflow`     | `rhino_zoom_extent` + `rhino_screenshot`으로 시각 검증하는 패턴.                       |
 
 긴 세션에서는 "general_strategy 프롬프트를 먼저 보고 시작해"라고 지시하면 도구 선택 품질 크게 향상.
 
-### base64 스크린샷으로 시각 검증
+### 이미지 캡처로 시각 검증
 
 ```text
-"'Demo' 레이어에 5x5x5 박스를 만들고, 1280x720 base64 스크린샷을 찍어 결과를 확인해."
+"'Demo' 레이어에 5x5x5 박스를 만들고, 스크린샷을 찍어 결과를 확인해."
 ```
 
-Claude가 `rhino_box → rhino_zoom_extent → rhino_screenshot(as_base64=True)` 순으로 호출 후 응답의 `image_base64` 필드에서 PNG 직접 읽어 다음 턴에 활용.
+Claude가 `rhino_box → rhino_zoom_extent → rhino_screenshot` 순으로 호출 → 캡처를 MCP 이미지 콘텐츠로 수신(`max_width=1024`, `format=jpeg|png`, `jpeg_quality=80`, `include_image=false` 로 인라인 이미지 생략, `path` 선택). `as_base64`, `mime` 은 폐기 예정 별칭으로 유지.
 
 ### 페이지네이션 & 풍부한 필터링
 
@@ -342,7 +370,7 @@ PY
 ## Grasshopper 연동
 
 ```text
-1. Rhino 8 실행 → Grasshopper 열기 → `.gh` 정의 로드.
+1. Rhino 8 또는 9 실행 → Grasshopper 열기 → `.gh` 정의 로드.
 2. C# 브리지 플러그인(`rhino-mcp.rhp`)이 Rhino에 로드된 상태인지 확인.
 3. `RHINO_MCP_FORCE_MODE=bridge` 설정 후 rhino-mcp 재시작.
 4. Claude에 요청:
@@ -370,6 +398,7 @@ PY
 | `RHINO_MCP_RECONNECT_RETRIES`       | `1`                  | transport 일시 실패 후 재연결 시도 횟수 |
 | `RHINO_MCP_RECONNECT_BASE_DELAY`    | `0.5`                | 지수 백오프 기준 시간(초) |
 | `RHINO_MCP_RECONNECT_JITTER`        | `0.25`               | 대칭 jitter 비율 (`0`이면 비활성, 테스트용) |
+| `RHINO_MCP_TOOLSETS`                | _(전체)_             | 등록할 도구 그룹(쉼표 구분): `core`, `bim`, `freeform`, `gh`, `render`, `scripting`, `docs` (`admin` 은 항상 활성, 알 수 없는 이름은 경고 로그). |
 | `RHINO_MCP_LOG_LEVEL`               | `INFO`               | stderr 로그 레벨. `DEBUG`로 모든 브리지 JSON-RPC 호출 추적. |
 
 ## 개발(Development)
@@ -408,13 +437,14 @@ npx @modelcontextprotocol/inspector http://127.0.0.1:8765/mcp
 
 | 증상                                       | 원인 / 해결 |
 |--------------------------------------------|------------|
-| `Cannot reach Rhino bridge.`               | Rhino 8에 C# 브리지 플러그인 로드 여부, `RHINO_HOST`/`RHINO_PORT` 일치 여부 확인. |
-| 브리지 전용 도구가 Claude에 미노출          | Standalone 모드 상태. 브리지 플러그인 로드 또는 `RHINO_MCP_FORCE_MODE=bridge` 설정 필요. |
+| `Cannot reach Rhino bridge.`               | Rhino 8 / 9에 C# 브리지 플러그인 로드 여부, `RHINO_HOST`/`RHINO_PORT` 일치 여부 확인. `./scripts/check-bridge.sh` 실행. |
+| `Tool 'X' requires Rhino bridge mode.`     | Rhino 가 필요한 작업인데 재탐색에도 브리지 미응답. 플러그인 로드 후 같은 도구 재호출(재탐색은 `RHINO_MCP_REDETECT_COOLDOWN` 초마다 최대 1회, `RHINO_MCP_FORCE_MODE=standalone` 에서는 미실행). |
+| 클라이언트에 도구 미노출                    | `rhino-mcp install --list-clients` 와 항목 `env` 의 `RHINO_MCP_TOOLSETS` 확인. 설치 후 클라이언트 재시작. |
 | `Invalid parameter: axis`(cylinder)        | Standalone은 `{x:0,y:0,z:1}`만 지원. 임의 축 필요 시 브리지 모드 사용. |
 | `non-3DM` import 에러                      | Standalone import는 `.3dm` 전용. STEP/IGES/DXF는 브리지 필요. |
 | `transport failure on tcp://...`           | 브리지 종료 또는 Rhino 종료 — `rhino-mcp`가 지수 백오프(`RHINO_MCP_RECONNECT_RETRIES`)로 자동 재연결 시도. |
 | stdio 전송 시 stdout 깨짐                   | 항상 stderr로 로깅 필요. rhino-mcp는 그렇게 동작 — 외부 라이브러리가 stdout으로 출력하는지 확인. |
-| 스크린샷 응답에 `image_base64` 없음          | 호출 시 `as_base64=False`(기본값) 또는 파일 쓰기 실패 — `summary.path`와 `base64_error` 필드 확인. |
+| 스크린샷 응답에 이미지 없음                  | `include_image=false` 는 요약만 반환. `Viewport capture returned no image` 는 서버보다 오래된 플러그인(갱신 필요) 또는 보이는 뷰포트 부재. 인코더 오류는 `details.base64_error` 에 기록. |
 | 페이지네이션 무한 루프                      | `offset`을 `limit`이 아닌 `pagination.returned`만큼 증가 필요. 마지막 페이지는 부분 가능. |
 | `rhino_object_select` 결과 0개              | 필터는 AND로 결합. 하나씩 제거 시도. `color` 필터는 `ColorSource=ColorFromObject` 객체에만 동작. |
 

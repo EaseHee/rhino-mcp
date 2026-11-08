@@ -15,7 +15,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
-from rhino_mcp.tools._helpers import bridge_call_batch
+from rhino_mcp.tools._helpers import ToolContext, bridge_call_batch, run_with_progress
 from rhino_mcp.tools.context import runtime
 from rhino_mcp.utils.error_handling import unsupported_in_standalone
 from rhino_mcp.utils.registry import Mode
@@ -63,7 +63,7 @@ class _BatchCallIn(BaseModel):
 
 def register(mcp: Any, mode: Mode) -> None:
     @mcp.tool(annotations={"title": "Bridge: Batch Call", "readOnlyHint": False})
-    def rhino_batch_call(args: _BatchCallIn) -> dict[str, Any]:
+    async def rhino_batch_call(args: _BatchCallIn, ctx: ToolContext | None = None) -> dict[str, Any]:
         """Dispatch multiple bridge methods in a single round-trip.
 
         IMPORTANT: ``steps[].method`` is a **bridge dispatcher route**, not
@@ -96,7 +96,9 @@ def register(mcp: Any, mode: Mode) -> None:
                     f"invalid method name {step.method!r}; expected 'rhino.*' or 'gh.*'",
                 )
 
-        result = bridge_call_batch(
+        result: dict[str, Any] = await run_with_progress(
+            ctx,
+            bridge_call_batch,
             [{"method": s.method, "params": s.params} for s in args.steps],
             on_error=args.on_error,
         )

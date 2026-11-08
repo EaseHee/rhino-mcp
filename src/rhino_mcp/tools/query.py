@@ -12,7 +12,7 @@ from typing import Annotated, Any
 import rhino3dm as r3
 from pydantic import BaseModel, Field
 
-from rhino_mcp.tools._helpers import doc
+from rhino_mcp.tools._helpers import curve_length, doc, subd_summary
 from rhino_mcp.tools.context import runtime
 from rhino_mcp.utils.registry import Mode
 from rhino_mcp.utils.serialization import bbox_to_dict
@@ -46,10 +46,24 @@ class _ListObjectsIn(_DocArg):
             description="Maximum number of objects in the response (paginate with ``offset``).",
         ),
     ] = 100
+    tight: bool = Field(
+        True,
+        description=(
+            "Exact bounding box (default; bridge mode always returns the exact box). "
+            "False uses the faster but looser control-hull box in standalone mode."
+        ),
+    )
 
 
 class _ObjectInfoIn(_DocArg):
     object_id: str
+    tight: bool = Field(
+        True,
+        description=(
+            "Exact bounding box (default; bridge mode always returns the exact box). "
+            "False uses the faster but looser control-hull box in standalone mode."
+        ),
+    )
 
 
 class _SelectedObjectsIn(_DocArg):
@@ -112,7 +126,8 @@ def register(mcp, mode: Mode) -> None:  # type: ignore[no-untyped-def]
             position = total_matched - 1
             if position < args.offset or len(objects) >= args.limit:
                 continue
-            bbox = obj.Geometry.GetBoundingBox()
+            g = obj.Geometry
+            bbox = g.GetTightBoundingBox() if args.tight else g.GetBoundingBox()
             objects.append(
                 {
                     "object_id": str(obj.Attributes.Id),
@@ -151,7 +166,7 @@ def register(mcp, mode: Mode) -> None:  # type: ignore[no-untyped-def]
             raise not_found_error("object", args.object_id)
         geom = obj.Geometry
         kind = type(geom).__name__
-        bbox = geom.GetBoundingBox()
+        bbox = geom.GetTightBoundingBox() if args.tight else geom.GetBoundingBox()
         layer_idx = obj.Attributes.LayerIndex
         layer_name = ""
         if 0 <= layer_idx < len(h.file3dm.Layers):
@@ -168,8 +183,9 @@ def register(mcp, mode: Mode) -> None:  # type: ignore[no-untyped-def]
 
         if isinstance(geom, r3.Curve):
             info["is_closed"] = geom.IsClosed
-            info["domain"] = [geom.Domain.Min, geom.Domain.Max]
-            info["length"] = geom.GetLength()
+            info["domain"] = [geom.Domain.T0, geom.Domain.T1]
+            # rhino3dm has no Curve.GetLength; integrate the curve speed instead.
+            info["length"] = curve_length(geom)
         elif isinstance(geom, r3.Brep):
             info["face_count"] = len(geom.Faces)
             info["edge_count"] = len(geom.Edges)
@@ -177,6 +193,8 @@ def register(mcp, mode: Mode) -> None:  # type: ignore[no-untyped-def]
         elif isinstance(geom, r3.Mesh):
             info["vertex_count"] = len(geom.Vertices)
             info["face_count"] = len(geom.Faces)
+        elif isinstance(geom, r3.SubD):
+            info.update(subd_summary(geom))
 
         return {"summary": info, "text": f"{kind}: {args.object_id}"}
 
@@ -279,7 +297,7 @@ def register(mcp, mode: Mode) -> None:  # type: ignore[no-untyped-def]
                 "full_path": lay.FullPath if hasattr(lay, 'FullPath') else lay.Name,
                 "color": {"r": r_, "g": g_, "b": b_},
                 "visible": lay.Visible,
-                "locked": lay.IsLocked,
+                "locked": lay.Locked,
                 "object_count": layer_obj_count.get(i, 0),
             })
 

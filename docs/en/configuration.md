@@ -63,6 +63,15 @@ or more Rhino instances on the same host coexist without manual config.
 The Python side enumerates listeners via `rhino_bridge_list_instances`
 and switches active endpoint with `rhino_bridge_select_instance`.
 
+### Toolset selection (v0.7)
+
+| Variable              | Default | Notes |
+|-----------------------|---------|-------|
+| `RHINO_MCP_TOOLSETS`  | _(all)_ | Comma-separated list of tool groups to register: `core`, `bim`, `freeform`, `gh`, `render`, `scripting`, `docs`. The `admin` group (`rhino_bridge_list_instances`, `rhino_bridge_select_instance`) is always on. Unknown names are ignored with a warning. |
+
+Group sizes (standalone-start registration): core 160, bim 26, freeform 11, gh 30, render 9, scripting 4, docs 4, admin 2 (246 in total).
+Example: `RHINO_MCP_TOOLSETS=core,docs` registers core + docs + admin only, which keeps the tool list short for clients with small tool budgets.
+
 ## Transport selection logic
 
 1. The server decides its **MCP transport** (`stdio` vs HTTP) from `--transport` / `RHINO_MCP_TRANSPORT`.
@@ -70,7 +79,7 @@ and switches active endpoint with `rhino_bridge_select_instance`.
    - If `RHINO_MCP_FORCE_MODE` is set, that wins.
    - Otherwise, candidate bridge transports are tried in priority order (named pipe on Windows; unix socket on macOS/Linux; TCP fallback). The first one that accepts `rhino.ping` wins.
    - If none respond before the timeout, the server falls back to standalone.
-3. Tool registration consults the runtime mode. Bridge-only tools are simply not registered when standalone.
+3. Since v0.5.1 every module is registered regardless of mode (narrowed by `RHINO_MCP_TOOLSETS`). Bridge-only tools are rejected at call time or promoted lazily once the bridge is reachable.
 
 ## Per-deployment recipes
 

@@ -91,8 +91,8 @@ STEP 3: BEST PRACTICES
    rhino_undo / rhino_redo can recover from a wrong turn.
 
 5. VERIFY VISUALLY — after non-trivial changes call rhino_zoom_extent
-   followed by rhino_screenshot(as_base64=true) to inspect the result
-   inline. See ``viewport_workflow``.
+   followed by rhino_screenshot() — the capture comes back as an inline
+   image you can inspect directly. See ``viewport_workflow``.
 
 6. STAY OUT OF rhinoscriptsyntax UNLESS NECESSARY — the structured tools
    above cover the common cases. Only fall back to rhino_execute_python
@@ -102,7 +102,7 @@ STEP 3: BEST PRACTICES
    ``error.category`` (connection, timeout, parameter, not_found,
    unsupported, gh_component, internal). Branch on this:
    - ``unsupported`` -> the tool requires bridge mode; prompt the user
-     to start Rhino 8 + rhino-mcp and retry.
+     to start Rhino 8 / 9 + rhino-mcp and retry.
    - ``not_found``   -> object/file does not exist; re-discover via
      rhino_list_objects or rhino_document_summary.
    - ``parameter``   -> input invalid; read the ``hint`` for the allowed
@@ -257,7 +257,7 @@ STEP 4: EVALUATE
 For every variant, capture quantitative + visual feedback:
 
 - rhino_zoom_extent()
-- rhino_screenshot(as_base64=True)            -> visual delta in chat
+- rhino_screenshot()                          -> inline image in chat
 - rhino_area / rhino_volume / rhino_bounding_box
                                                -> hard numbers
 - rhino_validate_brep / rhino_report_mesh_health
@@ -426,7 +426,7 @@ Generate the simplest representative sample first — typically:
 
 Then run the viewport_workflow:
     rhino_zoom_extent()
-    rhino_screenshot(as_base64=True)
+    rhino_screenshot()
 
 …and ask "Should I extend this to N floors / M bays / the whole
 site?". Do not extend silently.
@@ -804,18 +804,20 @@ STEPS
 
 3. Capture the viewport inline:
      rhino_screenshot(
-         path="/tmp/rhino_mcp_capture.png",
-         width=1280,
-         height=720,
-         as_base64=True,
+         max_width=1024,              # downscaled inline copy (0 = native)
+         format="jpeg",               # "png" for crisp line work
      )
    The response carries:
-     - summary.path                  -> on-disk PNG (handy for the user)
-     - image_base64                  -> PNG bytes you can read directly
-     - mime                          -> "image/png"
+     - an image content block        -> the capture itself, viewable inline
+     - summary.mime / image_width    -> encoding of the inline copy
+     - summary.path                  -> on-disk file, only when path=... is given
 
-4. Read the base64 payload — DO NOT call additional tools just to look at
-   the file again, the data is already in the response.
+   Pass path="/tmp/rhino_mcp_capture.png" to also keep a full-resolution
+   file for the user. Legacy as_base64=True still works and maps to the
+   same inline image.
+
+4. Look at the returned image — DO NOT call additional tools just to look
+   at the file again, the picture is already in the response.
 
 
 TIPS

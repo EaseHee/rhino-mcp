@@ -4,7 +4,7 @@
 # Walks the bridge detection stack (TCP reachability → JSON-RPC ping →
 # detect_mode result) and prints a PASS / FAIL / WARN verdict for each
 # step.  The current rhino-mcp bridge is a TCP transport implemented by
-# the C# `.rhp` plug-in loaded inside Rhino 8 — there is no
+# the C# `.rhp` plug-in loaded inside Rhino 8 or Rhino 9 — there is no
 # `rhino-mcp.py` script anymore, and the macOS / Linux Unix-socket
 # transport was retired in v0.4.
 #
@@ -62,7 +62,8 @@ except Exception:
   echo "   $PASS  TCP port is open"
 else
   echo "   $FAIL  TCP port $RHINO_PORT is not reachable"
-  echo "          → Open Rhino 8 with the rhino-mcp.rhp C# plug-in loaded."
+  echo "          → Open Rhino 8 or 9 with the rhino-mcp.rhp C# plug-in loaded."
+  echo "          → Multiple Rhino instances use ports 4242-4257; set RHINO_PORT to pick one."
   echo "          → Install the plug-in via the Rhino package manager,"
   echo "            or build locally: ./scripts/build-plugin.sh --release"
 fi
@@ -83,6 +84,8 @@ try:
     pong = client.call('rhino.ping', {})
     print('PASS')
     print('rhino:', pong.get('rhino'))
+    print('rhino_major:', pong.get('rhino_major'))
+    print('plugin_built_for:', pong.get('plugin_built_for'))
     print('grasshopper:', pong.get('grasshopper'))
     print('bridge_version:', pong.get('bridge_version'))
     print('protocol_version:', pong.get('protocol_version'))
@@ -96,6 +99,13 @@ if echo "$PING_OUTPUT" | grep -q "^PASS"; then
   echo "$PING_OUTPUT" | grep -v "^PASS" | while IFS= read -r line; do
     echo "          $line"
   done
+  running_major=$(echo "$PING_OUTPUT" | sed -n 's/^rhino_major: //p')
+  built_major=$(echo "$PING_OUTPUT" | sed -n 's/^plugin_built_for: //p')
+  if [ -n "$running_major" ] && [ -n "$built_major" ] && [ "$running_major" != "None" ] \
+     && [ "$built_major" != "None" ] && [ "$running_major" != "$built_major" ]; then
+    echo "   $WARN  Plug-in built for Rhino $built_major but running in Rhino $running_major"
+    echo "          → Install the rh$running_major package (or ./scripts/build-plugin.sh --rhino=$running_major)."
+  fi
 else
   echo "   $FAIL  Bridge did not respond"
   [ "$VERBOSE" = true ] && echo "          $PING_OUTPUT"
@@ -115,10 +125,10 @@ print(mode.value, 'with-client' if client else 'no-client')
 
 if echo "$MODE" | grep -q "^bridge"; then
   echo "   $PASS  $MODE"
-  echo "          → rhino-mcp will start in BRIDGE mode (~235 tools)."
+  echo "          → rhino-mcp will start in BRIDGE mode (~247 tools)."
 else
   echo "   $WARN  $MODE"
-  echo "          → rhino-mcp will start in STANDALONE mode (~234 tools)."
+  echo "          → rhino-mcp will start in STANDALONE mode (~246 tools)."
   echo "          → v0.5.1+: bridge tools auto-promote on first call once"
   echo "            the rhino-mcp.rhp plug-in becomes reachable; no MCP"
   echo "            server restart is required."
@@ -133,12 +143,13 @@ else
   echo "  Result: Bridge is NOT reachable."
   echo ""
   echo "  Quick fix:"
-  echo "    1. Open Rhino 8."
+  echo "    1. Open Rhino 8 or Rhino 9."
   echo "    2. Install the rhino-mcp.rhp plug-in"
   echo "       — package manager (yak), or build locally:"
-  echo "         ./scripts/build-plugin.sh --release"
+  echo "         ./scripts/build-plugin.sh --release --rhino=9   (or --rhino=8)"
   echo "    3. Inside Rhino, type:  _McpInstall"
-  echo "       (configures Claude Desktop and verifies the launcher.)"
+  echo "       (pick Claude Desktop / Claude Code / Codex / Antigravity;"
+  echo "        or run: rhino-mcp install --client detected)"
   echo "    4. Re-run this script."
 fi
 echo "$SEP"

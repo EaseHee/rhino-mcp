@@ -16,10 +16,58 @@ from uuid import UUID, uuid4
 
 import rhino3dm as r3
 
-from rhino_mcp.utils.error_handling import not_found_error
+from rhino_mcp.utils.error_handling import ErrorCategory, ToolError, not_found_error
 from rhino_mcp.utils.logging import get_logger
 
 log = get_logger("document")
+
+
+# Newest 3dm archive version (Rhino major * 10) this rhino3dm build is known to read.
+# rhino3dm 8.35 reads Rhino 9 (archive 90) files; anything newer is unknown territory.
+MAX_KNOWN_ARCHIVE_VERSION = 90
+
+
+def _archive_version(path: Path) -> int:
+    """Return the 3dm archive version of ``path`` or 0 when it cannot be determined."""
+    try:
+        return int(r3.File3dm.ReadArchiveVersion(str(path)) or 0)
+    except Exception:
+        return 0
+
+
+def _read_file3dm(path: Path) -> r3.File3dm:
+    """Read ``path`` with rhino3dm, raising a descriptive ToolError on failure."""
+    read_error: Exception | None = None
+    try:
+        f = r3.File3dm.Read(str(path))
+    except Exception as exc:
+        f = None
+        read_error = exc
+    if f is not None:
+        return f
+    version = _archive_version(path)
+    detail = f" ({read_error})" if read_error is not None else ""
+    if version > MAX_KNOWN_ARCHIVE_VERSION:
+        message = (
+            f"cannot read {path}: 3dm archive version {version} is newer than this "
+            f"rhino3dm build supports (<= {MAX_KNOWN_ARCHIVE_VERSION})"
+        )
+        hint = (
+            "Open the file in bridge mode (live Rhino), or re-save it from Rhino "
+            "in an older 3dm format (Rhino 9 or earlier)."
+        )
+    elif version > 0:
+        message = f"cannot read {path}: file is unreadable or corrupt (3dm archive version {version}){detail}"
+        hint = "Check the file is complete (not truncated) or re-save it from Rhino."
+    else:
+        message = f"cannot read {path}: not a 3dm file, or unreadable/corrupt{detail}"
+        hint = "Pass a valid .3dm file path."
+    raise ToolError(
+        ErrorCategory.PARAMETER,
+        message,
+        hint,
+        details={"path": str(path), "archive_version": version},
+    )
 
 
 @dataclass
@@ -72,9 +120,7 @@ class DocumentRegistry:
         p = Path(path).expanduser().resolve()
         if not p.exists():
             raise not_found_error("file", str(p))
-        f = r3.File3dm.Read(str(p))
-        if f is None:
-            raise not_found_error("3dm document", str(p))
+        f = _read_file3dm(p)
         chosen = doc_id or f"doc-{uuid4().hex[:8]}"
         handle = DocumentHandle(doc_id=chosen, file3dm=f, path=p)
         with self._lock:

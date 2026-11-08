@@ -48,25 +48,31 @@ jobs:
             dist/*.tar.gz
 
   build-rhp:
-    name: Build rhino-mcp .rhp
+    name: Build rhino-mcp .rhp (Rhino ${{ matrix.rhino }})
     runs-on: windows-latest
+    strategy:
+      matrix:
+        rhino: ["8", "9"]
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: "8.0.x"
       - name: Build Release .rhp
-        run: dotnet build rhino_plugin/csharp -c Release
+        run: dotnet build rhino_plugin/csharp -c Release -p:RhinoMajor=${{ matrix.rhino }} -p:SkipPluginCopy=true
+      - name: Rename .rhp for release assets
+        shell: bash
+        run: cp rhino_plugin/csharp/bin/rh${{ matrix.rhino }}/Release/net8.0/rhino-mcp.rhp rhino-mcp-rh${{ matrix.rhino }}.rhp
       - name: Upload artefact
         uses: actions/upload-artifact@v6
         with:
-          name: rhino-mcp-build
-          path: rhino_plugin/csharp/bin/Release/net8.0/
+          name: rhino-mcp-build-rh${{ matrix.rhino }}
+          path: rhino_plugin/csharp/bin/rh${{ matrix.rhino }}/Release/net8.0/
       - name: Attach .rhp to release
         if: github.event_name == 'push'
         uses: softprops/action-gh-release@v2
         with:
-          files: rhino_plugin/csharp/bin/Release/net8.0/rhino-mcp.rhp
+          files: rhino-mcp-rh${{ matrix.rhino }}.rhp
 
   build-yak:
     name: Build rhino-mcp .yak
@@ -76,14 +82,21 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/download-artifact@v7
         with:
-          name: rhino-mcp-build
-          path: rhino_plugin/csharp/bin/Release/net8.0/
+          name: rhino-mcp-build-rh8
+          path: rhino_plugin/csharp/bin/rh8/Release/net8.0/
+      - uses: actions/download-artifact@v7
+        with:
+          name: rhino-mcp-build-rh9
+          path: rhino_plugin/csharp/bin/rh9/Release/net8.0/
       - name: Locate yak.exe
         id: yak
         shell: bash
         run: |
-          yak="C:/Program Files/Rhino 8/System/yak.exe"
-          if [ ! -f "$yak" ]; then
+          yak=""
+          for candidate in "C:/Program Files/Rhino 9/System/yak.exe" "C:/Program Files/Rhino 8/System/yak.exe"; do
+            if [ -f "$candidate" ]; then yak="$candidate"; break; fi
+          done
+          if [ -z "$yak" ]; then
             echo "Yak not present on the runner; skipping .yak build."
             echo "found=false" >> "$GITHUB_OUTPUT"
             exit 0
@@ -95,7 +108,7 @@ jobs:
         shell: bash
         env:
           YAK_CLI: ${{ steps.yak.outputs.path }}
-        run: ./scripts/publish-yak.sh --skip-build --platform=win
+        run: ./scripts/publish-yak.sh --skip-build --platform=win --rhino=both
       - name: Attach .yak to release
         if: steps.yak.outputs.found == 'true' && github.event_name == 'push'
         uses: softprops/action-gh-release@v2

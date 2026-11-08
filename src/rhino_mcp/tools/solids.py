@@ -1,12 +1,13 @@
 """Solid primitives and boolean operations.
 
 Primitives (box/sphere/cylinder/cone/torus) work in standalone via Brep
-factories. Booleans, shell, and cap-holes are bridge-only because rhino3dm
+factories; cone and torus are exact ``RevSurface`` revolutions. Booleans, shell, and cap-holes are bridge-only because rhino3dm
 does not ship the solid-modelling kernel.
 """
 
 from __future__ import annotations
 
+import math
 from typing import Annotated, Any
 
 import rhino3dm as r3
@@ -92,6 +93,17 @@ def _add_brep(handle, brep: r3.Brep | None, kind: str, layer, name) -> dict[str,
     return {"summary": object_summary(handle, gid, kind), "text": text_for(kind, gid)}
 
 
+def _revolve_z(
+    profile: r3.Curve, x: float, y: float, z: float, *, cap_start: bool, cap_end: bool
+) -> r3.Brep | None:
+    """Revolve ``profile`` a full turn about the world-Z line through ``(x, y, z)``."""
+    axis = r3.Line(r3.Point3d(x, y, z), r3.Point3d(x, y, z + 1.0))
+    rev = r3.RevSurface.Create(profile, axis, 0.0, 2 * math.pi)
+    if rev is None:
+        return None
+    return r3.Brep.CreateFromRevSurface(rev, cap_start, cap_end)
+
+
 def register(mcp, mode: Mode) -> None:  # type: ignore[no-untyped-def]
     @mcp.tool(annotations={"title": "Add Box (solid)", "readOnlyHint": False})
     def rhino_box(args: _BoxIn) -> dict[str, Any]:
@@ -136,70 +148,38 @@ def register(mcp, mode: Mode) -> None:  # type: ignore[no-untyped-def]
 
     @mcp.tool(annotations={"title": "Add Cone", "readOnlyHint": False})
     def rhino_cone(args: _ConeIn) -> dict[str, Any]:
-        """Add a cone primitive (bridge required for non-Z axes)."""
-        # rhino3dm exposes Cone but its constructor is sealed; we therefore
-        # build the cone as a revolved Brep on the XZ plane in standalone mode.
+        """Add a cone primitive with its apex above ``base_center`` (world Z axis).
+
+        Standalone builds an exact revolved Brep (``RevSurface`` + base cap).
+        """
         if runtime().mode is Mode.BRIDGE:
             return runtime().require_bridge().call("rhino.solid.cone", args.model_dump())
         h = doc(args.doc_id)
-        # Axis line: from base_center upward by height
         c = args.base_center
-        # Build a profile (apex → base rim) then revolve via NurbsSurface.
-        # rhino3dm has no RevSurface.Create with profile/axis/angle; fall back
-        # to constructing a polyline-cone Brep via NurbsSurface ruled surface.
-        rim_count = 64
-        base_pts: list[r3.Point3d] = []
-        import math
-
-        for i in range(rim_count + 1):
-            theta = 2 * math.pi * i / rim_count
-            base_pts.append(
-                r3.Point3d(c.x + args.radius * math.cos(theta), c.y + args.radius * math.sin(theta), c.z)
-            )
-        side = r3.Polyline()
-        for p in base_pts:
-            side.Add(p.X, p.Y, p.Z)
-        # Approximate the cone as a polysurface mesh (sufficient for IO/visualisation).
-        mesh = r3.Mesh()
-        apex_idx = mesh.Vertices.Add(c.x, c.y, c.z + args.height)
-        base_indices = [mesh.Vertices.Add(p.X, p.Y, p.Z) for p in base_pts]
-        for i in range(rim_count):
-            mesh.Faces.AddFace(apex_idx, base_indices[i], base_indices[i + 1])
-        # Cap the base with a triangle fan.
-        center_idx = mesh.Vertices.Add(c.x, c.y, c.z)
-        for i in range(rim_count):
-            mesh.Faces.AddFace(center_idx, base_indices[i + 1], base_indices[i])
-        gid = add_object_with_attrs(h, "AddMesh", mesh, layer=args.layer, name=args.name)
-        return {"summary": object_summary(h, gid, "Cone"), "text": text_for("Cone (mesh)", gid)}
+        # Profile runs apex -> base rim so capEnd closes the base disc.
+        profile = r3.LineCurve(
+            r3.Point3d(c.x, c.y, c.z + args.height),
+            r3.Point3d(c.x + args.radius, c.y, c.z),
+        )
+        brep = _revolve_z(profile, c.x, c.y, c.z, cap_start=False, cap_end=True)
+        return _add_brep(h, brep, "Cone", args.layer, args.name)
 
     @mcp.tool(annotations={"title": "Add Torus", "readOnlyHint": False})
     def rhino_torus(args: _TorusIn) -> dict[str, Any]:
-        """Add a torus primitive (mesh approximation in standalone mode)."""
+        """Add a torus primitive around the world Z axis through ``center``.
+
+        Standalone builds an exact revolved Brep (circle profile on the XZ plane).
+        """
         if runtime().mode is Mode.BRIDGE:
             return runtime().require_bridge().call("rhino.solid.torus", args.model_dump())
         h = doc(args.doc_id)
-        import math
-
-        u_steps, v_steps = 48, 24
-        mesh = r3.Mesh()
         c = args.center
-        for i in range(u_steps):
-            for j in range(v_steps):
-                u = 2 * math.pi * i / u_steps
-                v = 2 * math.pi * j / v_steps
-                cx = (args.major_radius + args.minor_radius * math.cos(v)) * math.cos(u)
-                cy = (args.major_radius + args.minor_radius * math.cos(v)) * math.sin(u)
-                cz = args.minor_radius * math.sin(v)
-                mesh.Vertices.Add(c.x + cx, c.y + cy, c.z + cz)
-        for i in range(u_steps):
-            for j in range(v_steps):
-                a = i * v_steps + j
-                b = ((i + 1) % u_steps) * v_steps + j
-                bb = ((i + 1) % u_steps) * v_steps + (j + 1) % v_steps
-                d = i * v_steps + (j + 1) % v_steps
-                mesh.Faces.AddFace(a, b, bb, d)
-        gid = add_object_with_attrs(h, "AddMesh", mesh, layer=args.layer, name=args.name)
-        return {"summary": object_summary(h, gid, "Torus"), "text": text_for("Torus (mesh)", gid)}
+        ring_center = r3.Point3d(c.x + args.major_radius, c.y, c.z)
+        profile = r3.Circle(ring_center, args.minor_radius).ToNurbsCurve()
+        # Circle(center, r) lies on world XY; rotate it onto the XZ plane.
+        profile.Rotate(math.pi / 2, r3.Vector3d(1, 0, 0), ring_center)
+        brep = _revolve_z(profile, c.x, c.y, c.z, cap_start=False, cap_end=False)
+        return _add_brep(h, brep, "Torus", args.layer, args.name)
 
     if mode is Mode.STANDALONE:
         return  # bridge-only operations below

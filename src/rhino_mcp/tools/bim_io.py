@@ -1,7 +1,7 @@
 """BIM interchange tools — IFC and gbXML import / export.
 
 These tools are bridge-only because the conversion pipelines live inside
-Rhino 8's RhinoCommon (IFC plug-in / gbXML add-in). The Python layer
+Rhino 8 / 9 RhinoCommon (IFC plug-in / gbXML add-in). The Python layer
 forwards the JSON-RPC call and surfaces a structured result.
 
 Tool catalogue:
@@ -22,7 +22,14 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from rhino_mcp.tools._helpers import MAX_OBJECT_IDS, bridge_call, doc, require_bridge_only
+from rhino_mcp.tools._helpers import (
+    MAX_OBJECT_IDS,
+    ToolContext,
+    bridge_call,
+    bridge_call_with_progress,
+    doc,
+    require_bridge_only,
+)
 from rhino_mcp.tools.context import runtime
 from rhino_mcp.utils.error_handling import not_found_error, parameter_error
 from rhino_mcp.utils.registry import Mode
@@ -138,7 +145,7 @@ class _BimMetadataIn(_DocArg):
 
 def register(mcp, mode: Mode) -> None:  # type: ignore[no-untyped-def]
     @mcp.tool(annotations={"title": "Export IFC", "readOnlyHint": False})
-    def rhino_export_ifc(args: _ExportIfcIn) -> dict[str, Any]:
+    async def rhino_export_ifc(args: _ExportIfcIn, ctx: ToolContext | None = None) -> dict[str, Any]:
         """Export the active document (or a subset) to IFC2x3 / IFC4 / IFC4x3 (bridge only)."""
         require_bridge_only("rhino_export_ifc")
         if args.schema_version not in _IFC_SCHEMAS:
@@ -150,19 +157,19 @@ def register(mcp, mode: Mode) -> None:  # type: ignore[no-untyped-def]
         payload = args.model_dump()
         if not args.entity_type_map:
             payload["entity_type_map"] = _DEFAULT_ENTITY_MAP
-        return bridge_call("rhino.bim.export_ifc", payload)
+        return await bridge_call_with_progress("rhino.bim.export_ifc", payload, ctx)
 
     @mcp.tool(annotations={"title": "Import IFC", "readOnlyHint": False})
-    def rhino_import_ifc(args: _ImportIfcIn) -> dict[str, Any]:
+    async def rhino_import_ifc(args: _ImportIfcIn, ctx: ToolContext | None = None) -> dict[str, Any]:
         """Import an IFC file, mapping each entity to a layer under ``target_layer_root`` (bridge only)."""
         require_bridge_only("rhino_import_ifc")
-        return bridge_call("rhino.bim.import_ifc", args.model_dump())
+        return await bridge_call_with_progress("rhino.bim.import_ifc", args.model_dump(), ctx)
 
     @mcp.tool(annotations={"title": "Export gbXML", "readOnlyHint": False})
-    def rhino_export_gbxml(args: _ExportGbXmlIn) -> dict[str, Any]:
+    async def rhino_export_gbxml(args: _ExportGbXmlIn, ctx: ToolContext | None = None) -> dict[str, Any]:
         """Export thermal / structural BIM payload to gbXML (bridge only)."""
         require_bridge_only("rhino_export_gbxml")
-        return bridge_call("rhino.bim.export_gbxml", args.model_dump())
+        return await bridge_call_with_progress("rhino.bim.export_gbxml", args.model_dump(), ctx)
 
     @mcp.tool(annotations={"title": "Set BIM Metadata", "readOnlyHint": False})
     def rhino_bim_metadata_set(args: _BimMetadataIn) -> dict[str, Any]:

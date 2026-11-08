@@ -1,7 +1,7 @@
 [project]
 name = "rhino3dm-mcp"
-version = "0.6.0"
-description = "MCP server connecting Claude to McNeel Rhino 8 and Grasshopper via rhino3dm and an in-Rhino bridge plugin."
+version = "0.7.0"
+description = "MCP server connecting Claude to McNeel Rhino 8 / Rhino 9 and Grasshopper via rhino3dm and an in-Rhino bridge plugin."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
@@ -23,7 +23,7 @@ classifiers = [
 dependencies = [
     "mcp[cli]>=1.2,<2",
     "pydantic>=2.6,<3",
-    "rhino3dm>=8.9,<9",
+    "rhino3dm>=8.35,<9",
 ]
 
 [project.optional-dependencies]

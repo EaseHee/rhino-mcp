@@ -12,20 +12,23 @@
 #   ./scripts/publish-yak.sh                       # build both win + mac
 #   ./scripts/publish-yak.sh --platform=win        # win only
 #   ./scripts/publish-yak.sh --platform=mac        # mac only
-#   ./scripts/publish-yak.sh --skip-build          # reuse existing bin/Release output
+#   ./scripts/publish-yak.sh --rhino=9             # Rhino 9 only (default: both 8 and 9)
+#   ./scripts/publish-yak.sh --skip-build          # reuse existing bin/rh<N>/Release output
 #   ./scripts/publish-yak.sh --clean               # rebuild from scratch
 #   ./scripts/publish-yak.sh --help
 #
 # Environment overrides:
 #   YAK_CLI   Absolute path to the `yak` (or `yak.exe`) binary.
-#             Default: macOS  -> /Applications/Rhino 8.app/Contents/Resources/bin/yak
-#                      Windows -> C:/Program Files/Rhino 8/System/yak.exe
+#             Default: newest /Applications/Rhino N.app/Contents/Resources/bin/yak
+#                      or C:/Program Files/Rhino N/System/yak.exe
+#
+# One package version carries one distribution per Rhino major: yak derives
+# the rh8 / rh9 tag from the RhinoCommon version each .rhp was built against.
 
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PROJECT_DIR="$ROOT/rhino_plugin/csharp"
-BUILD_DIR="$PROJECT_DIR/bin/Release/net8.0"
 STAGE_ROOT="$PROJECT_DIR/yak-stage"
 DIST_DIR="$PROJECT_DIR/dist"
 MANIFEST_SRC="$PROJECT_DIR/manifest.yml"
@@ -35,16 +38,20 @@ LICENSE_SRC="$ROOT/LICENSE"
 README_SRC="$ROOT/README.md"
 
 PLATFORMS="both"
+RHINO_MAJORS="8 9"
 SKIP_BUILD=false
 CLEAN=false
 
 print_help() {
-  sed -n '2,22p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+  awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print; next } NR > 1 { exit }' "${BASH_SOURCE[0]}"
 }
 
 for arg in "$@"; do
   case "$arg" in
     --platform=win|--platform=mac|--platform=both) PLATFORMS="${arg#--platform=}" ;;
+    --rhino=8)    RHINO_MAJORS="8" ;;
+    --rhino=9)    RHINO_MAJORS="9" ;;
+    --rhino=both) RHINO_MAJORS="8 9" ;;
     --skip-build) SKIP_BUILD=true ;;
     --clean)      CLEAN=true ;;
     --help|-h)    print_help; exit 0 ;;
@@ -68,7 +75,7 @@ detect_yak_cli() {
       if [ -n "$rhino_app" ] && [ -x "$rhino_app/Contents/Resources/bin/yak" ]; then
         echo "$rhino_app/Contents/Resources/bin/yak"
       else
-        echo "/Applications/Rhino 8.app/Contents/Resources/bin/yak"
+        echo "/Applications/Rhino 9.app/Contents/Resources/bin/yak"
       fi
       ;;
     Linux)   echo "" ;;
@@ -81,7 +88,7 @@ detect_yak_cli() {
       if [ -n "$rhino_dir" ]; then
         echo "$rhino_dir"
       else
-        echo "C:/Program Files/Rhino 8/System/yak.exe"
+        echo "C:/Program Files/Rhino 9/System/yak.exe"
       fi
       ;;
     *)       echo "" ;;
@@ -92,39 +99,47 @@ YAK_CLI_PATH="$(detect_yak_cli)"
 if [ -z "$YAK_CLI_PATH" ] || [ ! -x "$YAK_CLI_PATH" ]; then
   echo "ERROR: yak CLI not found." >&2
   echo "  Tried: ${YAK_CLI_PATH:-<none>}" >&2
-  echo "  macOS:   /Applications/Rhino 8.app/Contents/Resources/bin/yak" >&2
-  echo "  Windows: C:/Program Files/Rhino 8/System/yak.exe" >&2
+  echo "  macOS:   /Applications/Rhino N.app/Contents/Resources/bin/yak" >&2
+  echo "  Windows: C:/Program Files/Rhino N/System/yak.exe" >&2
   echo "  Override with YAK_CLI=/absolute/path/to/yak ./scripts/publish-yak.sh" >&2
   exit 1
 fi
 echo ">>> Using yak CLI: $YAK_CLI_PATH"
 
-if [ "$SKIP_BUILD" = false ]; then
-  if ! command -v dotnet &>/dev/null; then
-    echo "ERROR: dotnet SDK not found. Install from https://dotnet.microsoft.com/download" >&2
-    exit 1
-  fi
-  if [ "$CLEAN" = true ]; then
-    # Skip `dotnet clean` — the Korean-locale MSBuild on macOS mislabels its
-    # informational "deleting" lines as errors and exits non-zero, which trips
-    # `set -e`. A direct rm of the output dirs is equivalent and locale-safe.
-    echo ">>> Cleaning previous build (rm bin/Release + obj/Release)..."
-    rm -rf "$PROJECT_DIR/bin/Release" "$PROJECT_DIR/obj/Release"
-  fi
-  echo ">>> Building rhino-mcp (Release)..."
-  dotnet build "$PROJECT_DIR/RhinoMCPPlugin.csproj" -c Release
-fi
+build_dir_for() {
+  echo "$PROJECT_DIR/bin/rh$1/Release/net8.0"
+}
 
-if [ ! -f "$BUILD_DIR/rhino-mcp.rhp" ]; then
-  echo "ERROR: $BUILD_DIR/rhino-mcp.rhp not found." >&2
-  echo "       Run without --skip-build first." >&2
+if [ "$SKIP_BUILD" = false ] && ! command -v dotnet &>/dev/null; then
+  echo "ERROR: dotnet SDK not found. Install from https://dotnet.microsoft.com/download" >&2
   exit 1
 fi
+
+for major in $RHINO_MAJORS; do
+  if [ "$SKIP_BUILD" = false ]; then
+    if [ "$CLEAN" = true ]; then
+      # Skip `dotnet clean` — the Korean-locale MSBuild on macOS mislabels its
+      # informational "deleting" lines as errors and exits non-zero, which trips
+      # `set -e`. A direct rm of the output dirs is equivalent and locale-safe.
+      echo ">>> Cleaning previous rh$major build..."
+      rm -rf "$PROJECT_DIR/bin/rh$major" "$PROJECT_DIR/obj/Release"
+    fi
+    echo ">>> Building rhino-mcp for Rhino $major (Release)..."
+    dotnet build "$PROJECT_DIR/RhinoMCPPlugin.csproj" -c Release \
+      -p:RhinoMajor="$major" -p:SkipPluginCopy=true
+  fi
+  if [ ! -f "$(build_dir_for "$major")/rhino-mcp.rhp" ]; then
+    echo "ERROR: $(build_dir_for "$major")/rhino-mcp.rhp not found." >&2
+    echo "       Run without --skip-build first." >&2
+    exit 1
+  fi
+done
 
 mkdir -p "$DIST_DIR"
 
 stage_files() {
   local stage="$1"
+  local BUILD_DIR="$2"
   rm -rf "$stage"
   mkdir -p "$stage"
 
@@ -147,10 +162,11 @@ stage_files() {
 
 build_for_platform() {
   local plat="$1"
-  local stage="$STAGE_ROOT/$plat"
+  local major="$2"
+  local stage="$STAGE_ROOT/rh$major-$plat"
   echo ""
-  echo ">>> Staging files for platform=$plat -> $stage"
-  stage_files "$stage"
+  echo ">>> Staging files for Rhino $major platform=$plat -> $stage"
+  stage_files "$stage" "$(build_dir_for "$major")"
 
   echo ">>> Running yak build --platform $plat"
   ( cd "$stage" && "$YAK_CLI_PATH" build --platform "$plat" )
@@ -166,11 +182,13 @@ build_for_platform() {
   echo ">>> Produced: $DIST_DIR/$(basename "$produced")"
 }
 
-case "$PLATFORMS" in
-  win)  build_for_platform win ;;
-  mac)  build_for_platform mac ;;
-  both) build_for_platform win; build_for_platform mac ;;
-esac
+for major in $RHINO_MAJORS; do
+  case "$PLATFORMS" in
+    win)  build_for_platform win "$major" ;;
+    mac)  build_for_platform mac "$major" ;;
+    both) build_for_platform win "$major"; build_for_platform mac "$major" ;;
+  esac
+done
 
 echo ""
 echo ">>> Done. Artefacts in $DIST_DIR:"

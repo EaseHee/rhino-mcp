@@ -47,7 +47,7 @@ def demo_unsupported_error() -> None:
         print(f"\n[{e.category.value}] {e.message}")
         print(f"  Hint: {e.hint}")
         if e.category == ErrorCategory.UNSUPPORTED:
-            print("  -> switch to Rhino 8 bridge mode")
+            print("  -> switch to Rhino 8 / 9 bridge mode")
 
 
 def demo_error_to_dict() -> None:

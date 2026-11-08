@@ -11,14 +11,15 @@ from __future__ import annotations
 
 import argparse
 import sys
-from typing import TYPE_CHECKING
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any
 
 from rhino_mcp import __version__
 from rhino_mcp.bridge.rhino_connection import BridgeClient, detect_mode
 from rhino_mcp.transport import fastmcp_transport_arg, resolve_transport
 from rhino_mcp.utils.logging import configure as configure_logging
 from rhino_mcp.utils.logging import get_logger
-from rhino_mcp.utils.registry import Mode, register_tools
+from rhino_mcp.utils.registry import Mode, register_tools, toolsets_from_env
 
 if TYPE_CHECKING:
     from mcp.server.fastmcp import FastMCP
@@ -26,8 +27,23 @@ if TYPE_CHECKING:
 log = get_logger("server")
 
 
-def _tool_specs() -> list[tuple[Mode, object]]:
-    """Lazy-import every tool module's ``register`` along with its capability mode."""
+# Toolset groups selectable through RHINO_MCP_TOOLSETS.
+CORE = "core"
+BIM = "bim"
+FREEFORM = "freeform"
+GH = "gh"
+RENDER = "render"
+SCRIPTING = "scripting"
+DOCS = "docs"
+ADMIN = "admin"
+
+TOOLSET_GROUPS: tuple[str, ...] = (CORE, BIM, FREEFORM, GH, RENDER, SCRIPTING, DOCS, ADMIN)
+# Groups registered regardless of the toolset filter.
+ALWAYS_ON_GROUPS: frozenset[str] = frozenset({ADMIN})
+
+
+def _tool_specs() -> list[tuple[Mode, Callable[..., None], str]]:
+    """Lazy-import every tool module's ``register`` with its capability mode and toolset group."""
     from rhino_mcp.tools import (
         analysis,
         annotation,
@@ -73,60 +89,60 @@ def _tool_specs() -> list[tuple[Mode, object]]:
 
     return [
         # Core geometry (standalone + bridge)
-        (Mode.BOTH, geometry.register),
-        (Mode.BOTH, curves.register),
-        (Mode.BOTH, solids.register),
-        (Mode.BOTH, surfaces.register),
-        (Mode.BOTH, mesh.register),
-        (Mode.BOTH, transform.register),
-        (Mode.BOTH, composition.register),
-        (Mode.BOTH, annotation.register),
-        (Mode.BOTH, layers.register),
-        (Mode.BOTH, materials.register),
-        (Mode.BOTH, io.register),
-        (Mode.BOTH, analysis.register),
-        (Mode.BOTH, query.register),
-        (Mode.BOTH, document_config.register),
-        (Mode.BOTH, geometry_validation.register),
+        (Mode.BOTH, geometry.register, CORE),
+        (Mode.BOTH, curves.register, CORE),
+        (Mode.BOTH, solids.register, CORE),
+        (Mode.BOTH, surfaces.register, CORE),
+        (Mode.BOTH, mesh.register, CORE),
+        (Mode.BOTH, transform.register, CORE),
+        (Mode.BOTH, composition.register, CORE),
+        (Mode.BOTH, annotation.register, CORE),
+        (Mode.BOTH, layers.register, CORE),
+        (Mode.BOTH, materials.register, CORE),
+        (Mode.BOTH, io.register, CORE),
+        (Mode.BOTH, analysis.register, CORE),
+        (Mode.BOTH, query.register, CORE),
+        (Mode.BOTH, document_config.register, CORE),
+        (Mode.BOTH, geometry_validation.register, CORE),
         # Drawing / quantity / blocks / environment (v0.3)
-        (Mode.BOTH, drawing.register),
-        (Mode.BOTH, schedule.register),
-        (Mode.BOTH, blocks.register),
-        (Mode.BOTH, environment.register),
+        (Mode.BOTH, drawing.register, BIM),
+        (Mode.BOTH, schedule.register, BIM),
+        (Mode.BOTH, blocks.register, CORE),
+        (Mode.BOTH, environment.register, BIM),
         # BIM interchange / render automation (v0.3)
-        (Mode.BOTH, bim_io.register),
-        (Mode.BRIDGE, render.register),
+        (Mode.BOTH, bim_io.register, BIM),
+        (Mode.BRIDGE, render.register, RENDER),
         # Freeform / non-rectilinear architecture (v0.3)
-        (Mode.BOTH, ff_skin.register),
-        (Mode.BOTH, ff_paneling.register),
-        (Mode.BOTH, ff_curvature.register),
-        (Mode.BOTH, ff_fields.register),
+        (Mode.BOTH, ff_skin.register, FREEFORM),
+        (Mode.BOTH, ff_paneling.register, FREEFORM),
+        (Mode.BOTH, ff_curvature.register, FREEFORM),
+        (Mode.BOTH, ff_fields.register, FREEFORM),
         # Documentation (standalone + bridge)
-        (Mode.BOTH, rhinoscript_docs.register),
+        (Mode.BOTH, rhinoscript_docs.register, DOCS),
         # Bridge administration: multi-Rhino discovery and endpoint switch
-        (Mode.BOTH, bridge_admin.register),
+        (Mode.BOTH, bridge_admin.register, ADMIN),
         # Script execution (bridge only)
-        (Mode.BRIDGE, scripting.register),
+        (Mode.BRIDGE, scripting.register, SCRIPTING),
         # History (bridge only)
-        (Mode.BRIDGE, history.register),
+        (Mode.BRIDGE, history.register, CORE),
         # Batch operations (bridge only)
-        (Mode.BRIDGE, batch.register),
-        (Mode.BRIDGE, batch_call.register),
+        (Mode.BRIDGE, batch.register, SCRIPTING),
+        (Mode.BRIDGE, batch_call.register, SCRIPTING),
         # Advanced modeling (bridge only)
-        (Mode.BRIDGE, deformation.register),
-        (Mode.BRIDGE, nurbs.register),
-        (Mode.BRIDGE, subd.register),
-        (Mode.BRIDGE, surface_match.register),
-        (Mode.BRIDGE, extraction.register),
-        (Mode.BRIDGE, control_points.register),
-        (Mode.BRIDGE, paneling.register),
+        (Mode.BRIDGE, deformation.register, CORE),
+        (Mode.BRIDGE, nurbs.register, CORE),
+        (Mode.BRIDGE, subd.register, CORE),
+        (Mode.BRIDGE, surface_match.register, CORE),
+        (Mode.BRIDGE, extraction.register, CORE),
+        (Mode.BRIDGE, control_points.register, CORE),
+        (Mode.BRIDGE, paneling.register, BIM),
         # Display & Grasshopper (bridge only)
-        (Mode.BRIDGE, display.register),
-        (Mode.BRIDGE, components.register),
-        (Mode.BRIDGE, parameters.register),
-        (Mode.BRIDGE, canvas.register),
-        (Mode.BRIDGE, data_tree.register),
-        (Mode.BOTH, templates.register),
+        (Mode.BRIDGE, display.register, CORE),
+        (Mode.BRIDGE, components.register, GH),
+        (Mode.BRIDGE, parameters.register, GH),
+        (Mode.BRIDGE, canvas.register, GH),
+        (Mode.BRIDGE, data_tree.register, GH),
+        (Mode.BOTH, templates.register, GH),
     ]
 
 
@@ -147,10 +163,10 @@ def build_server(
     mcp = FastMCP(
         "rhino-mcp",
         instructions=(
-            "Drive McNeel Rhino 8 and Grasshopper through MCP. "
+            "Drive McNeel Rhino 8 / Rhino 9 and Grasshopper through MCP. "
             "Each tool returns structured JSON (object IDs, bounding boxes, etc.) "
             "and a short human-readable summary. Standalone mode uses rhino3dm "
-            "for headless 3DM I/O; bridge mode forwards calls to a live Rhino 8 "
+            "for headless 3DM I/O; bridge mode forwards calls to a live Rhino 8 or 9 "
             "session running the rhino-mcp.rhp C# plugin."
         ),
     )
@@ -158,15 +174,90 @@ def build_server(
     # Always register all tool modules so BRIDGE tools remain callable even when
     # the server starts in STANDALONE mode. Lazy bridge promotion in context.py
     # handles the mode transition at call time.
-    applied = register_tools(mcp, Mode.BRIDGE, _tool_specs())
-    prompts = _register_prompts(mcp)
+    selected = toolsets_from_env(TOOLSET_GROUPS)
+    applied = register_tools(
+        mcp,
+        Mode.BRIDGE,
+        _tool_specs(),
+        toolsets=selected,
+        always_groups=ALWAYS_ON_GROUPS,
+    )
     log.info(
-        "Registered %d tool modules and %d prompts (startup_mode=%s)",
+        "Toolsets: %s",
+        "all" if selected is None else ", ".join(sorted(selected | ALWAYS_ON_GROUPS)),
+    )
+    _install_bridge_retry(mcp)
+    prompts = _register_prompts(mcp)
+    from rhino_mcp.resources import register_resources
+
+    resources = register_resources(mcp)
+    log.info(
+        "Registered %d tool modules, %d prompts and %d resources (startup_mode=%s)",
         applied,
         prompts,
+        resources,
         runtime_mode.value,
     )
     return mcp, applied
+
+
+def _is_unsupported(exc: BaseException) -> bool:
+    from rhino_mcp.utils.error_handling import ErrorCategory, ToolError
+
+    return isinstance(exc, ToolError) and exc.category is ErrorCategory.UNSUPPORTED
+
+
+def _with_bridge_retry(fn: Callable[..., Any], is_async: bool) -> Callable[..., Any]:
+    """Wrap a tool so a standalone refusal re-detects the bridge and retries once.
+
+    Dual-mode tools pick their path from ``runtime().mode`` and raise an
+    ``unsupported`` ToolError when the standalone path cannot serve the
+    request. Without this wrapper they never re-detect the bridge, so a
+    plug-in loaded after server start-up stays unused until a bridge-only
+    tool happens to promote the runtime. Standalone paths raise that error
+    before touching the document, so the retry cannot apply a change twice.
+    """
+    import functools
+
+    from rhino_mcp.tools.context import runtime
+
+    if is_async:
+
+        @functools.wraps(fn)
+        async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
+            import anyio.to_thread
+
+            try:
+                return await fn(*args, **kwargs)
+            except Exception as exc:
+                if not _is_unsupported(exc):
+                    raise
+                if not await anyio.to_thread.run_sync(runtime().promote_for_bridge_only_operation):
+                    raise
+                log.info("Bridge became reachable; retrying %s on the bridge path", fn.__name__)
+                return await fn(*args, **kwargs)
+
+        return async_wrapper
+
+    @functools.wraps(fn)
+    def sync_wrapper(*args: Any, **kwargs: Any) -> Any:
+        try:
+            return fn(*args, **kwargs)
+        except Exception as exc:
+            if not _is_unsupported(exc):
+                raise
+            if not runtime().promote_for_bridge_only_operation():
+                raise
+            log.info("Bridge became reachable; retrying %s on the bridge path", fn.__name__)
+            return fn(*args, **kwargs)
+
+    return sync_wrapper
+
+
+def _install_bridge_retry(mcp: FastMCP) -> None:
+    """Apply :func:`_with_bridge_retry` to every registered tool."""
+    for tool in mcp._tool_manager._tools.values():
+        tool.fn = _with_bridge_retry(tool.fn, tool.is_async)
 
 
 def _register_prompts(mcp: FastMCP) -> int:
@@ -234,15 +325,25 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     subparsers = parser.add_subparsers(dest="command", metavar="<command>")
-    from rhino_mcp.install import add_install_subparser, run_install
+    from rhino_mcp.install import (
+        add_install_subparser,
+        add_uninstall_subparser,
+        run_install,
+        run_uninstall,
+    )
 
     add_install_subparser(subparsers)
+    add_uninstall_subparser(subparsers)
 
     args = parser.parse_args(argv)
 
     if args.command == "install":
         configure_logging()
         return run_install(args)
+
+    if args.command == "uninstall":
+        configure_logging()
+        return run_uninstall(args)
 
     configure_logging()
     transport_kind = resolve_transport(args.transport)

@@ -6,37 +6,169 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
-### Added — generic bridge call batching
+## [0.7.0] - 2026-11-09
 
-- **`rhino_batch_call`** MCP tool (bridge only) — wraps the existing
-  `rhino.batch.execute` route to dispatch N JSON-RPC steps in one
-  round-trip. Methods are gated to the `rhino.*` / `gh.*` namespaces;
-  `on_error` accepts `stop` (default) or `continue`; per-row results
-  carry `status`, `result` or `error`, and the originating method.
-  Closes the gap left by the `gh_connect_many` / `rhino_batch_modify`
-  precedents — those are typed for one operation, this one is generic.
+### Added — Rhino 9 support
 
-### Added — long-op progress notifications
+- **`RhinoMajor` MSBuild property** in `RhinoMCPPlugin.csproj` (default `9`).
+  `9` references RhinoCommon / Grasshopper `9.0.26300.9401`, `8` references
+  `8.36.26296.17001`. The target stays `net8.0` (Rhino 9 runs on .NET 10 and
+  loads `net8.0` plug-ins through roll-forward). Outputs go to `bin/rh8` and
+  `bin/rh9`; the `RHINO9` compile symbol is defined for Rhino 9 builds.
+- **Post-build copy** into `/Applications/Rhino N.app` (macOS) or
+  `%APPDATA%/McNeel/Rhinoceros/N.0/Plug-ins/rhino-mcp/` (Windows) only when
+  that Rhino install exists; `-p:SkipPluginCopy=true` disables the copy.
+- **`scripts/publish-yak.sh --rhino=8|9|both`** (default `both`) produces
+  separate `rh8` and `rh9` Yak distributions. CI and release workflows build
+  an 8 / 9 matrix.
+- **`ping` reports** `rhino_major`, `plugin_built_for` and the real
+  `bridge_version`. The Python client logs a warning when an rh8 build runs
+  inside Rhino 9 (or the reverse). The plug-in load message lists the newly
+  supported MCP clients.
+- **Coexistence with McNeel's RhinoMCP** (Rhino 9, `MCPStart` / `MCPConnect`,
+  HTTP port 10500): both can run side by side, since rhino-mcp binds 4242 and
+  upward. rhino-mcp differs by the standalone headless `rhino3dm` mode, the
+  domain tools (BIM, render, freeform, Grasshopper) and batch + progress.
 
-- **`IProgressSink`** + `ProgressSink` (C#) — handlers can call
-  `EmitProgress(progress, total, message)` from inside a UI-thread
-  dispatch to push a `rhino.progress` JSON-RPC notification onto the
-  client socket. Writes share the same `_writeLock` as `HeartbeatSender`
-  so notifications never tear an in-progress response line.
-- Wired into `BridgeBatchHandler` (per-step), `BimIoHandler.ExportIfc`
-  / `ImportIfc` (per-object iteration), and `ExtractionHandler.Make2D`
-  (selection phase). `RenderQueueHandler` deferred — its frame loop
-  already runs on a background worker outside the dispatch sink.
-- Python `BridgeClient._call_once` recognises the new `rhino.progress`
-  notification frame and surfaces its payload at DEBUG
-  (`RHINO_MCP_LOG_LEVEL=DEBUG`). Heartbeat frames keep their existing
-  silent-drain behaviour. FastMCP `Context.report_progress` integration
-  is a follow-up.
+### Added — rhino3dm 8.35
+
+- **`rhino3dm>=8.35,<9`** (lock 8.17.0 → 8.35.0). The 8.35 macOS wheels
+  require macOS 14 or newer. rhino3dm 8.35 reads Rhino 9 (archive version 90)
+  files.
+- **`rhino_annotation_dimension_style`** now works standalone (new `doc_id`).
+- **`rhino_cone`** / **`rhino_torus`** build exact revolved Breps (were meshes).
+- **`rhino_check_naked_edges`** now works standalone and also returns
+  `non_manifold_edge_indices`.
+- **`rhino_subd_inspect`** — new tool (standalone + bridge handler
+  `rhino.subd.inspect`).
+- **`tight` option** on `rhino_list_objects`, `rhino_object_info`,
+  `rhino_bounding_box` and `rhino_object_quantity`.
+  It defaults to `True` (exact box, matching bridge mode); `False` selects the faster control-hull box in standalone mode.
+- 3dm open errors now report `archive_version` with hints.
+
+### Added — multi-client installer
+
+- **`rhino-mcp install --client`** (repeatable): `claude-desktop` (default),
+  `claude-code`, `codex`, `antigravity`, `all`, `detected`. Also
+  `--list-clients [--json]` and the new **`rhino-mcp uninstall`**.
+- Targets: Claude Desktop (unchanged); Claude Code through
+  `claude mcp add-json --scope user` when the CLI exists, otherwise the
+  `mcpServers` map in `~/.claude.json` (honours `CLAUDE_CONFIG_DIR`); Codex
+  `$CODEX_HOME/config.toml` or `~/.codex/config.toml`
+  (`[mcp_servers.rhino-mcp]`, comments and other tables preserved);
+  Antigravity `~/.gemini/antigravity/mcp_config.json`. Previous configs are
+  backed up as `.bak.<timestamp>`.
+- **`_McpInstall`** (Rhino command) gained toggles for ClaudeDesktop /
+  ClaudeCode / Codex / Antigravity, All and Uninstall, with the initial state
+  taken from detection. It passes `--launcher` so configs receive an absolute
+  launcher path (`~/.local/bin`, `~/.cargo/bin`, `/opt/homebrew/bin` and
+  `/usr/local/bin` are probed as well).
+- Updating an existing entry (`--force`, always used by `_McpInstall`) merges instead of replacing.
+  User-added env keys (e.g. `RHINO_MCP_TOOLSETS`, `RHINO_MCP_LOG_LEVEL`) and extra keys such as Codex `startup_timeout_sec` survive; only `command`, `args`, `type`, `RHINO_MCP_TRANSPORT` and `RHINO_MCP_FORCE_MODE` are owned by the installer.
+- A failed Claude Code CLI update restores the previous entry, and `~/.claude.json` is backed up before any CLI change.
+- Backups taken within the same second get a numeric suffix instead of overwriting each other.
+- `--list-clients` reports unreadable configs as `error` instead of "not installed".
+- `_McpInstall` checks every launcher with `--version` and uses the first one serving at least the plug-in's version: uvx with `--from rhino3dm-mcp>=<plug-in version>`, then every `rhino-mcp` script found (a stale one early on PATH no longer hides a current one in `~/.local/bin`), then every `python -m rhino_mcp.server`.
+  Skipped launchers are printed with the reason; when none qualifies (e.g. before the release is on PyPI) it explains `uv tool install --force --from <checkout> rhino3dm-mcp` instead of failing inside uv's resolver.
+- `rhino-mcp install` registers `uvx --from rhino3dm-mcp>=<version> rhino3dm-mcp` so a cached older server is never started, uses uvx in auto mode only when PyPI serves that version, and otherwise points the entry at its own installation (`rhino-mcp` script next to the interpreter, or `python -m`).
+
+### Added — MCP protocol improvements
+
+- **Image content** — `rhino_screenshot`, `rhino_viewport_preview` and
+  `rhino_viewport_image` return MCP image content (`max_width=1024`,
+  `format=jpeg|png`, `jpeg_quality=80`, `include_image`). `as_base64` and
+  `mime` remain as deprecated aliases; `path` is now optional.
+  A capture that requested an image but produced none now fails with an error (older plug-in builds get an "update the plug-in" hint) instead of returning an empty success.
+  `transparent_bg=True` defaults the inline image to PNG; captures to an explicit `path` never delete the existing file when they fail.
+  The staging file keeps a `.png` extension when the target path has none.
+  Capture tools are annotated `readOnlyHint: false` because they can write a file at a caller-chosen path.
+- **`rhino_export_draco`** — new standalone export.
+- **`RHINO_MCP_TOOLSETS`** — comma-separated toolset filter. Groups: `core`,
+  `bim`, `freeform`, `gh`, `render`, `scripting`, `docs`; `admin` is always on;
+  unknown names log a warning; default is all. Group sizes (standalone-start
+  registration, admin tools included in none of them): core 160, bim 26,
+  freeform 11, gh 30, render 9, scripting 4, docs 4, admin 2.
+  The bridge-only viewport tools (`rhino_view_set`, zoom, named views, display mode, `rhino_viewport_image`) belong to `core`, not `render`.
+- **MCP resources** — `rhino://scene/summary`, `rhino://layers`,
+  `rhino://selection` and the template `rhinoscript://{function}`.
+  The scene summary has the same keys in standalone and bridge mode, and resources promote to the bridge lazily (except under `RHINO_MCP_FORCE_MODE=standalone`).
+- **Progress notifications** — bridge `rhino.progress` frames are forwarded as
+  MCP progress notifications (`ctx.report_progress`) for IFC
+  export and import, gbXML export, Make2D, `rhino_batch_call`, `rhino_render_to_file`,
+  `rhino_turntable_render` and `rhino_render_queue_submit` (these tools are
+  now async).
+  Progress values strictly increase as the MCP spec requires; message-only frames are nudged just above the previous value.
+- **Tool annotations** (read-only / destructive hints) are covered by a new
+  regression test.
+
+### Added — generic bridge call batching and long-op progress (carried from Unreleased)
+
+- **`rhino_batch_call`** (bridge only) wraps `rhino.batch.execute` to dispatch
+  N JSON-RPC steps in one round-trip. Methods are gated to the `rhino.*` /
+  `gh.*` namespaces; `on_error` accepts `stop` (default) or `continue`.
+- **`IProgressSink`** + `ProgressSink` (C#) let handlers call
+  `EmitProgress(progress, total, message)` to push `rhino.progress`
+  notifications; wired into `BridgeBatchHandler`, `BimIoHandler.ExportIfc` /
+  `ImportIfc` and `ExtractionHandler.Make2D`.
+
+### Fixed
+
+- Curve length was 0 and `rhino_object_info` crashed because rhino3dm lacks
+  `Curve.GetLength`; length is now integrated numerically.
+- `Interval` `Min` / `Max` replaced with `T0` / `T1`.
+- Layer name normalisation no longer creates duplicate layers.
+- Standalone `rhino_layer_list` crashed on `IsLocked`.
+- Standalone `rhino_annotation_dimension_style` trims the name, rejects blanks, detects duplicates case-insensitively and verifies the table actually grew.
+- Curve length measures degree-1 spans by endpoint distance and uses `degree + 1` quadrature pieces per span elsewhere (a 2000-point polyline went from 88 ms to 1.3 ms; relative error stays below 1e-10).
+- Dual-mode tools (`rhino_import` of non-3DM files, `rhino_export_step` / `_iges`, Brep `rhino_area` / `rhino_volume`, …) re-detect the bridge when their standalone path refuses a request and retry once on the bridge.
+  Before, loading the plug-in after server start-up left them failing with "requires Rhino bridge mode" until a bridge-only tool happened to promote the server.
+  The re-detection honours `RHINO_MCP_REDETECT_COOLDOWN` and is skipped under `RHINO_MCP_FORCE_MODE=standalone`; every standalone path raises before touching the document, so the retry cannot apply a change twice.
+- The `rhino_execute_csharp` gate message now says to set `RHINO_MCP_ALLOW_CSHARP=1` in the rhino-mcp server environment, which is where it is read; it used to point at the Rhino process.
+- Connection-error hints no longer tell users to check a named pipe or Unix socket; the plug-in listens on TCP only.
+- `examples/batch_geometry.py` used `Box.ToBrep` and `Objects.Count`, which rhino3dm does not provide; it now uses `Brep.CreateFromBox` and `len()`.
 
 ### Changed
 
-- Tool count: 244 → 245 (+1; bridge only).
-- Test count: 287 → 295 (+8: 5 batch_call + 3 progress drain).
+- Tool count: 244 → 247 bridge-mode, 246 standalone-start (+3:
+  `rhino_batch_call`, `rhino_subd_inspect`, `rhino_export_draco`).
+- Test count: 287 → 441 (+154).
+- `pyproject.toml` description now reads "Rhino 8 / Rhino 9 and Grasshopper".
+- `scripts/build-plugin.sh` gained `--rhino=8|9|both` and `--no-install`, and follows the per-major `bin/rh<N>/` output and install paths.
+- `scripts/run.sh` gained `--toolsets LIST`; `check-bridge.sh` prints the running and built-for Rhino majors and warns on a mismatch.
+- `scripts/ci.sh` and `build.sh` now match the GitHub workflow: `ruff format --check` is opt-in (`--format-check`), mypy is informational, and the C# plug-in is built for Rhino 8 and 9 when `dotnet` exists.
+- Troubleshooting (en / ko) rewritten for Rhino 8 / 9, the TCP-only plug-in, multi-client installs, the Rhino major warning, the `_McpInstall` version floor, Rhino 9 3dm files and McNeel RhinoMCP.
+  Docs, READMEs, examples and user-facing messages say "Rhino 8 / 9" instead of "Rhino 8".
+
+### 변경/추가 (한글 요약)
+
+- **Rhino 9 지원** — csproj `RhinoMajor` 속성(기본 9), net8.0 유지,
+  `bin/rh8` / `bin/rh9` 출력, `RHINO9` 정의, `-p:SkipPluginCopy=true`.
+  `publish-yak.sh --rhino=8|9|both`, CI / 릴리스 8·9 매트릭스.
+- **ping 확장** — `rhino_major`, `plugin_built_for`, 실제 `bridge_version` 보고.
+  빌드와 실행 Rhino 메이저 불일치 시 경고.
+- **McNeel RhinoMCP 공존** — HTTP 10500 대 rhino-mcp 4242+ 포트 분리.
+- **rhino3dm 8.35 이상** — 락 8.17.0 → 8.35.0, macOS 14 이상 필요,
+  Rhino 9(archive 90) 파일 읽기 확인.
+- **standalone 확장** — `rhino_annotation_dimension_style`, `rhino_check_naked_edges`
+  (+ `non_manifold_edge_indices`), `rhino_subd_inspect` 신규, `rhino_cone` /
+  `rhino_torus` 정확한 회전 Brep, 개체 조회 4종 `tight` 옵션.
+- **멀티 클라이언트 설치** — `rhino-mcp install --client`
+  (claude-desktop / claude-code / codex / antigravity / all / detected),
+  `--list-clients`, `rhino-mcp uninstall`, `_McpInstall` 클라이언트 토글.
+- **MCP 프로토콜** — 캡처 도구 이미지 콘텐츠 반환, `rhino_export_draco` 신규,
+  `RHINO_MCP_TOOLSETS` 도구 그룹 필터, MCP 리소스 4종, 진행률 알림 전달.
+- **설치 갱신 시 병합** — `--force` 갱신에서 사용자가 추가한 env 키·Codex 타임아웃 키 보존, Claude Code CLI 갱신 실패 시 이전 항목 복원, 같은 초 백업 덮어쓰기 방지.
+- **캡처 실패 노출** — 이미지 요청 후 이미지가 없으면 오류 반환(구버전 플러그인은 갱신 안내), `transparent_bg` 는 PNG 인라인 기본.
+- **수정** — 곡선 길이 0 / object_info 크래시, Interval 속성명, 레이어 이름
+  중복 생성, standalone 레이어 목록 `IsLocked` 크래시.
+- **리뷰 반영** — `tight` 기본값 정확 박스, 캡처 도구 `readOnlyHint: false`, 뷰포트 도구 `core` 그룹 편입, 진행률 값 단조 증가, 치수 스타일 이름 정규화, 곡선 길이 1차 고속 경로.
+- **스크립트 최신화** — `build-plugin.sh --rhino=8|9|both --no-install`, `run.sh --toolsets`, `check-bridge.sh` 메이저 불일치 경고, `ci.sh`·`build.sh` 를 GitHub CI 기준(format 검사 선택, mypy 참고용, 플러그인 rh8·rh9 빌드)으로 정렬.
+- **문서 최신화** — troubleshooting 전면 개정(TCP 전용 플러그인, 다중 클라이언트, 메이저 불일치, 설치기 버전 하한, Rhino 9 3dm, McNeel RhinoMCP), 문서·예제·메시지의 "Rhino 8" 단독 표기를 "Rhino 8 / 9" 로 정리.
+- **양모드 도구 브리지 재탐색** — standalone 경로가 거절한 요청은 브리지를 재탐색해 1회 재실행. 서버 기동 뒤 플러그인을 로드해도 "requires Rhino bridge mode" 가 계속되던 결함 수정. cooldown 준수, `FORCE_MODE=standalone` 에서는 미실행.
+- **수정** — `RHINO_MCP_ALLOW_CSHARP` 안내를 실제로 읽는 서버 환경 기준으로 정정, 연결 오류 힌트의 pipe·socket 안내 제거, `examples/batch_geometry.py` 의 rhino3dm 미지원 API 교체.
+- **`_McpInstall` 런처 버전 확인** — 런처마다 `--version` 검사 후 플러그인 버전 이상인 첫 런처 사용, PATH 앞쪽의 낡은 스크립트가 `~/.local/bin` 의 최신본을 가리지 않음. 만족하는 런처가 없으면 사유와 `uv tool install --from <체크아웃>` 안내.
+- **설치 항목 버전 고정** — uvx 항목에 `--from rhino3dm-mcp>=<버전>` 기록, 자동 모드에서는 PyPI 가 그 버전을 제공할 때만 uvx 사용, 아니면 실행 중인 설치본을 가리킴.
+- **도구 수** 244 → 247(브리지), 246(standalone 기동). **테스트** 287 → **441개** (+154).
 
 ## [0.6.0] - 2026-05-16
 

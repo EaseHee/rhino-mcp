@@ -67,7 +67,7 @@ def test_mesh_health_open_mesh(server_standalone) -> None:
     assert s["face_count"] > 0
 
 
-def test_naked_edges_unsupported_in_standalone(server_standalone) -> None:
+def test_naked_edges_registered(server_standalone) -> None:
     _mcp, tools = server_standalone
-    # Tool is registered (lazy promotion), but raises at call time in standalone.
+    # Standalone path is covered in test_rhino3dm_835_paths.py.
     assert "rhino_check_naked_edges" in tools

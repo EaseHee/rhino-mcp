@@ -5,7 +5,7 @@ using RhinoMcp.Bridge;
 namespace RhinoMcp
 {
     /// <summary>
-    /// Rhino 8 native plugin that auto-starts a JSON-RPC 2.0 TCP bridge on load.
+    /// Rhino 8 / 9 native plugin that auto-starts a JSON-RPC 2.0 TCP bridge on load.
     /// The MCP server (<c>rhino-mcp</c>) connects to this bridge to forward tool calls.
     /// </summary>
     public class Plugin : PlugIn
@@ -17,11 +17,20 @@ namespace RhinoMcp
             Instance = this;
         }
 
+        /// <summary>Rhino major version this assembly was compiled against (RhinoMajor MSBuild property).</summary>
+#if RHINO9
+        public const int BuiltForRhinoMajor = 9;
+#else
+        public const int BuiltForRhinoMajor = 8;
+#endif
+
         public override PlugInLoadTime LoadTime => PlugInLoadTime.AtStartup;
 
         protected override LoadReturnCode OnLoad(ref string errorMessage)
         {
-            RhinoApp.WriteLine("[rhino-mcp] Plugin loaded. Type \"_McpInstall\" to configure Claude Desktop integration.");
+            RhinoApp.WriteLine("[rhino-mcp] Plugin loaded. Type \"_McpInstall\" to register rhino-mcp with Claude Desktop, Claude Code, Codex or Antigravity.");
+            if (RhinoApp.ExeVersion != BuiltForRhinoMajor)
+                RhinoApp.WriteLine($"[rhino-mcp] Note: this build targets Rhino {BuiltForRhinoMajor} but is running in Rhino {RhinoApp.ExeVersion}. Install the rh{RhinoApp.ExeVersion} package from the Package Manager for full compatibility.");
 
             var port = ResolvePort();
             var host = Environment.GetEnvironmentVariable("RHINO_HOST") ?? "127.0.0.1";

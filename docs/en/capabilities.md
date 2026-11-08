@@ -11,15 +11,15 @@ It cannot perform:
 - Viewport interaction (named views, display modes, zoom-extents, render).
 - Grasshopper.
 
-For those, the bridge plugin running inside Rhino 8 is required.
+For those, the bridge plugin running inside Rhino 8 or Rhino 9 is required.
 The capability matrix below summarises this.
 
-| Tool                                | Standalone (rhino3dm) | Bridge (Rhino 8 + RhinoCommon/Grasshopper) |
+| Tool                                | Standalone (rhino3dm) | Bridge (Rhino 8 / 9 + RhinoCommon/Grasshopper) |
 |-------------------------------------|:---------------------:|:------------------------------------------:|
 | `rhino_point` … `rhino_rebuild_curve` | ✓ | ✓ |
 | `rhino_curve_length/point_at/split` | ✓ | ✓ |
 | `rhino_box`, `rhino_sphere`, `rhino_cylinder` (Z-axis) | ✓ | ✓ |
-| `rhino_cone`, `rhino_torus` | ✓ (mesh) | ✓ (Brep) |
+| `rhino_cone`, `rhino_torus` (exact revolved Brep, v0.7) | ✓ (Brep) | ✓ (Brep) |
 | `rhino_boolean_union/difference/intersection` | ✗ | ✓ |
 | `rhino_shell`, `rhino_cap_holes` | ✗ | ✓ |
 | `rhino_plane_surface` … `rhino_offset_surface` (11 surface tools) | ✗ | ✓ |
@@ -50,6 +50,7 @@ The capability matrix below summarises this.
 | `rhino_bend`, `rhino_twist`, `rhino_taper`, `rhino_flow_along_curve` (deformation) | ✗ | ✓ |
 | `rhino_rebuild_surface`, `rhino_unroll`, `rhino_surface_from_points` + 2 more (NURBS) | ✗ | ✓ |
 | `rhino_create_subd`, `rhino_subd_to_nurbs` (SubD) | ✗ | ✓ |
+| `rhino_subd_inspect` (SubD inspection, v0.7) | ✓ | ✓ |
 | `rhino_match_surface`, `rhino_blend_surface_edges`, `rhino_merge_surfaces` (srf match) | ✗ | ✓ |
 | `rhino_dup_edge`, `rhino_dup_border`, `rhino_isocurve`, `rhino_make2d` (extraction) | ✗ | ✓ |
 | `rhino_get_control_points`, `rhino_set_control_points` (control points) | ✗ | ✓ |
@@ -57,7 +58,7 @@ The capability matrix below summarises this.
 | `rhino_place_grid`, `rhino_stack_floors`, `rhino_scatter`, `rhino_replicate_along_curve` (composition, v0.2) | ✓ | ✓ |
 | `rhino_document_units_get/set`, `rhino_tolerance_get/set`, `rhino_origin_set`, `rhino_document_settings` (document hygiene, v0.2) | ✓ | ✓ |
 | `rhino_validate_brep`, `rhino_report_mesh_health`, `rhino_curve_continuity` (validation, v0.2) | ✓ | ✓ |
-| `rhino_check_naked_edges` (naked-edge enumeration, v0.2) | ✗ | ✓ |
+| `rhino_check_naked_edges` (naked-edge enumeration, v0.2; standalone + `non_manifold_edge_indices`, v0.7) | ✓ | ✓ |
 | `gh_template_list` (catalogue, v0.2) | ✓ | ✓ |
 | `gh_load_template`, `gh_bind_template_parameter`, `gh_run_template` (v0.2) | ✗ | ✓ |
 | `rhino_skin_from_sections`, `rhino_section_at_axis(u/v)` (freeform skin, v0.2) | ✓ | ✓ |
@@ -72,7 +73,7 @@ The capability matrix below summarises this.
 | `rhino_sun_position`, `rhino_sun_path`, `rhino_shadow_project` (environment, v0.3) | ✓ | ✓ |
 | `rhino_solar_exposure_estimate` (ray-cast, v0.3) | ✗ | ✓ |
 | `rhino_annotation_north_arrow/scale_bar/revision_cloud/callout` (annotation, v0.3) | ✓ | ✓ |
-| `rhino_annotation_dimension_style` (DimStyle table, v0.3) | ✗ | ✓ |
+| `rhino_annotation_dimension_style` (DimStyle table, v0.3; standalone with `doc_id`, v0.7) | ✓ | ✓ |
 | `rhino_bim_metadata_set` (IFC entity + Pset tagging, v0.3) | ✓ | ✓ |
 | `rhino_export_ifc`, `rhino_import_ifc`, `rhino_export_gbxml` (BIM I/O, v0.3) | ✗ | ✓ |
 | `rhino_material_preset_list`, `rhino_material_preset_create` (presets, v0.3) | ✓ | ✓ |
@@ -88,5 +89,10 @@ The capability matrix below summarises this.
 | `gh_connect_many`, `gh_place_slider` (GH parity, v0.6) | ✗ | ✓ |
 | `rhino_layer_set_material`, `rhino_probe_intersection`, `rhino_zoom_object`, `rhino_zoom_layer`, `rhino_viewport_image` (UX boost, v0.6) | ✗ | ✓ |
 | `rhino_batch_call` (generic N-method bridge dispatch in one round-trip, v0.6.1) | ✗ | ✓ |
+| `rhino_export_draco` (Draco-compressed export, v0.7) | ✓ | ✗ |
+| `tight` option on `rhino_list_objects`, `rhino_object_info`, `rhino_bounding_box`, `rhino_object_quantity` (v0.7) | ✓ | ✓ |
+| `rhino_screenshot`, `rhino_viewport_preview`, `rhino_viewport_image` return MCP image content (`max_width`, `format`, `jpeg_quality`, `include_image`; v0.7) | ✗ | ✓ |
+| MCP resources `rhino://scene/summary`, `rhino://layers`, `rhino://selection` (bridge only), `rhinoscript://{function}` (v0.7) | ✓ | ✓ |
+| `RHINO_MCP_TOOLSETS` group filter (core / bim / freeform / gh / render / scripting / docs; v0.7) | ✓ | ✓ |
 
-In numbers: ~242 standalone tools, ~245 with the C# bridge.
+In numbers: 246 tools registered at standalone start, 247 with the C# bridge (v0.7.0).

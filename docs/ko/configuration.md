@@ -61,6 +61,15 @@ C# 플러그인 로드 시 process 단위 announcement 파일(`{pid}-{port}.json
 `rhino_bridge_list_instances`로 발견, `rhino_bridge_select_instance`로
 활성 엔드포인트 전환.
 
+### 도구 그룹 선택(v0.7)
+
+| 변수                  | 기본값  | 비고 |
+|-----------------------|---------|------|
+| `RHINO_MCP_TOOLSETS`  | _(전체)_ | 등록할 도구 그룹(쉼표 구분): `core`, `bim`, `freeform`, `gh`, `render`, `scripting`, `docs`. `admin` 그룹(`rhino_bridge_list_instances`, `rhino_bridge_select_instance`)은 항상 활성. 알 수 없는 이름은 경고 로그 후 무시. |
+
+그룹별 도구 수(standalone 기동 등록 기준): core 160, bim 26, freeform 11, gh 30, render 9, scripting 4, docs 4, admin 2 (합계 246).
+예: `RHINO_MCP_TOOLSETS=core,docs` → core + docs + admin 만 등록, 도구 예산이 작은 클라이언트에서 목록 축소.
+
 ## 전송 결정 로직
 
 1. `--transport` / `RHINO_MCP_TRANSPORT`로 **MCP 전송**(stdio vs HTTP)을 결정.

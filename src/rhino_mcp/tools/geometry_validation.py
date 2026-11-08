@@ -1,9 +1,10 @@
 """Geometry validation tools — surface the topology issues that silently
 break booleans, exports, and fabrication.
 
-In standalone mode the rhino3dm API only exposes high-level flags
-(``IsValid`` / ``IsSolid`` / ``IsManifold`` / ``IsClosed``); naked-edge
-enumeration and self-intersection scans require RhinoCommon (bridge).
+In standalone mode the rhino3dm API exposes high-level flags
+(``IsValid`` / ``IsSolid`` / ``IsManifold`` / ``IsClosed``) plus Brep
+face/loop/trim topology (8.32+), from which naked edges are derived;
+self-intersection scans still require RhinoCommon (bridge).
 The tools here surface what is available in each mode and route the
 deeper checks through the bridge transparently.
 """
@@ -15,7 +16,7 @@ from typing import Any
 import rhino3dm as r3
 from pydantic import BaseModel, Field
 
-from rhino_mcp.tools._helpers import bridge_call, doc, require_bridge_only
+from rhino_mcp.tools._helpers import bridge_call, curve_length, doc
 from rhino_mcp.tools.context import runtime
 from rhino_mcp.utils.error_handling import not_found_error, parameter_error
 from rhino_mcp.utils.registry import Mode
@@ -46,6 +47,23 @@ def _issue(severity: str, description: str, *, hint: str | None = None) -> dict[
     return payload
 
 
+def edge_valence(brep: Any) -> list[int]:
+    """Return, per Brep edge, how many trims reference it (1 = naked, 2 = interior).
+
+    rhino3dm has no ``BrepEdge.Valence`` / ``TrimIndices``; the count is built
+    from ``BrepFace.Loops -> BrepLoop.Trims -> BrepTrim.EdgeIndex``. Singular
+    trims (cone apex) carry ``EdgeIndex == -1`` and are skipped.
+    """
+    counts = [0] * len(brep.Edges)
+    for fi in range(len(brep.Faces)):
+        for loop in brep.Faces[fi].Loops:
+            for trim in loop.Trims:
+                ei = trim.EdgeIndex
+                if 0 <= ei < len(counts):
+                    counts[ei] += 1
+    return counts
+
+
 def register(mcp, mode: Mode) -> None:  # type: ignore[no-untyped-def]
     @mcp.tool(annotations={"title": "Validate Brep", "readOnlyHint": True})
     def rhino_validate_brep(args: _ObjectIn) -> dict[str, Any]:
@@ -71,7 +89,7 @@ def register(mcp, mode: Mode) -> None:  # type: ignore[no-untyped-def]
             issues.append(_issue(
                 "warning",
                 "Brep is not closed (open shell)",
-                hint="Use rhino_check_naked_edges (bridge) to locate gaps; cap_holes or join may close it.",
+                hint="Use rhino_check_naked_edges to locate gaps; cap_holes or join may close it.",
             ))
         if not geom.IsManifold:
             issues.append(_issue(
@@ -171,16 +189,34 @@ def register(mcp, mode: Mode) -> None:  # type: ignore[no-untyped-def]
             ),
         }
 
-    if mode is Mode.STANDALONE:
-        return  # bridge-only validation tools below
-
-    @mcp.tool(annotations={"title": "Naked Edges (bridge)", "readOnlyHint": True})
+    @mcp.tool(annotations={"title": "Naked Edges", "readOnlyHint": True})
     def rhino_check_naked_edges(args: _ObjectIn) -> dict[str, Any]:
-        """Enumerate naked edges of a Brep with their lengths (bridge only).
+        """Enumerate naked (boundary) edges of a Brep with their lengths.
 
-        Standalone rhino3dm cannot enumerate naked edges. In bridge mode this
-        forwards to ``Rhino.Geometry.Brep.GetNakedEdges`` and returns
-        ``[{edge_index, length}, ...]`` plus the gap count.
+        Returns ``[{edge_index, length}, ...]`` plus the gap count. Standalone
+        derives edge valence from Brep trims (an edge referenced by exactly
+        one trim is naked) and also reports non-manifold edges (3+ trims).
+        Bridge mode forwards to RhinoCommon ``BrepEdge.Valence``.
         """
-        require_bridge_only("rhino_check_naked_edges")
-        return bridge_call("rhino.validation.naked_edges", args.model_dump())
+        if runtime().mode is Mode.BRIDGE:
+            return bridge_call("rhino.validation.naked_edges", args.model_dump())
+        h = doc(args.doc_id)
+        geom: Any = _find_obj(h, args.object_id).Geometry
+        if not isinstance(geom, r3.Brep):
+            raise parameter_error("object_id", "must reference a Brep")
+        valence = edge_valence(geom)
+        edges = [
+            {"edge_index": i, "length": curve_length(geom.Edges[i])}  # type: ignore[index]
+            for i, n in enumerate(valence)
+            if n == 1
+        ]
+        non_manifold = [i for i, n in enumerate(valence) if n > 2]
+        return {
+            "summary": {
+                "object_id": args.object_id,
+                "naked_edge_count": len(edges),
+                "edges": edges,
+                "non_manifold_edge_indices": non_manifold,
+            },
+            "text": f"Brep {args.object_id}: {len(edges)} naked edge(s)",
+        }

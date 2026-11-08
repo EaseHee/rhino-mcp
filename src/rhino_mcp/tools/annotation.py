@@ -25,12 +25,11 @@ from rhino_mcp.tools._helpers import (
     bridge_call,
     doc,
     object_summary,
-    require_bridge_only,
     text_for,
     to_point,
 )
 from rhino_mcp.tools.context import runtime
-from rhino_mcp.utils.error_handling import unsupported_in_standalone
+from rhino_mcp.utils.error_handling import parameter_error, unsupported_in_standalone
 from rhino_mcp.utils.registry import Mode
 
 
@@ -113,6 +112,10 @@ class _CalloutIn(_DocArg):
 
 
 class _DimensionStyleIn(BaseModel):
+    doc_id: str = Field(
+        "active",
+        description="Document handle id; 'active' targets the current document.",
+    )
     name: str = Field(..., min_length=1)
     font: str = Field("Arial")
     text_height: Annotated[float, Field(gt=0)] = 2.5
@@ -350,6 +353,53 @@ def register(mcp, mode: Mode) -> None:  # type: ignore[no-untyped-def]
             "text": f"Callout placed ({args.style})",
         }
 
+    @mcp.tool(annotations={"title": "Create Dimension Style", "readOnlyHint": False})
+    def rhino_annotation_dimension_style(args: _DimensionStyleIn) -> dict[str, Any]:
+        """Register a reusable dimension style in the document's DimStyle table.
+
+        Standalone writes a ``rhino3dm.DimensionStyle`` (name, font, text
+        height, arrow length) into the 3dm DimStyle table. ``color`` is only
+        honoured by bridge mode; rhino3dm's DimensionStyle has no text colour.
+        """
+        if runtime().mode is Mode.BRIDGE:
+            return bridge_call("rhino.annotation.dim_style_create", args.model_dump())
+        h = doc(args.doc_id)
+        table: Any = h.file3dm.DimStyles
+        # rhino3dm trims names and treats them case-insensitively, renaming a clash
+        # to "<name> 02"; check the same way so a duplicate is rejected, not renamed.
+        name = args.name.strip()
+        if not name:
+            raise parameter_error("name", "dimension style name must not be blank")
+        for i in range(len(table)):
+            if str(table[i].Name).strip().casefold() == name.casefold():
+                raise parameter_error("name", f"dimension style '{name}' already exists")
+        ds: Any = r3.DimensionStyle()
+        ds.Name = name
+        ds.Font = r3.Font(args.font)  # type: ignore[call-arg]
+        ds.TextHeight = args.text_height
+        ds.ArrowLength = args.arrow_size
+        # File3dmDimStyleTable.Add returns None; the new entry is appended last.
+        before = len(table)
+        table.Add(ds)
+        if len(table) != before + 1:
+            raise RuntimeError(f"rhino3dm rejected dimension style '{name}'")
+        idx = len(table) - 1
+        added = table[idx]
+        if added.Name != name:
+            raise RuntimeError(f"rhino3dm stored dimension style '{name}' as '{added.Name}'")
+        return {
+            "summary": {
+                "doc_id": h.doc_id,
+                "index": idx,
+                "name": added.Name,
+                "id": str(added.Id),
+                "font": args.font,
+                "text_height": added.TextHeight,
+                "arrow_size": added.ArrowLength,
+            },
+            "text": f"Dimension style '{added.Name}' created at index {idx}",
+        }
+
     if mode is Mode.STANDALONE:
         return  # bridge-only annotation tools below
 
@@ -394,9 +444,3 @@ def register(mcp, mode: Mode) -> None:  # type: ignore[no-untyped-def]
         if runtime().mode is Mode.STANDALONE:
             raise unsupported_in_standalone("rhino_clipping_plane")
         return runtime().require_bridge().call("rhino.annotation.clipping_plane", args.model_dump())
-
-    @mcp.tool(annotations={"title": "Create Dimension Style", "readOnlyHint": False})
-    def rhino_annotation_dimension_style(args: _DimensionStyleIn) -> dict[str, Any]:
-        """Register a reusable dimension style (bridge only — Rhino DimStyle table)."""
-        require_bridge_only("rhino_annotation_dimension_style")
-        return bridge_call("rhino.annotation.dim_style_create", args.model_dump())

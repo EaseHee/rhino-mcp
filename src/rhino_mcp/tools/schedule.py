@@ -18,7 +18,7 @@ from typing import Any
 import rhino3dm as r3
 from pydantic import BaseModel, Field
 
-from rhino_mcp.tools._helpers import MAX_OBJECT_IDS, bridge_call, doc
+from rhino_mcp.tools._helpers import MAX_OBJECT_IDS, bridge_call, curve_length, doc
 from rhino_mcp.tools.context import runtime
 from rhino_mcp.utils.error_handling import not_found_error, parameter_error
 from rhino_mcp.utils.registry import Mode
@@ -67,6 +67,13 @@ class _ObjectQuantityIn(_DocArg):
     fields: list[str] = Field(
         default_factory=lambda: ["area", "volume", "length", "centroid", "bbox"],
         description="Per-object measurements to include.",
+    )
+    tight: bool = Field(
+        True,
+        description=(
+            "Exact bounding box (default; bridge mode always returns the exact box). "
+            "False uses the faster but looser control-hull box in standalone mode."
+        ),
     )
 
 
@@ -142,7 +149,7 @@ def _tet_signed(a: Any, b: Any, c: Any) -> float:
 def _measure_geom_length(geom: Any) -> float:
     if isinstance(geom, r3.Curve):
         try:
-            return float(geom.GetLength())
+            return float(curve_length(geom))
         except Exception:  # pragma: no cover - rhino3dm version safety
             return 0.0
     return 0.0
@@ -303,13 +310,13 @@ def register(mcp, mode: Mode) -> None:  # type: ignore[no-untyped-def]
             if "length" in args.fields:
                 entry["length"] = round(_measure_geom_length(geom), 6)
             if "centroid" in args.fields:
-                bb = geom.GetBoundingBox()
+                bb = geom.GetTightBoundingBox() if args.tight else geom.GetBoundingBox()
                 cx = 0.5 * (bb.Min.X + bb.Max.X)
                 cy = 0.5 * (bb.Min.Y + bb.Max.Y)
                 cz = 0.5 * (bb.Min.Z + bb.Max.Z)
                 entry["centroid"] = {"x": cx, "y": cy, "z": cz}
             if "bbox" in args.fields:
-                bb = geom.GetBoundingBox()
+                bb = geom.GetTightBoundingBox() if args.tight else geom.GetBoundingBox()
                 entry["bbox"] = {
                     "min": {"x": bb.Min.X, "y": bb.Min.Y, "z": bb.Min.Z},
                     "max": {"x": bb.Max.X, "y": bb.Max.Y, "z": bb.Max.Z},

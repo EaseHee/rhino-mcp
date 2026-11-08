@@ -142,7 +142,8 @@ def register(mcp: Any, mode: Mode) -> None:
             raise parameter_error(
                 "RHINO_MCP_ALLOW_CSHARP",
                 "C# execution is disabled. Set RHINO_MCP_ALLOW_CSHARP=1 in the "
-                "Rhino process environment to enable this tool. Audit the "
+                "rhino-mcp server environment (the env block of the MCP client "
+                "config) and restart the server to enable this tool. Audit the "
                 "request first — Roslyn scripts have full RhinoCommon access.",
             )
         # Audit trail: the request id propagates from the MCP transport; the
