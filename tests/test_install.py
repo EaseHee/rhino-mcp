@@ -347,7 +347,8 @@ def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 def _paths(h: Path) -> dict[str, Path]:
     return {
-        "claude-desktop": h / "Library" / "Application Support" / "Claude" / "claude_desktop_config.json",
+        # Platform-dependent; the fixture's HOME / APPDATA keep it under ``h``.
+        "claude-desktop": default_config_path(),
         "claude-code": h / ".claude.json",
         "codex": h / ".codex" / "config.toml",
         "antigravity": h / ".gemini" / "antigravity" / "mcp_config.json",
