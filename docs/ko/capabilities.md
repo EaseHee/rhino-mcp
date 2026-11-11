@@ -94,4 +94,4 @@
 | MCP 리소스 `rhino://scene/summary`, `rhino://layers`, `rhino://selection`(브리지 전용), `rhinoscript://{function}` (v0.7) | ✓ | ✓ |
 | `RHINO_MCP_TOOLSETS` 그룹 필터 (core / bim / freeform / gh / render / scripting / docs; v0.7) | ✓ | ✓ |
 
-요약: standalone 기동 시 246개 등록, C# 브리지 활성 시 247개 (v0.7.1).
+요약: standalone 기동 시 246개 등록, C# 브리지 활성 시 247개 (v0.7.2).

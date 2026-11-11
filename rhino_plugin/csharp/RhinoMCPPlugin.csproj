@@ -26,15 +26,35 @@
     <DeveloperName>EaseHee</DeveloperName>
     <DeveloperEmail>26100044@snut.ac.kr</DeveloperEmail>
     <DeveloperCountry>South Korea</DeveloperCountry>
+    <!-- No public postal address or phone; "-" is the placeholder McNeel's own ConstraintsUI ships with. -->
+    <DeveloperAddress>-</DeveloperAddress>
+    <DeveloperPhone>-</DeveloperPhone>
     <RepositoryUrl>https://github.com/EaseHee/rhino-mcp</RepositoryUrl>
   </PropertyGroup>
 
-  <!-- Rhino 9 refuses to install a plug-in without developer contact fields. -->
+  <!--
+    The seven fields RhinoCore has load checks for ("Unable to load %s plug-in:
+    developer ... not specified"); McNeel's own plug-ins declare the same set.
+    Fax has no check. Rhino's plug-in error dialog shows "The developer did not
+    include any contact details" when it has no field to list, including load
+    failures that stop before the attributes are read; that text accompanies a
+    load failure, it is not the cause.
+  -->
   <ItemGroup>
     <AssemblyAttribute Include="Rhino.PlugIns.PlugInDescriptionAttribute">
       <_Parameter1>Rhino.PlugIns.DescriptionType.Organization</_Parameter1>
       <_Parameter1_IsLiteral>true</_Parameter1_IsLiteral>
       <_Parameter2>$(DeveloperName)</_Parameter2>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="Rhino.PlugIns.PlugInDescriptionAttribute">
+      <_Parameter1>Rhino.PlugIns.DescriptionType.Address</_Parameter1>
+      <_Parameter1_IsLiteral>true</_Parameter1_IsLiteral>
+      <_Parameter2>$(DeveloperAddress)</_Parameter2>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="Rhino.PlugIns.PlugInDescriptionAttribute">
+      <_Parameter1>Rhino.PlugIns.DescriptionType.Phone</_Parameter1>
+      <_Parameter1_IsLiteral>true</_Parameter1_IsLiteral>
+      <_Parameter2>$(DeveloperPhone)</_Parameter2>
     </AssemblyAttribute>
     <AssemblyAttribute Include="Rhino.PlugIns.PlugInDescriptionAttribute">
       <_Parameter1>Rhino.PlugIns.DescriptionType.Email</_Parameter1>
@@ -65,7 +85,7 @@
     <NoWarn>NU1701</NoWarn>
     <Title>rhino-mcp</Title>
     <Description>rhino-mcp plugin for Rhino 8 and Rhino 9 — JSON-RPC 2.0 over a platform-native transport.</Description>
-    <Version>0.7.1</Version>
+    <Version>0.7.2</Version>
     <Authors>$(DeveloperName) &lt;$(DeveloperEmail)&gt;</Authors>
     <Copyright>Copyright (c) 2026 $(DeveloperName) &lt;$(DeveloperEmail)&gt;</Copyright>
     <AssemblyName>rhino-mcp</AssemblyName>

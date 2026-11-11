@@ -16,8 +16,8 @@ CSPROJ = ROOT / "rhino_plugin" / "csharp" / "RhinoMCPPlugin.csproj"
 MANIFEST = ROOT / "rhino_plugin" / "csharp" / "manifest.yml"
 PYPROJECT = ROOT / "pyproject.toml"
 
-# Rhino 9 refuses to install a plug-in missing these.
-REQUIRED_DESCRIPTIONS = {"Organization", "Email", "WebSite", "UpdateUrl", "Country"}
+# The fields RhinoCore has load checks for ("developer ... not specified"); Fax has none.
+REQUIRED_DESCRIPTIONS = {"Organization", "Address", "Country", "Phone", "Email", "WebSite", "UpdateUrl"}
 
 
 def _csproj() -> ET.Element:
@@ -36,8 +36,8 @@ def test_csproj_declares_every_required_plugin_description() -> None:
         if attr.get("Include") != "Rhino.PlugIns.PlugInDescriptionAttribute":
             continue
         kind = attr.findtext("_Parameter1", "").rsplit(".", 1)[-1]
-        value = attr.findtext("_Parameter2", "").strip()
-        assert value, f"PlugInDescription {kind} has an empty value"
+        value = re.sub(r"\$\((\w+)\)", lambda m: _property(m.group(1)), attr.findtext("_Parameter2", ""))
+        assert value.strip(), f"PlugInDescription {kind} has an empty value"
         declared.add(kind)
     assert declared == REQUIRED_DESCRIPTIONS
 

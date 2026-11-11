@@ -6,6 +6,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.7.2] - 2026-11-11
+
+### Changed
+
+- **Plug-in developer info declares all seven fields RhinoCore has load checks for.**
+  RhinoCore carries a "Unable to load %s plug-in: developer … not specified" message for organization, address, country, phone, e-mail, website, and update URL, and McNeel's own plug-ins declare the same seven.
+  0.7.1 declared five and left out Address and Phone.
+  Both are now declared from the new `DeveloperAddress` / `DeveloperPhone` properties in `RhinoMCPPlugin.csproj`, set to the `-` placeholder that McNeel's own ConstraintsUI ships with.
+  This is defensive: 0.7.1 loads in Rhino 9 (9.0.26300.9401) without them.
+  Fax has no check and stays unset.
+  `tests/test_developer_metadata.py` now requires all seven and resolves each `$(…)` property, so an empty property also fails.
+- **Correction to the 0.7.1 entry.**
+  "The developer did not include any contact details" in Rhino's plug-in error dialog is the text shown in place of the developer box when the dialog has no contact field to list.
+  That happens when the plug-in declares none, and also when the load fails before Rhino reads the attributes (a file blocked by Windows, a file-load or bad-image error), whatever the plug-in declares.
+  The text accompanies a load failure and is not its cause; the real reason is in the dialog's message and report.
+
+### 변경 (한글 요약)
+
+- **플러그인 개발자 정보를 RhinoCore 로드 검사 문구가 있는 7개 필드 전체로 확장** — 0.7.1 은 주소·전화 누락.
+  `RhinoMCPPlugin.csproj` 의 `DeveloperAddress`·`DeveloperPhone` 속성으로 `-` 자리표시자 선언 (McNeel ConstraintsUI 와 같은 방식). Fax 는 검사 대상 아님.
+  방어적 변경임 — 0.7.1 도 두 필드 없이 Rhino 9 에서 로드됨.
+- **0.7.1 항목 정정** — Rhino 플러그인 오류 대화상자의 "개발자가 연락처 정보를 포함하지 않았습니다" 는 표시할 연락처 필드가 없을 때의 대체 문구임.
+  연락처를 선언하지 않은 경우뿐 아니라, Windows 차단·파일 로드 오류처럼 속성을 읽기 전에 로드가 실패한 경우에도 표시됨.
+  로드 실패 원인이 아니고, 실제 원인은 대화상자 본문과 보고서에 표시됨.
+
 ## [0.7.1] - 2026-11-11
 
 ### Fixed
