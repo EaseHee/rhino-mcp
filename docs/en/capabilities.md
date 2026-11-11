@@ -95,4 +95,4 @@ The capability matrix below summarises this.
 | MCP resources `rhino://scene/summary`, `rhino://layers`, `rhino://selection` (bridge only), `rhinoscript://{function}` (v0.7) | ✓ | ✓ |
 | `RHINO_MCP_TOOLSETS` group filter (core / bim / freeform / gh / render / scripting / docs; v0.7) | ✓ | ✓ |
 
-In numbers: 246 tools registered at standalone start, 247 with the C# bridge (v0.7.0).
+In numbers: 246 tools registered at standalone start, 247 with the C# bridge (v0.7.1).

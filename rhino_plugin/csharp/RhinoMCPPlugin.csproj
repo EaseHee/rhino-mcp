@@ -16,6 +16,48 @@
     <SkipPluginCopy Condition="'$(SkipPluginCopy)' == ''">false</SkipPluginCopy>
   </PropertyGroup>
 
+  <!--
+    Developer contact: the single source for the plug-in's PlugInDescription
+    attributes, Authors / Copyright, and the Yak manifest (scripts/publish-yak.sh
+    injects these into manifest.yml). tests/test_developer_metadata.py keeps
+    pyproject.toml in step.
+  -->
+  <PropertyGroup>
+    <DeveloperName>EaseHee</DeveloperName>
+    <DeveloperEmail>26100044@snut.ac.kr</DeveloperEmail>
+    <DeveloperCountry>South Korea</DeveloperCountry>
+    <RepositoryUrl>https://github.com/EaseHee/rhino-mcp</RepositoryUrl>
+  </PropertyGroup>
+
+  <!-- Rhino 9 refuses to install a plug-in without developer contact fields. -->
+  <ItemGroup>
+    <AssemblyAttribute Include="Rhino.PlugIns.PlugInDescriptionAttribute">
+      <_Parameter1>Rhino.PlugIns.DescriptionType.Organization</_Parameter1>
+      <_Parameter1_IsLiteral>true</_Parameter1_IsLiteral>
+      <_Parameter2>$(DeveloperName)</_Parameter2>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="Rhino.PlugIns.PlugInDescriptionAttribute">
+      <_Parameter1>Rhino.PlugIns.DescriptionType.Email</_Parameter1>
+      <_Parameter1_IsLiteral>true</_Parameter1_IsLiteral>
+      <_Parameter2>$(DeveloperEmail)</_Parameter2>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="Rhino.PlugIns.PlugInDescriptionAttribute">
+      <_Parameter1>Rhino.PlugIns.DescriptionType.WebSite</_Parameter1>
+      <_Parameter1_IsLiteral>true</_Parameter1_IsLiteral>
+      <_Parameter2>$(RepositoryUrl)</_Parameter2>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="Rhino.PlugIns.PlugInDescriptionAttribute">
+      <_Parameter1>Rhino.PlugIns.DescriptionType.UpdateUrl</_Parameter1>
+      <_Parameter1_IsLiteral>true</_Parameter1_IsLiteral>
+      <_Parameter2>$(RepositoryUrl)/releases</_Parameter2>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="Rhino.PlugIns.PlugInDescriptionAttribute">
+      <_Parameter1>Rhino.PlugIns.DescriptionType.Country</_Parameter1>
+      <_Parameter1_IsLiteral>true</_Parameter1_IsLiteral>
+      <_Parameter2>$(DeveloperCountry)</_Parameter2>
+    </AssemblyAttribute>
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFrameworks>net8.0</TargetFrameworks>
     <EnableDynamicLoading>true</EnableDynamicLoading>
@@ -23,9 +65,9 @@
     <NoWarn>NU1701</NoWarn>
     <Title>rhino-mcp</Title>
     <Description>rhino-mcp plugin for Rhino 8 and Rhino 9 — JSON-RPC 2.0 over a platform-native transport.</Description>
-    <Version>0.7.0</Version>
-    <Authors>GeonHee Lee (EaseHee) &lt;easehee.0@gmail.com&gt;</Authors>
-    <Copyright>Copyright (c) 2026 EaseHee &lt;easehee.0@gmail.com&gt;</Copyright>
+    <Version>0.7.1</Version>
+    <Authors>$(DeveloperName) &lt;$(DeveloperEmail)&gt;</Authors>
+    <Copyright>Copyright (c) 2026 $(DeveloperName) &lt;$(DeveloperEmail)&gt;</Copyright>
     <AssemblyName>rhino-mcp</AssemblyName>
     <RootNamespace>RhinoMcp</RootNamespace>
     <Nullable>enable</Nullable>

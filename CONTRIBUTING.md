@@ -6,7 +6,7 @@ rhino-mcp에 기여해 주셔서 감사합니다.
 
 ```bash
 # Python 3.11+ 필요
-git clone https://github.com/easehee/rhino-mcp.git
+git clone https://github.com/EaseHee/rhino-mcp.git
 cd rhino-mcp
 uv sync
 uv pip install -e '.[dev]'

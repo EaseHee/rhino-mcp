@@ -902,7 +902,7 @@ wheels = [
 
 [[package]]
 name = "rhino3dm-mcp"
-version = "0.7.0"
+version = "0.7.1"
 source = { editable = "." }
 dependencies = [
     { name = "mcp", extra = ["cli"] },

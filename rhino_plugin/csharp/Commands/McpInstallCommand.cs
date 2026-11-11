@@ -317,12 +317,14 @@ namespace RhinoMcp.Commands
         public const string PypiDistribution = "rhino3dm-mcp";
         public const string ConsoleScript = "rhino-mcp";
 
-        /// <summary>Oldest server whose installer understands this command's flags (the plug-in's own version).</summary>
-        public static string MinServerVersion =>
-            typeof(McpInstallConstants).Assembly.GetName().Version?.ToString(3) ?? "0.7.0";
+        /// <summary>
+        /// Oldest server whose installer understands this command's flags
+        /// (<c>install --client</c>, <c>--list-clients --json</c>, <c>uninstall</c>; added in 0.7.0).
+        /// Independent of the plug-in version: raise it only when the command starts passing a newer flag.
+        /// </summary>
+        public const string MinServerVersion = "0.7.0";
 
-        public static Version MinServerVersionParsed =>
-            Version.TryParse(MinServerVersion, out var v) ? v : new Version(0, 7, 0);
+        public static readonly Version MinServerVersionParsed = Version.Parse(MinServerVersion);
 
         /// <summary>Parse "rhino-mcp X.Y.Z" from <c>--version</c> output.</summary>
         public static Version? ParseServerVersion(string stdout)

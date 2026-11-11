@@ -404,7 +404,7 @@ PY
 ## 개발(Development)
 
 ```bash
-git clone https://github.com/easehee/rhino-mcp.git
+git clone https://github.com/EaseHee/rhino-mcp.git
 cd rhino-mcp
 uv venv && source .venv/bin/activate
 uv pip install -e '.[dev]'

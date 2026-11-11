@@ -110,10 +110,25 @@ build_dir_for() {
   echo "$PROJECT_DIR/bin/rh$1/Release/net8.0"
 }
 
-if [ "$SKIP_BUILD" = false ] && ! command -v dotnet &>/dev/null; then
+# dotnet is needed even with --skip-build: the manifest reads developer info from the csproj.
+if ! command -v dotnet &>/dev/null; then
   echo "ERROR: dotnet SDK not found. Install from https://dotnet.microsoft.com/download" >&2
   exit 1
 fi
+
+csproj_property() {
+  dotnet msbuild "$PROJECT_DIR/RhinoMCPPlugin.csproj" -nologo -getProperty:"$1" | tr -d '\r'
+}
+
+DEVELOPER_NAME="$(csproj_property DeveloperName)"
+DEVELOPER_EMAIL="$(csproj_property DeveloperEmail)"
+REPOSITORY_URL="$(csproj_property RepositoryUrl)"
+for value in "$DEVELOPER_NAME" "$DEVELOPER_EMAIL" "$REPOSITORY_URL"; do
+  if [ -z "$value" ]; then
+    echo "ERROR: developer info missing from RhinoMCPPlugin.csproj." >&2
+    exit 1
+  fi
+done
 
 for major in $RHINO_MAJORS; do
   if [ "$SKIP_BUILD" = false ]; then
@@ -156,8 +171,17 @@ stage_files() {
   [ -f "$LICENSE_SRC" ] && cp "$LICENSE_SRC" "$stage/LICENSE"
   [ -f "$README_SRC" ]  && cp "$README_SRC"  "$stage/README.md"
 
-  # Flatten manifest icon path so it resolves inside the staging directory.
-  sed "s|^icon: .*$|icon: $ICON_NAME|" "$MANIFEST_SRC" > "$stage/manifest.yml"
+  # Flatten manifest icon path so it resolves inside the staging directory,
+  # and fill developer placeholders from the csproj.
+  sed -e "s|^icon: .*$|icon: $ICON_NAME|" \
+      -e "s|{{DEVELOPER_NAME}}|$DEVELOPER_NAME|g" \
+      -e "s|{{DEVELOPER_EMAIL}}|$DEVELOPER_EMAIL|g" \
+      -e "s|{{REPOSITORY_URL}}|$REPOSITORY_URL|g" \
+      "$MANIFEST_SRC" > "$stage/manifest.yml"
+  if grep -q '{{' "$stage/manifest.yml"; then
+    echo "ERROR: unfilled placeholder left in $stage/manifest.yml" >&2
+    exit 1
+  fi
 }
 
 build_for_platform() {

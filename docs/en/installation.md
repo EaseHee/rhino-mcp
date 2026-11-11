@@ -17,7 +17,7 @@ uv tool install rhino-mcp
 To run a development checkout:
 
 ```bash
-git clone https://github.com/easehee/rhino-mcp.git
+git clone https://github.com/EaseHee/rhino-mcp.git
 cd rhino-mcp
 uv sync
 uv run rhino-mcp --help
@@ -70,7 +70,7 @@ Every write is preceded by a `.bak.<timestamp>` copy of the previous config.
 With the bridge plugin loaded, type `_McpInstall` on the Rhino command line.
 The command offers toggles for ClaudeDesktop, ClaudeCode, Codex and Antigravity plus All and Uninstall; the initial state comes from detection.
 It passes `--launcher` so every config receives an absolute launcher path.
-Each launcher is checked with `--version` first, and the first one serving at least the plug-in's version is used (uvx with `--from rhino3dm-mcp>=<plug-in version>`, then installed `rhino-mcp` scripts, then `python -m rhino_mcp.server`).
+Each launcher is checked with `--version` first, and the first one serving at least the minimum server version the plug-in's flags need (currently 0.7.0, independent of the plug-in version) is used (uvx with `--from rhino3dm-mcp>=<minimum>`, then installed `rhino-mcp` scripts, then `python -m rhino_mcp.server`).
 Before a release reaches PyPI, install the server locally with `uv tool install --force --from <path-to-rhino-mcp> rhino3dm-mcp` (see [troubleshooting](troubleshooting.md)).
 `rhino-mcp install` itself registers `uvx` only when PyPI serves its own version; otherwise the entry points at the installation that ran it.
 Launchers are searched on `PATH` plus `~/.local/bin`, `~/.cargo/bin`, `/opt/homebrew/bin` and `/usr/local/bin`.

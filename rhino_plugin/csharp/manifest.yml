@@ -1,8 +1,9 @@
 ---
+# Double-brace placeholders are filled from RhinoMCPPlugin.csproj by scripts/publish-yak.sh.
 name: rhino-mcp
-version: 0.7.0
+version: 0.7.1
 authors:
-  - "EaseHee <26100044@snut.ac.kr>"
+  - "{{DEVELOPER_NAME}} <{{DEVELOPER_EMAIL}}>"
 description: |
   RhinoCommon + Grasshopper bridge for the rhino-mcp MCP server.
   Loads as a Rhino 8 or Rhino 9 plug-in (separate rh8 / rh9 builds) and
@@ -15,12 +16,12 @@ description: |
        clients to configure (Claude Desktop, Claude Code, Codex,
        Antigravity), OR
     2. Run "rhino-mcp install --client <name>" from a terminal — see
-       https://github.com/easehee/rhino-mcp/blob/main/docs/en/installation.md
+       {{REPOSITORY_URL}}/blob/main/docs/en/installation.md
   Then restart the configured clients to load the rhino-mcp tools.
 
   If "uvx" or "python" is missing, "_McpInstall" will offer to install
   uv automatically (with confirmation).
-url: https://github.com/easehee/rhino-mcp
+url: "{{REPOSITORY_URL}}"
 keywords:
   - mcp
   - claude

@@ -17,7 +17,7 @@ uv tool install rhino-mcp
 git clone본에서 개발 실행:
 
 ```bash
-git clone https://github.com/easehee/rhino-mcp.git
+git clone https://github.com/EaseHee/rhino-mcp.git
 cd rhino-mcp
 uv sync
 uv run rhino-mcp --help
@@ -70,7 +70,7 @@ rhino-mcp uninstall --client all           # rhino-mcp 항목만 제거
 브리지 플러그인 로드 상태에서 Rhino 명령창에 `_McpInstall` 입력.
 ClaudeDesktop / ClaudeCode / Codex / Antigravity 토글 + All / Uninstall 제공, 초기 상태는 감지 결과.
 `--launcher` 전달 → 모든 설정에 절대 경로 런처 기록.
-런처마다 먼저 `--version` 을 확인해 플러그인 버전 이상을 제공하는 첫 런처 사용(uvx 는 `--from rhino3dm-mcp>=<플러그인 버전>`, 이어서 설치된 `rhino-mcp` 스크립트, 마지막으로 `python -m rhino_mcp.server`).
+런처마다 먼저 `--version` 을 확인해 플러그인 플래그가 요구하는 최소 서버 버전(현재 0.7.0, 플러그인 버전과 무관) 이상을 제공하는 첫 런처 사용(uvx 는 `--from rhino3dm-mcp>=<최소 버전>`, 이어서 설치된 `rhino-mcp` 스크립트, 마지막으로 `python -m rhino_mcp.server`).
 PyPI 배포 전에는 `uv tool install --force --from <rhino-mcp 경로> rhino3dm-mcp` 로 로컬 설치([troubleshooting](troubleshooting.md) 참고).
 `rhino-mcp install` 자체도 PyPI 가 자기 버전을 제공할 때만 `uvx` 를 등록하고, 아니면 실행 중인 설치본을 가리키는 항목 기록.
 런처 탐색 위치: `PATH` + `~/.local/bin`, `~/.cargo/bin`, `/opt/homebrew/bin`, `/usr/local/bin`.
