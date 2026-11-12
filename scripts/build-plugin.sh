@@ -87,8 +87,17 @@ for major in "${MAJORS[@]}"; do
 
   if [ "$(uname -s)" = "Darwin" ]; then
     rhp="/Applications/Rhino $major.app/Contents/PlugIns/rhino-mcp.rhp"
+    yak_pkg="$HOME/Library/Application Support/McNeel/Rhinoceros/packages/$major.0/rhino-mcp"
   else
     rhp="${APPDATA:-}/McNeel/Rhinoceros/$major.0/Plug-ins/rhino-mcp/rhino-mcp.rhp"
+    yak_pkg="${APPDATA:-}/McNeel/Rhinoceros/packages/$major.0/rhino-mcp"
+  fi
+
+  # Both copies share the fixed plug-in GUID, so Rhino loads only one ("ID already in use").
+  if [ -d "$yak_pkg" ]; then
+    echo "WARNING: a Package Manager copy of rhino-mcp is installed for Rhino $major ($yak_pkg)." >&2
+    echo "         It has the same plug-in GUID as this build; uninstall it in the Package Manager" >&2
+    echo "         before loading the local build, or Rhino reports \"ID already in use\"." >&2
   fi
 
   if [ -f "$rhp" ]; then

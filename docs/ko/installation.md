@@ -95,7 +95,10 @@ MSBuild 속성 `RhinoMajor` 로 RhinoCommon / Grasshopper 참조 선택(`9` 는 
 빌드 산출물: `rhino_plugin/csharp/bin/rh9/` 또는 `bin/rh8/` 아래 `rhino-mcp.rhp`.
 `-p:SkipPluginCopy=true` 미지정 시 PostBuild 가 `/Applications/Rhino N.app`(macOS) 또는 `%APPDATA%/McNeel/Rhinoceros/N.0/Plug-ins/rhino-mcp/`(Windows)로 복사, 해당 Rhino 설치 존재 시에만 동작.
 
-Package Manager: `./scripts/publish-yak.sh --rhino=8|9|both`(기본 `both`)가 `rh8`, `rh9` Yak 배포본을 각각 생성. Rhino 9 에서는 `rh9` 패키지 설치 필요, 잘못된 메이저용 빌드도 로드되지만 Python 측이 경고 로그 출력.
+Package Manager: `./scripts/publish-yak.sh --rhino=8|9|both`(기본 `both`)가 `rh8`, `rh9` Yak 배포본을 각각 생성.
+마지막에 전체를 push 하는 복사용 한 줄(`'<yak>' push '<a>.yak' && …`) 출력, `rhino_plugin/csharp/dist/push-<버전>.sh` 에도 저장.
+`./scripts/release.sh` 는 버전 검사·설치·테스트와 이 단계를 한 번에 실행. 두 스크립트 모두 push 는 하지 않음.
+Rhino 9 에서는 `rh9` 패키지 설치 필요, 잘못된 메이저용 빌드도 로드되지만 Python 측이 경고 로그 출력.
 
 Rhino 뷰포트에 `.rhp` 드래그-앤-드롭(또는 `_PluginManager`)으로 1회 로드 → 플러그인이 TCP `127.0.0.1:4242`(추가 Rhino 인스턴스는 4257 까지의 다음 빈 포트)에서 JSON-RPC 리스너 시작.
 MCP 서버 기동 시 자동 감지.

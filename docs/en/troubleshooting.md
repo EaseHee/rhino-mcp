@@ -120,6 +120,22 @@ A `net8.0` build for the other major usually still loads (Rhino 9 runs .NET 10 a
 Install the matching package, or rebuild with `./scripts/build-plugin.sh --release --rhino=<running major>`.
 The Rhino command line shows the same note when the plug-in loads.
 
+### Plug-in loads but is missing from the Plug-in Manager (0.7.0 – 0.7.2)
+
+The bridge starts, then Rhino shows `Object reference not set to an instance of an object` with "The developer did not include any contact details", and rhino-mcp is not listed in the Plug-in Manager.
+Those builds have no assembly GUID, so Rhino sees the plug-in ID as `00000000-0000-0000-0000-000000000000` and registration fails after `OnLoad`.
+Update to 0.7.3 or later in the Package Manager.
+No manual cleanup is needed: the older builds were never registered, and the Package Manager removes the previous version folder on update.
+
+### "ID already in use" when loading the plug-in
+
+Another plug-in with the same GUID is already loaded.
+On a development machine this is usually a local build next to the Package Manager copy, since both use the same fixed ID from 0.7.3 on.
+Only one copy can be loaded, so uninstall the package in the Package Manager before loading a local build.
+While the package stays installed, build with `-p:SkipPluginCopy=true` (or `./scripts/build-plugin.sh --no-install`) so the build does not drop a second copy into the Rhino install; that avoids the clash but does not let you load the local build.
+`./scripts/build-plugin.sh` warns when it finds a Package Manager copy.
+If a fork ships under the same GUID, that fork must generate its own (see `CONTRIBUTING.md`).
+
 ### `_McpInstall` reports "No launcher provides rhino-mcp X or newer"
 
 `_McpInstall` needs a server at least as new as the plug-in.

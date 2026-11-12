@@ -95,7 +95,10 @@ The target framework stays `net8.0` for both: Rhino 9 runs on .NET 10 and loads 
 The build emits `rhino-mcp.rhp` under `rhino_plugin/csharp/bin/rh9/` or `bin/rh8/`.
 Unless `-p:SkipPluginCopy=true` is set, post-build copies the plug-in into `/Applications/Rhino N.app` (macOS) or `%APPDATA%/McNeel/Rhinoceros/N.0/Plug-ins/rhino-mcp/` (Windows), and only when that Rhino install exists.
 
-Package Manager: `./scripts/publish-yak.sh --rhino=8|9|both` (default `both`) produces separate `rh8` and `rh9` Yak distributions. In Rhino 9, install the `rh9` package; a build for the wrong Rhino major still loads, but the Python side logs a warning.
+Package Manager: `./scripts/publish-yak.sh --rhino=8|9|both` (default `both`) produces separate `rh8` and `rh9` Yak distributions.
+It ends with one copy-ready line that pushes them all (`'<yak>' push '<a>.yak' && …`), also saved to `rhino_plugin/csharp/dist/push-<version>.sh`.
+`./scripts/release.sh` runs the version check, install, tests and this step in one go; neither script pushes.
+In Rhino 9, install the `rh9` package; a build for the wrong Rhino major still loads, but the Python side logs a warning.
 
 Drag-and-drop the `.rhp` onto a Rhino viewport (or load it via `_PluginManager`).
 Once loaded the plugin starts a JSON-RPC listener on TCP `127.0.0.1:4242` (the next free port up to 4257 for additional Rhino instances) and the MCP server auto-detects it on startup, or on the first bridge-only tool call.

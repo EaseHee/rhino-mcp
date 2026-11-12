@@ -33,6 +33,27 @@
   </PropertyGroup>
 
   <!--
+    Plug-in identity. RhinoCommon takes PlugIn.Id from the assembly's
+    GuidAttribute; without one the Id is Guid.Empty, OnLoad still runs, and
+    registration then fails in PlugIn.InternalOnLoad, so the plug-in never
+    appears in the Plug-in Manager. Rhino stores settings, load-at-start and
+    command registration under this value.
+    NEVER CHANGE IT: a new value turns every installed copy into a different
+    plug-in. Forks that ship their own build must generate their own GUID
+    (see CONTRIBUTING.md); two plug-ins sharing it fail with "ID already in use".
+    tests/test_developer_metadata.py pins the value.
+  -->
+  <PropertyGroup>
+    <PluginGuid>880c2dd9-2cb2-4d7f-a3bc-880f628beb87</PluginGuid>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.InteropServices.GuidAttribute">
+      <_Parameter1>$(PluginGuid)</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <!--
     The seven fields RhinoCore has load checks for ("Unable to load %s plug-in:
     developer ... not specified"); McNeel's own plug-ins declare the same set.
     Fax has no check. Rhino's plug-in error dialog shows "The developer did not
@@ -85,7 +106,7 @@
     <NoWarn>NU1701</NoWarn>
     <Title>rhino-mcp</Title>
     <Description>rhino-mcp plugin for Rhino 8 and Rhino 9 — JSON-RPC 2.0 over a platform-native transport.</Description>
-    <Version>0.7.2</Version>
+    <Version>0.7.3</Version>
     <Authors>$(DeveloperName) &lt;$(DeveloperEmail)&gt;</Authors>
     <Copyright>Copyright (c) 2026 $(DeveloperName) &lt;$(DeveloperEmail)&gt;</Copyright>
     <AssemblyName>rhino-mcp</AssemblyName>

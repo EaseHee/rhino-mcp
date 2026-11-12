@@ -1,7 +1,7 @@
 ---
 # Double-brace placeholders are filled from RhinoMCPPlugin.csproj by scripts/publish-yak.sh.
 name: rhino-mcp
-version: 0.7.2
+version: 0.7.3
 authors:
   - "{{DEVELOPER_NAME}} <{{DEVELOPER_EMAIL}}>"
 description: |

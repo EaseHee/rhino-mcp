@@ -6,6 +6,92 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.7.3] - 2026-11-12
+
+### Fixed
+
+- **The plug-in now registers in Rhino: it declares a fixed assembly GUID.**
+  RhinoCommon takes `PlugIn.Id` from the assembly's `GuidAttribute`, and 0.7.0 – 0.7.2 had none, so the ID was `00000000-0000-0000-0000-000000000000`.
+  `OnLoad` still ran and the bridge started, but registration then failed in `PlugIn.InternalOnLoad` with `Object reference not set to an instance of an object`.
+  The plug-in never appeared in the Plug-in Manager, and its commands were not registered.
+  `RhinoMCPPlugin.csproj` now generates `[assembly: Guid("880c2dd9-2cb2-4d7f-a3bc-880f628beb87")]` from the new `PluginGuid` property, for both the rh8 and rh9 builds.
+  This value must never change.
+  Reproduced in Rhino 9 (9.0.26300.9401) with two minimal plug-ins that differ only in `GuidAttribute`; the one without it showed exactly this failure.
+- **Correction to the 0.7.1 and 0.7.2 entries.**
+  Missing developer contact fields did not cause the install failure, and 0.7.1 and 0.7.2 do not register in Rhino 9 either.
+  The "no contact details" dialog text appears with the GUID failure even when all seven fields are declared.
+
+### Added
+
+- `tests/test_developer_metadata.py` requires exactly one `GuidAttribute` in the csproj with the fixed value, and no hand-written `[assembly: Guid(...)]` in the C# sources.
+- `CONTRIBUTING.md` gains a "Plug-in GUID" section: the GUID is a public identifier, not a secret, and forks that ship their own build must generate a new one.
+- `docs/{en,ko}/troubleshooting.md` cover the missing-from-Plug-in-Manager symptom of 0.7.0 – 0.7.2 and the "ID already in use" conflict between a local build and the Package Manager copy.
+- **`scripts/release.sh`** runs a Yak release in one go: a version check across `pyproject.toml`, `__init__.py`, `manifest.yml` and the csproj, then `install.sh --dev`, `pytest` and `ruff`, then `publish-yak.sh`.
+  It never pushes, and it leaves out `build-plugin.sh`, whose copy into the local Rhino install would clash with the Package Manager copy on the shared GUID.
+  Only `--skip-install` and `--skip-checks` are its own options.
+  `--rhino=`, `--platform=`, `--clean`, `--skip-build` and `--copy` are passed to `publish-yak.sh`, and any other option is rejected before step 1.
+  Its version check reads the manifest and the csproj (through `dotnet msbuild`) the same way `publish-yak.sh` does.
+- **`publish-yak.sh` ends with one copy-ready push line**, `'<yak>' push '<a>.yak' && '<yak>' push '<b>.yak' && …`, covering only the packages built in that run, and saves it to `rhino_plugin/csharp/dist/push-<version>.sh`.
+  It replaces the old `push <file>.yak` placeholder hint and the listing of every `.yak` in `dist/`, older versions included.
+  The `&&` chain stops at the first failed push.
+  `--print-push` rebuilds the line from the current version's packages in `rhino_plugin/csharp/dist/` without building, and `--copy` puts it on the clipboard (`pbcopy` / `clip.exe`).
+  `--print-push` requires exactly one package per requested Rhino major and platform, and lists what is missing or duplicated instead of printing a partial line.
+- **`publish-yak.sh` refuses stale or mismatched builds.**
+  It stops when `manifest.yml` and the csproj `Version` differ, and before packaging it checks each `.rhp` for the csproj `Version` (its informational version) and `PluginGuid`.
+  A leftover `.rhp` reused with `--skip-build`, such as a 0.7.2 build without the GUID, is no longer packaged under the new version.
+  The csproj properties are read in one `dotnet msbuild` evaluation instead of one per property.
+- **`build-plugin.sh` warns when a Package Manager copy of rhino-mcp is installed** for the Rhino major it copies into, since the two share the plug-in GUID.
+
+### Removed
+
+- **`scripts/test.sh`, `scripts/ci.sh`, `scripts/build.sh`.**
+  `test.sh` wrapped `uv run pytest` with coverage, `--live` and path-filter presets; `ci.sh` chained install, lint, tests, plug-in build and wheel, which GitHub CI and `release.sh` now cover; `build.sh` re-ran ruff / mypy and built the wheel with `python -m build`, a package the project does not depend on.
+  Use `uv run pytest tests/`, `./scripts/release.sh`, and `uv build` (as the release workflow does); Docker stays on `docker compose -f docker/docker-compose.yml up --build`.
+  Kept: `install.sh`, `build-plugin.sh` (local development builds), `publish-yak.sh`, `release.sh`, `check-bridge.sh`, `run.sh`.
+
+### Upgrade notes
+
+- Users on 0.7.0 – 0.7.2 only need to update in the Package Manager.
+  Those builds were never registered, so nothing is left behind, and the Package Manager removes the previous version folder on update.
+- On a development machine, a local build and the Package Manager copy now share the same ID and cannot load together.
+  Uninstall the package before loading a local build; while it stays installed, build with `-p:SkipPluginCopy=true` so no second copy lands in the Rhino install.
+  `build-plugin.sh` warns when it finds a Package Manager copy.
+
+### 수정 (한글 요약)
+
+- **플러그인 어셈블리 GUID 고정 선언으로 Rhino 등록 실패 해소** — 0.7.0 ~ 0.7.2 는 `GuidAttribute` 가 없어 플러그인 ID 가 빈 GUID 였음.
+  `OnLoad` 는 실행돼 브리지는 켜지지만 `PlugIn.InternalOnLoad` 에서 등록이 실패해 플러그인 관리자 목록·명령 등록에서 빠짐.
+  `RhinoMCPPlugin.csproj` 의 `PluginGuid` 속성에서 `880c2dd9-2cb2-4d7f-a3bc-880f628beb87` 생성. 이후 변경 금지.
+  Rhino 9 (9.0.26300.9401) 에서 GUID 유무만 다른 최소 플러그인 두 개로 재현 확인.
+- **0.7.1·0.7.2 항목 정정** — 개발자 연락처 필드는 설치 실패 원인이 아니었고, 0.7.1·0.7.2 도 Rhino 9 에 등록되지 않음.
+
+### 추가 (한글 요약)
+
+- GUID 가 고정값으로 정확히 하나인지 검사하는 테스트 추가.
+- `CONTRIBUTING.md` 에 플러그인 GUID 절 추가 — 비밀값이 아닌 공개 식별자이고, 포크해서 별도 배포할 때는 새 GUID 생성 필수.
+- `docs/{en,ko}/troubleshooting.md` 에 0.7.0 ~ 0.7.2 미등록 증상과 "ID already in use" 충돌 항목 추가.
+- **`scripts/release.sh` 추가** — 버전 일치 검사, `install.sh --dev`, `pytest`·`ruff`, `publish-yak.sh` 를 한 번에 실행. push 는 하지 않음.
+  로컬 Rhino 로 복사하는 `build-plugin.sh` 는 같은 GUID 의 설치본과 충돌하므로 제외.
+- **`publish-yak.sh` 가 복사용 push 한 줄 출력** — 이번 실행에서 만든 패키지만 `&&` 로 이은 명령을 출력하고 `rhino_plugin/csharp/dist/push-<버전>.sh` 로 저장. 첫 push 실패 시 중단.
+  `--print-push` 는 빌드 없이 `rhino_plugin/csharp/dist/` 의 현재 버전 패키지로 명령만 재출력, `--copy` 는 클립보드 복사.
+  `--print-push` 는 요청한 메이저·플랫폼마다 패키지가 정확히 하나여야 하며, 빠지거나 중복된 항목을 나열하고 중단.
+- **`publish-yak.sh` 가 오래된·불일치 빌드 거부** — `manifest.yml` 과 csproj `Version` 이 다르면 중단하고, 포장 전 각 `.rhp` 의 버전과 `PluginGuid` 확인.
+  `--skip-build` 로 남은 0.7.2 빌드(GUID 없음)를 새 버전으로 포장하던 경로 차단. csproj 속성은 `dotnet msbuild` 1회 평가로 읽음.
+- **`release.sh` 옵션 검사** — 자체 옵션은 `--skip-install`·`--skip-checks` 뿐이고, `--copy` 등은 `publish-yak.sh` 로 전달. 그 밖의 옵션은 1단계 전에 거부.
+- **`build-plugin.sh` 가 Package Manager 설치본 발견 시 경고** — 같은 플러그인 GUID 라 함께 로드 불가.
+
+### 제거 (한글 요약)
+
+- **`scripts/test.sh`·`ci.sh`·`build.sh` 제거** — 각각 커버리지·`--live`·경로 필터 프리셋을 얹은 `uv run pytest` 래퍼, GitHub CI·`release.sh` 와 중복된 파이프라인, 의존성에 없는 `python -m build` 를 쓰던 빌드 스크립트였음.
+  대체: `uv run pytest tests/`, `./scripts/release.sh`, `uv build`. Docker 는 `docker compose -f docker/docker-compose.yml up --build` 그대로.
+  유지: `install.sh`, `build-plugin.sh`(로컬 개발 빌드), `publish-yak.sh`, `release.sh`, `check-bridge.sh`, `run.sh`.
+
+### 업그레이드 안내
+
+- 0.7.0 ~ 0.7.2 사용자는 Package Manager 업데이트만으로 충분함. 수동 제거 불필요.
+- 개발 PC 에서는 로컬 빌드와 설치본이 같은 ID 라 동시 로드 불가. 로컬 빌드를 로드하려면 먼저 패키지 제거.
+  패키지를 유지하는 동안에는 `-p:SkipPluginCopy=true` 로 빌드해 Rhino 설치 경로에 두 번째 사본이 생기지 않게 함. `build-plugin.sh` 는 설치본 발견 시 경고.
+
 ## [0.7.2] - 2026-11-11
 
 ### Changed

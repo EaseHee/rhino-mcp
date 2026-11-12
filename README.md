@@ -255,7 +255,8 @@ Any MCP-compatible client (mcp-inspector, Continue, Claude Code, etc.) that can 
 
 Build and install the C# plugin for full 247 tool support.
 The `RhinoMajor` MSBuild property selects the target Rhino (default `9`; `8` for Rhino 8). Outputs go to `bin/rh9` and `bin/rh8`.
-The included helper script wraps `dotnet build` and verifies the post-build install location:
+The included helper script wraps `dotnet build` and verifies the post-build install location.
+A local build and a Package Manager install share the same plug-in GUID and cannot load together: uninstall the package before loading a local build, or use `--no-install` while it stays installed (the script warns when it finds one).
 
 ```bash
 ./scripts/build-plugin.sh                       # Rhino 9 debug build + install
@@ -271,8 +272,12 @@ dotnet build rhino_plugin/csharp/RhinoMCPPlugin.csproj -c Release -p:RhinoMajor=
 # Skip the copy into the Rhino install:
 dotnet build rhino_plugin/csharp/RhinoMCPPlugin.csproj -c Release -p:SkipPluginCopy=true
 
-# Yak packages for both Rhino versions (rh8 + rh9):
+# Yak packages for both Rhino versions (rh8 + rh9); ends with one copy-ready push line:
 ./scripts/publish-yak.sh --rhino=both
+./scripts/publish-yak.sh --print-push            # print the push line again, no build
+
+# Whole release in one go (version check, install, pytest + ruff, packages); never pushes:
+./scripts/release.sh
 ```
 
 Post-build targets copy the `.rhp` only when the matching Rhino install exists (`N` is 8 or 9):
@@ -431,11 +436,12 @@ uv run pytest --cov=src/rhino_mcp
 uv run ruff check src/ tests/
 uv run mypy src/rhino_mcp
 
-# Build the C# bridge plugin (auto-installs into Rhino on macOS/Windows)
+# Build the C# bridge plugin (auto-installs into Rhino on macOS/Windows;
+# uninstall a Package Manager copy first — same plug-in GUID — or add --no-install)
 ./scripts/build-plugin.sh --release
 
-# Wheel + sdist
-./scripts/build.sh
+# Wheel + sdist (into dist/)
+uv build
 ```
 
 ### Manual smoke test against a running server

@@ -118,6 +118,22 @@ Bridge on tcp://... runs in Rhino 9 but the plug-in was built for Rhino 8. Insta
 맞는 패키지를 설치하거나 `./scripts/build-plugin.sh --release --rhino=<실행 중인 메이저>` 로 재빌드.
 플러그인 로드 시 Rhino 명령창에도 같은 안내 출력.
 
+### 플러그인은 로드되지만 플러그인 관리자에 없음 (0.7.0 ~ 0.7.2)
+
+브리지는 켜진 뒤 Rhino 가 `Object reference not set to an instance of an object` 와 "개발자가 연락처 정보를 포함하지 않았습니다" 문구를 띄우고, 플러그인 관리자 목록에 rhino-mcp 가 없음.
+해당 빌드에는 어셈블리 GUID 가 없어 Rhino 가 플러그인 ID 를 `00000000-0000-0000-0000-000000000000` 으로 읽고, `OnLoad` 직후 등록에 실패함.
+Package Manager 에서 0.7.3 이상으로 업데이트.
+수동 정리는 불필요함. 이전 빌드는 등록된 적이 없고, Package Manager 가 업데이트 때 이전 버전 폴더를 지움.
+
+### 플러그인 로드 시 "ID already in use"
+
+같은 GUID 의 플러그인이 이미 로드된 상태.
+0.7.3 부터 로컬 빌드와 Package Manager 설치본이 같은 고정 ID 를 쓰므로, 개발 PC 에서 둘이 함께 있을 때 주로 발생.
+한 번에 하나만 로드되므로, 로컬 빌드를 로드하기 전에 Package Manager 에서 패키지 제거.
+패키지를 유지하는 동안에는 `-p:SkipPluginCopy=true`(또는 `./scripts/build-plugin.sh --no-install`)로 빌드해 Rhino 설치 경로에 두 번째 사본이 생기지 않게 함. 충돌은 피하지만 로컬 빌드를 로드할 수는 없음.
+`./scripts/build-plugin.sh` 는 Package Manager 설치본을 발견하면 경고 출력.
+포크가 같은 GUID 로 배포된 경우라면 그 포크 쪽에서 새 GUID 를 생성해야 함 (`CONTRIBUTING.md` 참고).
+
 ### `_McpInstall` 이 "No launcher provides rhino-mcp X or newer" 출력
 
 `_McpInstall` 은 플러그인 버전 이상의 서버가 필요함.

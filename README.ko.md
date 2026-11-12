@@ -253,7 +253,8 @@ mcp-inspector, Continue, Claude Code 등 서브프로세스 spawn 가능한 모�
 
 247개 도구를 모두 사용하려면 C# 플러그인 빌드 후 설치 필요.
 대상 Rhino 는 MSBuild 속성 `RhinoMajor` 로 선택(기본 `9`, Rhino 8 은 `8`). 출력은 `bin/rh9`, `bin/rh8`.
-헬퍼 스크립트가 `dotnet build`를 wrap하고 설치 위치 검증:
+헬퍼 스크립트가 `dotnet build`를 wrap하고 설치 위치 검증.
+로컬 빌드와 Package Manager 설치본은 같은 플러그인 GUID 라 함께 로드 불가. 로컬 빌드를 로드하려면 먼저 패키지를 제거하고, 패키지를 유지하는 동안에는 `--no-install` 사용(설치본 발견 시 스크립트가 경고).
 
 ```bash
 ./scripts/build-plugin.sh                       # Rhino 9 debug 빌드 + 설치
@@ -269,8 +270,12 @@ dotnet build rhino_plugin/csharp/RhinoMCPPlugin.csproj -c Release -p:RhinoMajor=
 # Rhino 설치 경로로 복사 생략:
 dotnet build rhino_plugin/csharp/RhinoMCPPlugin.csproj -c Release -p:SkipPluginCopy=true
 
-# Rhino 8 + 9 용 Yak 패키지(rh8 + rh9):
+# Rhino 8 + 9 용 Yak 패키지(rh8 + rh9), 마지막에 복사용 push 한 줄 출력:
 ./scripts/publish-yak.sh --rhino=both
+./scripts/publish-yak.sh --print-push            # 빌드 없이 push 한 줄만 재출력
+
+# 릴리스 일괄 실행(버전 검사, 설치, pytest + ruff, 패키지 생성), push 는 하지 않음:
+./scripts/release.sh
 ```
 
 PostBuild 단계에서 `.rhp`가 자동 복사되는 위치(해당 Rhino 설치 존재 시에만, `N` 은 8 또는 9):
@@ -416,11 +421,12 @@ uv run pytest --cov=src/rhino_mcp
 uv run ruff check src/ tests/
 uv run mypy src/rhino_mcp
 
-# C# 브리지 플러그인 빌드(macOS/Windows에서 자동 설치)
+# C# 브리지 플러그인 빌드(macOS/Windows에서 자동 설치.
+# 같은 플러그인 GUID 라 Package Manager 설치본을 먼저 제거하거나 --no-install 추가)
 ./scripts/build-plugin.sh --release
 
-# Wheel + sdist 패키지 빌드
-./scripts/build.sh
+# Wheel + sdist 패키지 빌드(dist/)
+uv build
 ```
 
 ### 실행 중인 서버에 수동 smoke test

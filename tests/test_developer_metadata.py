@@ -71,3 +71,28 @@ def test_manifest_takes_developer_info_from_placeholders() -> None:
     assert 'url: "{{REPOSITORY_URL}}"' in text
     assert not re.search(r"[\w.+-]+@[\w-]+\.[\w.]+", text), "manifest hard-codes an email address"
     assert "github.com/" not in text, "manifest hard-codes a repository URL"
+
+
+# Published plug-in identity; changing it orphans every installed copy (see the csproj comment).
+PLUGIN_GUID = "880c2dd9-2cb2-4d7f-a3bc-880f628beb87"
+
+
+def test_csproj_declares_fixed_plugin_guid() -> None:
+    guids = [
+        attr.findtext("_Parameter1", "")
+        for attr in _csproj().iterfind("./ItemGroup/AssemblyAttribute")
+        if attr.get("Include") == "System.Runtime.InteropServices.GuidAttribute"
+    ]
+    assert len(guids) == 1, f"expected exactly one GuidAttribute, found {len(guids)}"
+    value = re.sub(r"\$\((\w+)\)", lambda m: _property(m.group(1)), guids[0]).strip().lower()
+    assert value == PLUGIN_GUID
+
+
+def test_no_hand_written_assembly_guid() -> None:
+    pattern = re.compile(r"\[\s*assembly\s*:\s*(System\.Runtime\.InteropServices\.)?Guid(Attribute)?\s*\(")
+    offenders = [
+        p
+        for p in CSPROJ.parent.rglob("*.cs")
+        if "obj" not in p.parts and "bin" not in p.parts and pattern.search(p.read_text("utf-8"))
+    ]
+    assert offenders == []
